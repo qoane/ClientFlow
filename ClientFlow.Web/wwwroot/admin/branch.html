@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>ClientFlow — Branch Details</title>
+    <style>
+        :root {
+            --bg: #0b1020;
+            --panel: #121936;
+            --panel2: #0f1530;
+            --border: rgba(255,255,255,.08);
+            --muted: #9fb0ff;
+            --text: #eef1ff;
+            --accent: #6cf0c2;
+            --accent2: #89b4ff;
+            --danger: #ff6b6b;
+        }
+        * { box-sizing: border-box; }
+        html, body { height: 100%; margin: 0; }
+        body {
+            background: radial-gradient(1200px 800px at 80% -10%,#1b2550 0%,transparent 60%),var(--bg);
+            color: var(--text);
+            font-family: system-ui,-apple-system,Segoe UI,Roboto;
+            display: grid;
+            grid-template-rows: 64px 1fr;
+        }
+        header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 0 20px;
+            border-bottom: 1px solid var(--border);
+            background: linear-gradient(180deg,#141c3f,#0e1533);
+        }
+        .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; }
+        .logo { width: 28px; height: 28px; border-radius: 8px; background: conic-gradient(from 210deg,var(--accent),var(--accent2)); box-shadow: 0 0 0 2px rgba(255,255,255,.07) inset; }
+        .toolbar { margin-left: auto; }
+        .toolbar button { padding: 8px 12px; border-radius: 10px; border: 1px solid var(--border); background: linear-gradient(180deg,#1a2248,#141c3f); color: var(--text); cursor: pointer; }
+        .shell { display: grid; grid-template-columns: 220px 1fr; gap: 12px; height: 100%; }
+        @media (max-width:900px){ .shell { grid-template-columns: 1fr; } }
+        nav { padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+        nav a { text-decoration: none; color: var(--text); padding: 10px 12px; border: 1px solid var(--border); border-radius: 12px; background: linear-gradient(180deg,#1a2248,#141c3f); }
+        nav a.active { box-shadow: 0 0 0 2px #19cba044; }
+        main { padding: 12px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
+        .card { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 16px; box-shadow: 0 10px 30px rgba(0,0,0,.15); }
+        h1 { margin-top: 0; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 8px 10px; border-bottom: 1px solid var(--border); text-align: left; }
+        th { color: var(--muted); font-weight: 500; }
+        tr:hover { background: var(--panel2); }
+        .actions button { margin-right: 6px; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); background: linear-gradient(180deg,#1a2248,#141c3f); color: var(--text); cursor: pointer; font-size: 12px; }
+        .actions button.delete { background: linear-gradient(180deg,#ef4444,#dc2626); border:none; color: #fff; }
+        .actions button.toggle { background: linear-gradient(180deg,#19cba0,#0dbb93); color: #031b15; border: none; }
+        form input, form textarea, form select { width: 100%; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--border); background: #0f1530; color: var(--text); margin-bottom: 8px; }
+        form input[type="checkbox"] { width: auto; margin-bottom: 0; }
+        form label { font-size: 12px; color: var(--muted); display:block; margin-top:8px; }
+        form button { padding: 8px 12px; border: none; border-radius: 10px; background: linear-gradient(180deg,#19cba0,#0dbb93); color: #031b15; cursor: pointer; }
+        .muted { color: var(--muted); font-size: 14px; }
+        .inline-actions { display:flex; gap:8px; flex-wrap: wrap; }
+        .inline-actions button.secondary { background: linear-gradient(180deg,#1a2248,#141c3f); color: var(--text); border: 1px solid var(--border); }
+        .error { color: var(--danger); margin-top: 8px; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="brand"><div class="logo"></div><div>ClientFlow</div></div>
+        <div class="toolbar"><span id="userEmail" style="margin-right:16px;"></span><button id="signOut">Sign Out</button></div>
+    </header>
+    <div class="shell">
+        <nav>
+            <a href="/admin/dashboard.html">Dashboard</a>
+            <a href="/admin/branches.html" class="active">Branches</a>
+            <a href="/admin/users.html">Users</a>
+            <a href="/admin/settings.html">Settings</a>
+            <a href="/admin/flow-dash.html">Surveys</a>
+            <a href="/kiosk-dashboard.html" target="_blank">Kiosk Dashboard</a>
+        </nav>
+        <main>
+            <div class="inline-actions">
+                <a href="/admin/branches.html" class="secondary" style="text-decoration:none; padding:8px 12px; border-radius:10px; border:1px solid var(--border); background: linear-gradient(180deg,#1a2248,#141c3f); color: var(--text);">&larr; Back to branches</a>
+            </div>
+            <div id="branchDetails" class="card"></div>
+            <div id="staffSection" class="card">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+                    <h2 style="margin:0;">Branch Staff</h2>
+                    <button id="addStaffBtn">Add Staff Member</button>
+                </div>
+                <p class="muted" style="margin-top:8px;">Manage the roster for this branch. Toggle on-duty status to control who appears in the kiosk roster.</p>
+                <div id="staffForm" style="margin-top:12px;"></div>
+                <div id="staffList" style="margin-top:12px; overflow-x:auto;"></div>
+            </div>
+        </main>
+    </div>
+    <script>
+        const token = localStorage.getItem('authToken');
+        if (!token) { window.location.href = '/login.html'; }
+        const emailSpan = document.getElementById('userEmail');
+        if (emailSpan) {
+            emailSpan.textContent = localStorage.getItem('userEmail') || '';
+        }
+        const role = localStorage.getItem('userRole');
+        document.getElementById('signOut').addEventListener('click', () => {
+            localStorage.clear();
+            window.location.href = '/login.html';
+        });
+
+        const params = new URLSearchParams(window.location.search);
+        const branchId = params.get('id');
+        if (!branchId) {
+            window.location.href = '/admin/branches.html';
+        }
+
+        const branchDetailsDiv = document.getElementById('branchDetails');
+        const staffListDiv = document.getElementById('staffList');
+        const staffFormDiv = document.getElementById('staffForm');
+        const addStaffBtn = document.getElementById('addStaffBtn');
+
+        let currentBranch = null;
+        let currentStaff = [];
+
+        async function api(url, opts = {}) {
+            opts.headers = Object.assign({}, opts.headers || {}, {
+                'Authorization': 'Bearer ' + token,
+                'Content-Type': 'application/json'
+            });
+            const res = await fetch(url, opts);
+            if (!res.ok) {
+                const txt = await res.text();
+                throw new Error(txt || 'Request failed');
+            }
+            return res.status === 204 ? null : res.json();
+        }
+
+        function renderBranchDetails() {
+            if (!currentBranch) {
+                branchDetailsDiv.innerHTML = '<p>Branch not found.</p>';
+                return;
+            }
+            const { name, reportRecipients, reportTime } = currentBranch;
+            branchDetailsDiv.innerHTML = `
+                <h1 style="margin-bottom:4px;">${name}</h1>
+                <p class="muted" style="margin-top:0;">Branch ID: ${branchId}</p>
+                <div style="display:grid; gap:12px; margin-top:12px;">
+                    <div><strong>Daily Report Recipients:</strong><br>${reportRecipients ? reportRecipients : '<span class="muted">No recipients configured</span>'}</div>
+                    <div><strong>Report Time:</strong><br>${reportTime ? reportTime : '<span class="muted">Default (08:00)</span>'}</div>
+                </div>
+                <div class="inline-actions" style="margin-top:16px;">
+                    <button id="editBranchBtn">Edit Branch</button>
+                </div>
+                <div id="branchFormContainer" style="margin-top:12px;"></div>
+            `;
+
+            const editBtn = document.getElementById('editBranchBtn');
+            editBtn.addEventListener('click', () => showBranchEditForm());
+        }
+
+        function showBranchEditForm() {
+            if (!currentBranch) return;
+            const formContainer = document.getElementById('branchFormContainer');
+            const isBranchAdmin = role === 'BranchAdmin';
+            formContainer.innerHTML = '';
+            const form = document.createElement('form');
+            form.innerHTML = `
+                <h3>Edit Branch</h3>
+                <label>Name</label>
+                <input type="text" id="branchName" value="${currentBranch.name}" ${isBranchAdmin ? 'disabled' : ''} />
+                <label>Report Recipients (comma separated emails)</label>
+                <textarea id="branchRecipients">${currentBranch.reportRecipients ?? ''}</textarea>
+                <label>Report Time (HH:mm)</label>
+                <input type="text" id="branchTime" value="${currentBranch.reportTime ?? ''}" placeholder="08:00" />
+                <div class="inline-actions" style="margin-top:12px;">
+                    <button type="submit">Save Changes</button>
+                    <button type="button" class="secondary" id="cancelBranchEdit">Cancel</button>
+                </div>
+                <div class="error" id="branchError" style="display:none;"></div>
+            `;
+            formContainer.appendChild(form);
+            document.getElementById('cancelBranchEdit').addEventListener('click', () => {
+                formContainer.innerHTML = '';
+            });
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const payload = {
+                    name: document.getElementById('branchName').value.trim(),
+                    reportRecipients: document.getElementById('branchRecipients').value.trim(),
+                    reportTime: document.getElementById('branchTime').value.trim()
+                };
+                if (isBranchAdmin) {
+                    delete payload.name;
+                }
+                try {
+                    await api(`/api/branches/${encodeURIComponent(branchId)}`, {
+                        method: 'PUT',
+                        body: JSON.stringify(payload)
+                    });
+                    formContainer.innerHTML = '';
+                    await loadBranch();
+                } catch (err) {
+                    const errorDiv = document.getElementById('branchError');
+                    errorDiv.textContent = err.message;
+                    errorDiv.style.display = '';
+                }
+            });
+        }
+
+        function renderStaffList() {
+            if (!currentStaff.length) {
+                staffListDiv.innerHTML = '<p class="muted">No staff members have been added to this branch yet.</p>';
+                return;
+            }
+            let html = '<table><tr><th>Name</th><th>Photo</th><th>On Duty</th><th>Actions</th></tr>';
+            currentStaff.forEach(s => {
+                const photo = s.photoUrl ? `<a href="${s.photoUrl}" target="_blank">View</a>` : '<span class="muted">N/A</span>';
+                html += `<tr data-id="${s.id}"><td>${s.name}</td><td>${photo}</td><td>${s.isActive ? 'Yes' : 'No'}</td><td class="actions">`;
+                html += `<button class="toggle" data-action="toggle">${s.isActive ? 'Set Off Duty' : 'Set On Duty'}</button>`;
+                html += `<button class="edit" data-action="edit">Edit</button>`;
+                html += `<button class="delete" data-action="delete">Delete</button>`;
+                html += '</td></tr>';
+            });
+            html += '</table>';
+            staffListDiv.innerHTML = html;
+
+            staffListDiv.querySelectorAll('tr[data-id]').forEach(row => {
+                row.addEventListener('dblclick', () => {
+                    const staff = currentStaff.find(s => s.id === row.dataset.id);
+                    if (staff) {
+                        showStaffEditForm(staff);
+                    }
+                });
+            });
+
+            staffListDiv.querySelectorAll('button').forEach(btn => {
+                btn.addEventListener('click', async (event) => {
+                    const row = event.target.closest('tr');
+                    if (!row) return;
+                    const staff = currentStaff.find(s => s.id === row.dataset.id);
+                    if (!staff) return;
+                    const action = event.target.dataset.action;
+                    if (action === 'toggle') {
+                        await toggleStaffDuty(staff);
+                    } else if (action === 'edit') {
+                        showStaffEditForm(staff);
+                    } else if (action === 'delete') {
+                        deleteStaff(staff);
+                    }
+                });
+            });
+        }
+
+        function showStaffForm(title, initial = {}) {
+            staffFormDiv.innerHTML = '';
+            const form = document.createElement('form');
+            form.innerHTML = `
+                <h3>${title}</h3>
+                <label>Name</label>
+                <input type="text" id="staffName" value="${initial.name ?? ''}" required />
+                <label>Photo URL</label>
+                <input type="text" id="staffPhoto" value="${initial.photoUrl ?? ''}" placeholder="https://" />
+                <label style="display:flex; align-items:center; gap:8px;">
+                    <input type="checkbox" id="staffActive" ${initial.isActive !== false ? 'checked' : ''} /> On Duty
+                </label>
+                <div class="inline-actions" style="margin-top:12px;">
+                    <button type="submit">Save</button>
+                    <button type="button" class="secondary" id="cancelStaffForm">Cancel</button>
+                </div>
+                <div class="error" id="staffError" style="display:none;"></div>
+            `;
+            staffFormDiv.appendChild(form);
+            document.getElementById('cancelStaffForm').addEventListener('click', () => {
+                staffFormDiv.innerHTML = '';
+            });
+            return form;
+        }
+
+        function showStaffCreateForm() {
+            const form = showStaffForm('Add Staff Member');
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const payload = {
+                    name: document.getElementById('staffName').value.trim(),
+                    photoUrl: document.getElementById('staffPhoto').value.trim(),
+                    isActive: document.getElementById('staffActive').checked,
+                    branchId: branchId
+                };
+                if (!payload.name) {
+                    const err = document.getElementById('staffError');
+                    err.textContent = 'Name is required.';
+                    err.style.display = '';
+                    return;
+                }
+                try {
+                    await api('/api/staff', {
+                        method: 'POST',
+                        body: JSON.stringify(payload)
+                    });
+                    staffFormDiv.innerHTML = '';
+                    await loadStaff();
+                } catch (err) {
+                    const errorDiv = document.getElementById('staffError');
+                    errorDiv.textContent = err.message;
+                    errorDiv.style.display = '';
+                }
+            });
+        }
+
+        function showStaffEditForm(staff) {
+            const form = showStaffForm('Edit Staff Member', staff);
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const payload = {
+                    name: document.getElementById('staffName').value.trim(),
+                    photoUrl: document.getElementById('staffPhoto').value.trim(),
+                    isActive: document.getElementById('staffActive').checked,
+                    branchId: branchId
+                };
+                if (!payload.name) {
+                    const err = document.getElementById('staffError');
+                    err.textContent = 'Name is required.';
+                    err.style.display = '';
+                    return;
+                }
+                try {
+                    await api(`/api/staff/${staff.id}`, {
+                        method: 'PUT',
+                        body: JSON.stringify(payload)
+                    });
+                    staffFormDiv.innerHTML = '';
+                    await loadStaff();
+                } catch (err) {
+                    const errorDiv = document.getElementById('staffError');
+                    errorDiv.textContent = err.message;
+                    errorDiv.style.display = '';
+                }
+            });
+        }
+
+        async function toggleStaffDuty(staff) {
+            try {
+                await api(`/api/staff/${staff.id}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ isActive: !staff.isActive })
+                });
+                await loadStaff();
+            } catch (err) {
+                alert('Unable to update staff status: ' + err.message);
+            }
+        }
+
+        async function deleteStaff(staff) {
+            if (!confirm(`Delete ${staff.name}?`)) {
+                return;
+            }
+            try {
+                await api(`/api/staff/${staff.id}`, {
+                    method: 'DELETE'
+                });
+                await loadStaff();
+            } catch (err) {
+                alert('Unable to delete staff member: ' + err.message);
+            }
+        }
+
+        async function loadBranch() {
+            try {
+                currentBranch = await api(`/api/branches/${encodeURIComponent(branchId)}`);
+                renderBranchDetails();
+            } catch (err) {
+                branchDetailsDiv.innerHTML = `<p class="error">Unable to load branch: ${err.message}</p>`;
+            }
+        }
+
+        async function loadStaff() {
+            try {
+                const staff = await api(`/api/staff?branchId=${encodeURIComponent(branchId)}`);
+                const normalizedBranchId = (branchId || '').toLowerCase();
+                currentStaff = (staff || []).filter(s => (s.branchId || '').toLowerCase() === normalizedBranchId);
+                renderStaffList();
+            } catch (err) {
+                staffListDiv.innerHTML = `<p class="error">Unable to load staff: ${err.message}</p>`;
+            }
+        }
+
+        addStaffBtn.addEventListener('click', () => {
+            showStaffCreateForm();
+        });
+
+        if (branchId) {
+            loadBranch();
+            loadStaff();
+        } else {
+            branchDetailsDiv.innerHTML = '<p class="error">No branch selected.</p>';
+            addStaffBtn.disabled = true;
+        }
+    </script>
+</body>
+</html>

@@ -153,6 +153,14 @@
             html += '</table>';
             listDiv.innerHTML = html;
             // Attach handlers
+            listDiv.querySelectorAll('tr[data-id]').forEach(row => {
+                row.addEventListener('dblclick', () => {
+                    const id = row.dataset.id;
+                    if (id) {
+                        window.location.href = `/admin/branch.html?id=${encodeURIComponent(id)}`;
+                    }
+                });
+            });
             listDiv.querySelectorAll('.edit').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     const id = e.target.closest('tr').dataset.id;
