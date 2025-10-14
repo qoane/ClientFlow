@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 namespace ClientFlow.Domain.Users;
 
 /// <summary>
@@ -23,9 +21,6 @@ public class User
     /// </summary>
     public Guid? BranchId { get; set; }
     public ClientFlow.Domain.Branches.Branch? Branch { get; set; }
-    public Guid? CreatedByUserId { get; set; }
-    public User? CreatedByUser { get; set; }
-    public ICollection<User> CreatedUsers { get; set; } = new List<User>();
 }
 
 public enum UserRole

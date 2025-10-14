@@ -167,10 +167,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 .WithMany()
                 .HasForeignKey(x => x.BranchId)
                 .OnDelete(DeleteBehavior.SetNull);
-            e.HasOne(x => x.CreatedByUser)
-                .WithMany(x => x.CreatedUsers)
-                .HasForeignKey(x => x.CreatedByUserId)
-                .OnDelete(DeleteBehavior.Restrict);
         });
 
         // Staff belong to a branch (nullable); when branch is deleted the staff remain with null BranchId

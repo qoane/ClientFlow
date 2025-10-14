@@ -146,20 +146,13 @@ public class UsersController : ControllerBase
         {
             return BadRequest("Invalid BranchId");
         }
-        Guid? createdBy = null;
-        var creatorClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (Guid.TryParse(creatorClaim, out var creatorId))
-        {
-            createdBy = creatorId;
-        }
         var user = new User
         {
             Id = Guid.NewGuid(),
             Email = email.Trim(),
             PasswordHash = _auth.HashPassword(password),
             Role = role,
-            BranchId = branchId,
-            CreatedByUserId = createdBy
+            BranchId = branchId
         };
         _db.Users.Add(user);
         await _db.SaveChangesAsync(ct);
@@ -187,64 +180,6 @@ public class UsersController : ControllerBase
             .Select(u => new { u.Id, u.Email, Role = u.Role.ToString(), u.BranchId })
             .ToListAsync(ct);
         return Ok(users);
-    }
-
-    /// <summary>
-    /// Returns all users that were created by branch managers, grouped by the
-    /// manager's branch.  Only SuperAdmin users may access this endpoint.
-    /// </summary>
-    [HttpGet("branch-manager-created")]
-    [Authorize(Roles = "SuperAdmin")]
-    public async Task<IActionResult> ListCreatedByManagers(CancellationToken ct)
-    {
-        var createdUsers = await _db.Users
-            .AsNoTracking()
-            .Where(u => u.CreatedByUserId != null)
-            .Select(u => new
-            {
-                u.Id,
-                u.Email,
-                Role = u.Role.ToString(),
-                u.BranchId,
-                BranchName = u.Branch != null ? u.Branch.Name : null,
-                u.CreatedByUserId,
-                CreatedByEmail = u.CreatedByUser != null ? u.CreatedByUser.Email : null,
-                ManagerBranchId = u.CreatedByUser != null ? u.CreatedByUser.BranchId : null,
-                ManagerBranchName = u.CreatedByUser != null && u.CreatedByUser.Branch != null ? u.CreatedByUser.Branch.Name : null
-            })
-            .ToListAsync(ct);
-
-        var grouped = createdUsers
-            .GroupBy(x => new { x.ManagerBranchId, x.ManagerBranchName })
-            .OrderBy(g => g.Key.ManagerBranchName ?? "Unassigned")
-            .Select(g => new
-            {
-                branchId = g.Key.ManagerBranchId,
-                branchName = g.Key.ManagerBranchName ?? "Unassigned",
-                totalUsers = g.Count(),
-                managers = g
-                    .GroupBy(x => new { x.CreatedByUserId, x.CreatedByEmail })
-                    .OrderBy(mg => mg.Key.CreatedByEmail ?? string.Empty)
-                    .Select(mg => new
-                    {
-                        managerId = mg.Key.CreatedByUserId,
-                        managerEmail = mg.Key.CreatedByEmail ?? "Unknown",
-                        userCount = mg.Count(),
-                        users = mg
-                            .OrderBy(u => u.Email)
-                            .Select(u => new
-                            {
-                                id = u.Id,
-                                email = u.Email,
-                                role = u.Role,
-                                branchId = u.BranchId,
-                                branchName = u.BranchName ?? "Unassigned"
-                            })
-                    })
-            })
-            .ToList();
-
-        return Ok(grouped);
     }
 
     /// <summary>
