@@ -1,0 +1,385 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Liberty Feedback Kiosk</title>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0b1020" />
+  <style>
+    :root {
+      --bg-light: #f1f3f7;
+      --primary: #0d1a4a;
+      --secondary: #e3e6ee;
+      --highlight: #1e2d6d;
+      --text-dark: #0d1a4a;
+      --text-light: #fff;
+      --accent: #3fb7ff;
+    }
+    * { box-sizing: border-box }
+    html, body { height: 100%; margin: 0; font-family: system-ui,-apple-system,Segoe UI,Roboto,sans-serif }
+    body { background: var(--bg-light); color: var(--text-dark) }
+    .wrapper { position: relative; height: 100%; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden }
+    .logo { position: absolute; top: 24px; right: 24px; width: 140px; height: auto; z-index: 20 }
+    body.final-active .logo { filter: invert(1) brightness(2) }
+    .page { display: none; width: 90%; max-width: 860px; margin: 0 auto; text-align: left; opacity: 0; transition: opacity .35s ease }
+    .page.active { display: block; opacity: 1 }
+    h1 { margin-top: 0; font-size: 2.2rem; font-weight: 700; line-height: 1.2 }
+    #page-idle { display: none; position: absolute; inset: 0; background: var(--primary); color: var(--text-light) }
+    #page-idle.active { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center }
+    .idle-title { font-size: 3rem; margin-bottom: 10px; animation: pulse 2s infinite }
+    .idle-subtitle { font-size: 1.2rem; margin-bottom: 20px; color: #b7c1ec; animation: fadein 3s ease-in-out infinite }
+    .idle-animation { width: 80px; height: 80px; border: 6px solid var(--accent); border-top-color: transparent; border-radius: 50%; animation: spin 2s linear infinite; margin-top: 20px }
+    @keyframes spin { to { transform: rotate(360deg) } }
+    @keyframes pulse { 0%,100% { transform: scale(1); opacity: 1 } 50% { transform: scale(1.06); opacity: .9 } }
+    @keyframes fadein { 0%,100% { opacity: 1 } 50% { opacity: .55 } }
+    #phoneInput { width: 100%; padding: 16px 20px; font-size: 1.2rem; border: 2px solid var(--primary); border-radius: 12px; background: var(--secondary); color: var(--primary) }
+    #phoneInput::placeholder { color: #6e7aa3 }
+    .btn { display: inline-block; padding: 14px 36px; margin-top: 28px; font-size: 1.1rem; font-weight: 600; border: 0; border-radius: 12px; cursor: pointer; background: var(--primary); color: var(--text-light); transition: opacity .15s ease,transform .05s ease }
+    .btn:active { transform: translateY(1px) }
+    .btn:disabled { opacity: .4; cursor: default }
+    .staff-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(160px,1fr)); gap: 20px; margin-top: 32px }
+    .staff-card { background: var(--secondary); border: 2px solid var(--primary); border-radius: 16px; padding: 20px 12px; text-align: center; cursor: pointer; transition: transform .12s ease,background-color .12s ease,box-shadow .12s ease }
+    .staff-card:hover { transform: translateY(-3px) }
+    .staff-card.selected { background: #d6daec; border-color: var(--highlight); box-shadow: 0 6px 16px rgba(13,26,74,.16) }
+    .staff-card img { width: 80px; height: 80px; border-radius: 12px; object-fit: cover; background: #c6cbe3; margin-bottom: 12px }
+    .staff-card .name { font-size: 1rem; font-weight: 600; color: var(--primary) }
+    .rating-options { display: grid; grid-template-columns: repeat(auto-fit,minmax(120px,1fr)); gap: 20px; margin-top: 32px }
+    .rating-option { background: var(--secondary); border: 2px solid var(--primary); border-radius: 16px; padding: 20px 12px; text-align: center; cursor: pointer; transition: transform .12s ease,filter .12s ease }
+    .rating-option:hover { transform: translateY(-3px) }
+    .rating-option.selected { filter: brightness(1.15) }
+    .rating-option img { width: 60px; height: 60px; margin-bottom: 12px }
+    .rating-option .label { font-size: .9rem; font-weight: 600; color: var(--primary) }
+    .back-btn { margin-top: 36px; padding: 12px 24px; font-size: 1rem; border: 0; border-radius: 10px; background: var(--primary); color: var(--text-light); cursor: pointer }
+    .progress { position: absolute; bottom: 32px; right: 36px; display: none; gap: 10px }
+    .progress .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--primary); opacity: .3 }
+    .progress .dot.active { opacity: 1 }
+    .final-page { position: absolute; inset: 0; background: var(--primary); color: var(--text-light); text-align: center; display: none; z-index: 10 }
+    .final-page.active { display: flex; flex-direction: column; align-items: center; justify-content: center }
+    .final-page h1 { font-size: 3rem; margin-bottom: 20px }
+    .final-page p { margin-top: 50px; font-size: .9rem; color: #b7c1ec }
+    .progress-container { width: 80%; max-width: 420px; margin-top: 40px }
+    .progress-track { background: rgba(255,255,255,.15); border-radius: 6px; width: 100%; height: 10px; overflow: hidden }
+    .progress-fill { height: 100%; width: 0%; background: var(--accent); border-radius: 6px; transition: width 4s linear }
+
+      #wrapper {
+          position: relative;
+          height: 100%;
+          width: 100%;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          overflow: hidden;
+          margin: 0;
+          padding: 0;
+      }
+
+      #page-idle {
+          display: none;
+          position: fixed; /* instead of absolute */
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          width: 100%;
+          height: 100%;
+          background: var(--primary);
+          color: var(--text-light);
+      }
+
+      @keyframes gradientShift {
+          0% {
+              background-position: 0% 50%;
+          }
+
+          50% {
+              background-position: 100% 50%;
+          }
+
+          100% {
+              background-position: 0% 50%;
+          }
+      }
+
+      #page-idle.active {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+      }
+
+      #page-idle .logo {
+          width: 200px;
+          margin-bottom: 40px;
+      }
+
+      .idle-title {
+          font-size: 2.5rem;
+          margin-bottom: 20px;
+          text-shadow: 0 0 12px rgba(255,255,255,0.6);
+          animation: pulse 3s infinite;
+      }
+
+      .idle-subtitle {
+          font-size: 1.3rem;
+          margin-bottom: 40px;
+          color: #e0e7ff;
+          animation: fadein 4s ease-in-out infinite;
+      }
+
+      .start-btn {
+          padding: 20px 60px;
+          font-size: 1.5rem;
+          font-weight: 700;
+          border: none;
+          border-radius: 50px;
+          background: #3fb7ff;
+          color: #0b1020;
+          cursor: pointer;
+          box-shadow: 0 0 25px rgba(63,183,255,0.8);
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+
+          .start-btn:hover {
+              transform: scale(1.05);
+              box-shadow: 0 0 40px rgba(63,183,255,1);
+          }
+
+      .logo-center {
+          width: 180px;
+          margin-bottom: 40px;
+      }
+
+      #phoneInput {
+          margin-bottom: 20px;
+      }
+
+      #bgAnimation {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          z-index: -1; /* sits behind everything */
+          background: linear-gradient(135deg, #0d1a4a, #0b1020);
+      }
+
+  </style>
+</head>
+<body>
+    <canvas id="bgAnimation"></canvas>
+    <div class="wrapper" id="wrapper">
+        <!-- Idle -->
+        <div class="page" id="page-idle">
+            <img src="assets/liberty.png" alt="Liberty" class="logo" style="position:relative;" />
+            <div class="idle-content">
+                <h1 class="idle-title">Please give us feedback</h1>
+                <p class="idle-subtitle">Tell us about your customer experience</p>
+                <button class="start-btn" id="btnStart">Press to Start</button>
+            </div>
+        </div>
+
+        <!-- Logo -->
+        <!-- Phone -->
+        <div class="page" id="page-phone">
+            <h1 style="color:white;">Please enter your phone number</h1>
+            <input type="tel" id="phoneInput" value="+266 " placeholder="+266 5xx xxxx" autocomplete="tel" inputmode="tel" />
+            <button class="btn" id="btnProceed" disabled>Proceed</button>
+        </div>
+        <!-- Staff -->
+        <div class="page" id="page-staff">
+            <h1 style="color:white;">I was assisted by…</h1>
+            <div class="staff-grid" id="staffGrid"></div>
+            <button class="back-btn" id="backFromStaff">Back</button>
+        </div>
+        <!-- Time -->
+        <div class="page" id="page-time">
+            <h1 style="color:white;">Was your query handled within a reasonable time?</h1>
+            <div class="rating-options" id="optsTime"></div>
+            <button class="back-btn" id="backFromTime">Back</button>
+        </div>
+        <!-- Respect -->
+        <div class="page" id="page-respect">
+            <h1 style="color:white;">Did our staff treat you professionally and with respect?</h1>
+            <div class="rating-options" id="optsRespect"></div>
+            <button class="back-btn" id="backFromRespect">Back</button>
+        </div>
+        <!-- Overall -->
+        <div class="page" id="page-overall">
+            <h1 style="color:white;">Overall Service Rating?</h1>
+            <div class="rating-options" id="optsOverall"></div>
+            <button class="back-btn" id="backFromOverall">Back</button>
+        </div>
+        <!-- Final -->
+        <div class="page final-page" id="page-final">
+            <h1 style="color:white;">Thank You for the Feedback!</h1>
+            <p style="color:white;">Liberty Life Lesotho Limited – Reg. No. 50966</p>
+            <div class="progress-container">
+                <div class="progress-track"><div class="progress-fill" id="finalProgress"></div></div>
+            </div>
+        </div>
+        <!-- Step dots -->
+        <div class="progress" id="progress">
+            <div class="dot" data-step="0"></div>
+            <div class="dot" data-step="1"></div>
+            <div class="dot" data-step="2"></div>
+            <div class="dot" data-step="3"></div>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            const questions = [
+                { key: 'time', container: 'optsTime', labels: ['Not at all', 'No', 'Neutral', 'Yes, Mostly', 'Absolutely'] },
+                { key: 'respect', container: 'optsRespect', labels: ['Not at all', 'No', 'Neutral', 'Yes, Mostly', 'Absolutely'] },
+                { key: 'overall', container: 'optsOverall', labels: ['Very Poor', 'Poor', 'Okay', 'Good', 'Excellent'] }
+            ];
+            const ratingColours = ['#e74c3c', '#e67e22', '#f1c40f', '#2ecc71', '#27ae60'];
+
+            const state = { phone: '+266 ', staff: null, staffName: null, staffBranchId: null, staffBranchName: null, time: null, respect: null, overall: null, startedAt: null, duration: 0 };
+            const pages = ['page-idle', 'page-phone', 'page-staff', 'page-time', 'page-respect', 'page-overall', 'page-final'];
+            let currentIndex = 0;
+            const byId = id => document.getElementById(id);
+
+            function showPage(idx) {
+                currentIndex = idx;
+                pages.forEach((pid, i) => { const p = byId(pid); p.classList.toggle('active', i === idx); p.style.removeProperty('display'); });
+                const prog = byId('progress');
+                if (idx >= 2 && idx <= 5) { prog.style.display = 'flex'; prog.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === (idx - 2))); }
+                else { prog.style.display = 'none'; }
+                document.body.classList.toggle('final-active', pages[idx] === 'page-final');
+                if (pages[idx] === 'page-phone') setTimeout(() => byId('phoneInput').focus(), 50);
+            }
+
+            async function fetchRosterFromServer() {
+                const token = localStorage.getItem('authToken');
+                if (!token) return [];
+                try {
+                    const r = await fetch('/api/staff?active=true', { headers: { 'Authorization': 'Bearer ' + token } });
+                    if (r.ok) {
+                        const staff = await r.json();
+                        localStorage.setItem('kiosk_staff', JSON.stringify(staff));
+                        return staff.map(s => ({ id: s.id, name: s.name, photo: s.photoUrl || 'assets/icons/meh.svg', branchId: s.branchId, branchName: s.branchName }));
+                    }
+                } catch (e) { console.warn('Roster fetch failed', e); }
+                return [];
+            }
+
+            function renderStaff(roster) {
+                const host = byId('staffGrid'); host.innerHTML = '';
+                if (!roster || roster.length === 0) { host.innerHTML = '<p>No staff configured for this branch.</p>'; return; }
+                roster.forEach(m => {
+                    const card = document.createElement('div');
+                    card.className = 'staff-card'; card.dataset.id = m.id;
+                    card.innerHTML = `<img src="${m.photo}" alt=""><div class="name">${m.name}</div>`;
+                    card.addEventListener('click', () => {
+                        state.staff = m.id; state.staffName = m.name; state.staffBranchId = m.branchId; state.staffBranchName = m.branchName;
+                        host.querySelectorAll('.staff-card').forEach(c => c.classList.remove('selected'));
+                        card.classList.add('selected'); setTimeout(() => showPage(3), 150);
+                    });
+                    host.appendChild(card);
+                });
+            }
+
+            function renderRatings() {
+                const icons = ['angry', 'sad', 'meh', 'smile', 'laugh'];
+                questions.forEach(q => {
+                    const host = byId(q.container); host.innerHTML = '';
+                    icons.forEach((icon, idx) => {
+                        const opt = document.createElement('div'); opt.className = 'rating-option'; opt.dataset.value = idx + 1;
+                        opt.innerHTML = `<img src="assets/icons/${icon}.svg" alt=""><div class="label">${q.labels[idx]}</div>`;
+                        opt.style.backgroundColor = ratingColours[idx]; opt.style.borderColor = ratingColours[idx];
+                        opt.addEventListener('click', () => { state[q.key] = idx + 1; host.querySelectorAll('.rating-option').forEach(o => o.classList.remove('selected')); opt.classList.add('selected'); const next = { time: 4, respect: 5, overall: 6 }[q.key]; setTimeout(() => showPage(next), 150); });
+                        host.appendChild(opt);
+                    });
+                });
+            }
+
+            function persistResponse() {
+                (async () => {
+                    try {
+                        await fetch('/api/feedback', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                phone: state.phone, staffId: state.staff, staffName: state.staffName,
+                                timeRating: state.time, respectRating: state.respect, overallRating: state.overall,
+                                startedUtc: state.startedAt ? new Date(state.startedAt).toISOString() : undefined,
+                                durationSeconds: state.duration ?? 0,
+                                branchId: state.staffBranchId, branchName: state.staffBranchName
+                            })
+                        });
+                    } catch (e) { console.warn('Feedback submit failed', e); }
+                })();
+            }
+
+            function resetState() {
+                state.phone = '+266 '; state.staff = null; state.staffName = null; state.staffBranchId = null; state.staffBranchName = null; state.time = null; state.respect = null; state.overall = null; state.duration = 0;
+                byId('phoneInput').value = '+266 '; byId('btnProceed').disabled = true;
+                [byId('staffGrid'), byId('optsTime'), byId('optsRespect'), byId('optsOverall')].forEach(h => h && h.querySelectorAll('.selected').forEach(el => el.classList.remove('selected')));
+            }
+
+            (async () => { const roster = await fetchRosterFromServer(); renderStaff(roster); renderRatings(); showPage(0); })();
+
+            byId('btnStart').addEventListener('click', () => {
+                if (currentIndex === 0) {
+                    state.startedAt = Date.now();
+                    showPage(1);
+                }
+            });
+            const phoneInput = byId('phoneInput'), btnProceed = byId('btnProceed');
+            function validatePhone(v) { return v.replace(/\s+/g, '').startsWith('+266') && v.replace(/\s+/g, '').length >= 8; }
+            phoneInput.addEventListener('input', () => { state.phone = phoneInput.value.trim(); btnProceed.disabled = !validatePhone(state.phone); });
+            phoneInput.addEventListener('keydown', ev => { if (ev.key === 'Enter' && !btnProceed.disabled) { ev.preventDefault(); showPage(2); } });
+            btnProceed.addEventListener('click', () => showPage(2));
+            byId('backFromStaff').addEventListener('click', () => showPage(1));
+            byId('backFromTime').addEventListener('click', () => showPage(2));
+            byId('backFromRespect').addEventListener('click', () => showPage(3));
+            byId('backFromOverall').addEventListener('click', () => showPage(4));
+            const observer = new MutationObserver(() => { if (pages[currentIndex] === 'page-final') { state.duration = state.startedAt ? Math.round((Date.now() - state.startedAt) / 1000) : 0; persistResponse(); const bar = byId('finalProgress'); if (bar) { bar.style.width = '0%'; setTimeout(() => { bar.style.width = '100%'; }, 50); } setTimeout(() => { resetState(); showPage(0); }, 4000); } });
+            observer.observe(byId('page-final'), { attributes: true, attributeFilter: ['class'] });
+            if ('serviceWorker' in navigator) { navigator.serviceWorker.register('/sw.js').catch(() => { }); }
+        })();
+
+        const canvas = document.getElementById('bgAnimation');
+        const ctx = canvas.getContext('2d');
+        let w, h;
+        function resize() {
+            w = canvas.width = window.innerWidth;
+            h = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        let particles = [];
+        for (let i = 0; i < 60; i++) {
+            particles.push({
+                x: Math.random() * w,
+                y: Math.random() * h,
+                angle: Math.random() * Math.PI * 2,
+                radius: 50 + Math.random() * 150,
+                speed: 0.002 + Math.random() * 0.003
+            });
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, w, h);
+            ctx.strokeStyle = "rgba(63,183,255,0.3)";
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            particles.forEach(p => {
+                p.angle += p.speed;
+                const px = p.x + Math.cos(p.angle) * p.radius;
+                const py = p.y + Math.sin(p.angle) * p.radius;
+                ctx.lineTo(px, py);
+            });
+            ctx.stroke();
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>ClientFlow — Branches</title>
+    <style>
+        :root {
+            --bg: #0b1020;
+            --panel: #121936;
+            --panel2: #0f1530;
+            --border: rgba(255,255,255,.08);
+            --muted: #9fb0ff;
+            --text: #eef1ff;
+            --accent: #6cf0c2;
+            --accent2: #89b4ff;
+            --danger: #ff6b6b;
+        }
+        * { box-sizing: border-box; }
+        html, body { height: 100%; margin: 0; }
+        body {
+            background: radial-gradient(1200px 800px at 80% -10%,#1b2550 0%,transparent 60%),var(--bg);
+            color: var(--text);
+            font-family: system-ui,-apple-system,Segoe UI,Roboto;
+            display: grid;
+            grid-template-rows: 64px 1fr;
+        }
+        header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 0 20px;
+            border-bottom: 1px solid var(--border);
+            background: linear-gradient(180deg,#141c3f,#0e1533);
+        }
+        .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; }
+        .logo { width: 28px; height: 28px; border-radius: 8px; background: conic-gradient(from 210deg,var(--accent),var(--accent2)); box-shadow: 0 0 0 2px rgba(255,255,255,.07) inset; }
+        .toolbar { margin-left: auto; }
+        .toolbar button { padding: 8px 12px; border-radius: 10px; border: 1px solid var(--border); background: linear-gradient(180deg,#1a2248,#141c3f); color: var(--text); cursor: pointer; }
+        .shell { display: grid; grid-template-columns: 220px 1fr; gap: 12px; height: 100%; }
+        @media (max-width:900px){ .shell { grid-template-columns: 1fr; } }
+        nav { padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+        nav a { text-decoration: none; color: var(--text); padding: 10px 12px; border: 1px solid var(--border); border-radius: 12px; background: linear-gradient(180deg,#1a2248,#141c3f); }
+        nav a.active { box-shadow: 0 0 0 2px #19cba044; }
+        main { padding: 12px; overflow-y: auto; }
+        .card { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 16px; box-shadow: 0 10px 30px rgba(0,0,0,.15); }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 8px 10px; border-bottom: 1px solid var(--border); }
+        th { text-align: left; color: var(--muted); }
+        tr:hover { background: var(--panel2); }
+        .actions button { margin-right: 6px; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); background: linear-gradient(180deg,#1a2248,#141c3f); color: var(--text); cursor: pointer; font-size: 12px; }
+        .actions button.delete { background: linear-gradient(180deg,#ef4444,#dc2626); border:none; color: #fff; }
+        form input, form textarea { width: 100%; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--border); background: #0f1530; color: var(--text); margin-bottom: 8px; }
+        form label { font-size: 12px; color: var(--muted); display:block; margin-top:8px; }
+        form button { padding: 8px 12px; border: none; border-radius: 10px; background: linear-gradient(180deg,#19cba0,#0dbb93); color: #031b15; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="brand"><div class="logo"></div><div>ClientFlow</div></div>
+        <div class="toolbar"><span id="userEmail" style="margin-right:16px;"></span><button id="signOut">Sign Out</button></div>
+    </header>
+    <div class="shell">
+        <nav>
+            <a href="/admin/dashboard.html">Dashboard</a>
+            <a href="/admin/branches.html" class="active">Branches</a>
+            <a href="/admin/users.html">Users</a>
+            <a href="/admin/settings.html">Settings</a>
+            <a href="/admin/flow-dash.html">Surveys</a>
+            <a href="/kiosk-dashboard.html" target="_blank">Kiosk Dashboard</a>
+        </nav>
+        <main>
+            <h1>Branches</h1>
+            <div id="branchList" class="card" style="margin-bottom:20px; overflow-x:auto;"></div>
+            <div id="createForm" class="card" style="display:none;"></div>
+            <button id="addBtn" style="margin-bottom:12px;">Add Branch</button>
+        </main>
+    </div>
+    <script>
+        const token = localStorage.getItem('authToken');
+        if (!token) { window.location.href = '/login.html'; }
+        // Show logged in email
+        const emailSpan = document.getElementById('userEmail');
+        if (emailSpan) {
+            emailSpan.textContent = localStorage.getItem('userEmail') || '';
+        }
+        // Display logged in user's email
+        const userEmailSpan = document.getElementById('userEmail');
+        if (userEmailSpan) userEmailSpan.textContent = localStorage.getItem('userEmail') || '';
+        const role = localStorage.getItem('userRole');
+        const branchId = localStorage.getItem('branchId');
+        document.getElementById('signOut').addEventListener('click', () => {
+            localStorage.clear(); window.location.href = '/login.html';
+        });
+        const listDiv = document.getElementById('branchList');
+        const createDiv = document.getElementById('createForm');
+        const addBtn = document.getElementById('addBtn');
+        if (role === 'BranchAdmin') {
+            addBtn.style.display = 'none';
+        }
+        addBtn.addEventListener('click', () => {
+            showCreateForm();
+        });
+        async function api(url, opts = {}) {
+            opts.headers = Object.assign({}, opts.headers || {}, { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' });
+            const res = await fetch(url, opts);
+            if (!res.ok) throw new Error(await res.text());
+            return res.status === 204 ? null : res.json();
+        }
+        function showCreateForm() {
+            createDiv.innerHTML = '';
+            const form = document.createElement('form');
+            form.innerHTML = `
+                <h2>Create Branch</h2>
+                <label>Name</label>
+                <input type="text" id="newName" required />
+                <label>Report Recipients (comma separated emails)</label>
+                <textarea id="newRecipients"></textarea>
+                <label>Report Time (HH:mm)</label>
+                <input type="text" id="newTime" placeholder="08:00" />
+                <button type="submit">Create</button>
+                <button type="button" id="cancelCreate" style="margin-left:8px;">Cancel</button>
+            `;
+            createDiv.appendChild(form);
+            createDiv.style.display = '';
+            document.getElementById('cancelCreate').addEventListener('click', () => {
+                createDiv.style.display = 'none';
+            });
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const name = document.getElementById('newName').value.trim();
+                const recipients = document.getElementById('newRecipients').value.trim();
+                const time = document.getElementById('newTime').value.trim();
+                try {
+                    await api('/api/branches', { method:'POST', body: JSON.stringify({ name, reportRecipients: recipients, reportTime: time }) });
+                    createDiv.style.display = 'none';
+                    loadBranches();
+                } catch (err) {
+                    alert('Error creating branch: ' + err.message);
+                }
+            });
+        }
+        function showList(branches) {
+            let html = '<table><tr><th>Name</th><th>Recipients</th><th>Time</th><th>Actions</th></tr>';
+            branches.forEach(b => {
+                html += `<tr data-id="${b.id}"><td>${b.name}</td><td>${b.reportRecipients ?? ''}</td><td>${b.reportTime ?? ''}</td><td class="actions">`;
+                html += `<button class="edit">Edit</button>`;
+                if (role === 'SuperAdmin') {
+                    html += `<button class="delete">Delete</button>`;
+                }
+                html += '</td></tr>';
+            });
+            html += '</table>';
+            listDiv.innerHTML = html;
+            // Attach handlers
+            listDiv.querySelectorAll('.edit').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const id = e.target.closest('tr').dataset.id;
+                    const branch = branches.find(x => x.id === id);
+                    editBranch(branch);
+                });
+            });
+            listDiv.querySelectorAll('.delete').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const id = e.target.closest('tr').dataset.id;
+                    if (confirm('Delete this branch?')) {
+                        try {
+                            await api('/api/branches/' + id, { method:'DELETE' });
+                            loadBranches();
+                        } catch (err) {
+                            alert('Error deleting: ' + err.message);
+                        }
+                    }
+                });
+            });
+        }
+        function editBranch(b) {
+            createDiv.innerHTML = '';
+            const form = document.createElement('form');
+            form.innerHTML = `
+                <h2>Edit Branch</h2>
+                <label>Name</label>
+                <input type="text" id="editName" value="${b.name}" />
+                <label>Report Recipients</label>
+                <textarea id="editRecipients">${b.reportRecipients ?? ''}</textarea>
+                <label>Report Time</label>
+                <input type="text" id="editTime" value="${b.reportTime ?? ''}" />
+                <button type="submit">Save</button>
+                <button type="button" id="cancelEdit" style="margin-left:8px;">Cancel</button>
+            `;
+            createDiv.appendChild(form);
+            createDiv.style.display = '';
+            document.getElementById('cancelEdit').addEventListener('click', () => { createDiv.style.display = 'none'; });
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const name = document.getElementById('editName').value.trim();
+                const recipients = document.getElementById('editRecipients').value.trim();
+                const time = document.getElementById('editTime').value.trim();
+                try {
+                    await api('/api/branches/' + b.id, { method:'PUT', body: JSON.stringify({ name, reportRecipients: recipients, reportTime: time }) });
+                    createDiv.style.display = 'none';
+                    loadBranches();
+                } catch (err) {
+                    alert('Error updating branch: ' + err.message);
+                }
+            });
+        }
+        async function loadBranches() {
+            try {
+                let branches = await api('/api/branches');
+                // BranchAdmin only sees their branch
+                if (role === 'BranchAdmin' && branchId) {
+                    branches = branches.filter(b => b.id === branchId);
+                }
+                showList(branches);
+            } catch (err) {
+                listDiv.innerHTML = '<p>Error loading branches: ' + err.message + '</p>';
+            }
+        }
+        loadBranches();
+    </script>
+</body>
+</html>

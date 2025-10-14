@@ -1,0 +1,319 @@
+﻿<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>ClientFlow Survey</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <style>
+        :root {
+            --accent: #19cba0;
+            --panel: #0f1530;
+        }
+
+        body {
+            background: var(--panel);
+            color: #eef1ff;
+            font: 16px/1.45 system-ui,-apple-system,Segoe UI,Roboto;
+            margin: 0;
+        }
+
+        /* UNIQUE wrapper — no library collisions */
+        .cf-card.runner-form {
+            background: #121936;
+            border: 1px solid rgba(255,255,255,.08);
+            border-radius: 12px;
+            padding: 16px;
+            max-width: 800px;
+            margin: 20px auto;
+        }
+
+        /* Runner-only base */
+        .runner-form * {
+            box-sizing: border-box;
+        }
+
+        /* Give this a touch more authority */
+        .runner-form .section-head {
+            margin: 16px 0 8px;
+        }
+
+        .runner-form .row {
+            margin-bottom: 18px;
+        }
+
+        .runner-form h2 {
+            margin: 0 0 8px;
+            font-weight: 700;
+        }
+
+        .progress {
+            height: 6px;
+            background: #0f1530;
+            border-radius: 6px;
+            overflow: hidden;
+            margin: 12px 0;
+        }
+
+            .progress > div {
+                height: 100%;
+                width: 0%;
+                background: var(--accent);
+            }
+
+        .hidden {
+            display: none;
+        }
+
+        /* Critical fixes: label visibility + inputs */
+        .runner-form label {
+            color: #cfe0ff !important; /* beat any lingering globals */
+            font-weight: 600;
+            display: block;
+            margin-bottom: 6px;
+            opacity: 1 !important; /* some kits lower opacity */
+            -webkit-text-fill-color: #cfe0ff; /* Safari edge case */
+        }
+
+        .runner-form input,
+        .runner-form select,
+        .runner-form textarea {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 100%;
+            display: block;
+            color: #eef1ff;
+            background: #2c3140; /* slightly lighter than panel for contrast */
+            border: 1px solid rgba(255,255,255,.14);
+            border-radius: 12px;
+            padding: 10px 12px;
+            min-height: 44px;
+            line-height: 1.35;
+            outline: none;
+        }
+
+        .runner-form select {
+            background-image: linear-gradient(45deg, transparent 50%, #9fb0ff 50%), linear-gradient(135deg, #9fb0ff 50%, transparent 50%);
+            background-position: calc(100% - 18px) calc(50% - 3px), calc(100% - 12px) calc(50% - 3px);
+            background-size: 6px 6px, 6px 6px;
+            background-repeat: no-repeat;
+            padding-right: 36px;
+        }
+    </style>
+</head>
+<body>
+    <div class="cf-card runner-form">
+        <h2 id="title">Survey</h2>
+        <div class="progress"><div id="bar"></div></div>
+        <div id="section" class="cf-form"></div>
+        <div class="row">
+            <button class="btn" id="prev">◀ Back</button>
+            <button class="btn" id="next" style="float:right">Next ▶</button>
+            <button class="btn hidden" id="submit" style="float:right;background:#19cba0;color:#031b15">Submit</button>
+        </div>
+        <div id="msg" class="row"></div>
+    </div>
+
+    <script>
+        const qs = new URLSearchParams(location.search);
+        const code = qs.get('code');
+        if (!code) {
+            document.getElementById('msg').textContent = 'Missing ?code= in URL.';
+            throw new Error('Survey code is required');
+        }
+
+        let def, sections = [], questions = [], options = [], rules = [];
+        let pageIdx = 0;
+        const answers = {};
+        const el = id => document.getElementById(id);
+        const show = (e, v) => e.classList.toggle('hidden', !v);
+
+        function scopeCss(css, scopeSel) {
+            if (!css) return '';
+            const parts = css.split('}');
+            const out = [];
+            for (let part of parts) {
+                if (!part.trim()) continue;
+                const idx = part.indexOf('{'); if (idx === -1) continue;
+                const sel = part.slice(0, idx).trim();
+                const body = part.slice(idx + 1);
+                if (sel.startsWith('@media')) out.push(sel + '{' + scopeCss(body, scopeSel) + '}');
+                else if (sel.startsWith('@keyframes') || sel.startsWith('@font-face')) out.push(sel + '{' + body + '}');
+                else {
+                    const scoped = sel.split(',').map(s => {
+                        s = s.trim();
+                        if (/^:root\b/.test(s) || /^html\b/.test(s) || /^body\b/.test(s)) return scopeSel;
+                        return scopeSel + ' ' + s;
+                    }).join(', ');
+                    out.push(scoped + '{' + body + '}');
+                }
+            }
+            return out.join('\n');
+        }
+
+        async function loadDefinition() {
+            const r = await fetch(`/api/surveys/${encodeURIComponent(code)}/definition`);
+            if (!r.ok) { el('msg').textContent = 'Survey not found.'; throw new Error('not found'); }
+            def = await r.json();
+
+            if (def.theme) {
+                if (def.theme.accent) document.documentElement.style.setProperty('--accent', def.theme.accent);
+                if (def.theme.panel) document.documentElement.style.setProperty('--panel', def.theme.panel);
+            }
+
+            // inject scoped theme css from DB
+            const rawCss = def.style?.css || '';
+            const scoped = scopeCss(rawCss, '.runner-form');
+            let tag = document.getElementById('cfScopedStyle');
+            if (!tag) { tag = document.createElement('style'); tag.id = 'cfScopedStyle'; document.head.appendChild(tag); }
+            tag.textContent = scoped;
+
+            sections = def.sections.sort((a, b) => a.order - b.order);
+            questions = def.questions.sort((a, b) => a.order - b.order);
+            options = def.options;
+            rules = def.rules;
+            el('title').textContent = def.title;
+        }
+
+        const qOptions = qid => options.filter(o => o.questionId === qid).sort((a, b) => a.order - b.order);
+        const sectionQuestions = sid => questions.filter(q => q.sectionId === sid);
+
+        function evalCondition(expr) {
+            const equals = (key, val) => (answers[key] ?? null) == val;
+            const inRange = (key, min, max) => { const v = +answers[key]; if (isNaN(v)) return false; return v >= min && v <= max; };
+            const selected = (key, val) => (answers[key] ?? null) == val;
+            try { return Function('equals', 'inRange', 'selected', 'answers', `return (${expr});`)(equals, inRange, selected, answers); }
+            catch { return false; }
+        }
+
+        function nextSectionIndex(curIdx) {
+            const curSec = sections[curIdx];
+            const curQs = sectionQuestions(curSec.id).map(q => q.id);
+            const relevant = rules.filter(r => curQs.includes(r.sourceQuestionId));
+            for (const r of relevant) {
+                if (evalCondition(r.condition)) {
+                    const m = /skipTo\(section:'(.+)'\)/.exec(r.action);
+                    if (m) { const target = sections.findIndex(s => s.title === m[1]); if (target >= 0) return target; }
+                }
+            }
+            return curIdx + 1;
+        }
+
+        function render() {
+            const total = sections.length;
+            el('bar').style.width = Math.min(100, (pageIdx / Math.max(1, total - 1)) * 100) + '%';
+            show(el('prev'), pageIdx > 0);
+
+            const sec = sections[pageIdx];
+            const host = el('section'); host.innerHTML = '';
+
+            const head = document.createElement('div');
+            head.className = 'section-head';
+            head.textContent = sec.title;
+            host.appendChild(head);
+
+            const wrap = document.createElement('div');
+            wrap.style.display = 'grid';
+            wrap.style.gap = '10px';
+            wrap.style.gridTemplateColumns = '1fr';
+            host.appendChild(wrap);
+
+            for (const q of sectionQuestions(sec.id)) {
+                const field = document.createElement('div');
+                const lab = document.createElement('label');
+                lab.textContent = q.prompt + (q.required ? ' *' : '');
+                field.appendChild(lab);
+
+                let input;
+                switch (q.type) {
+                    case 'nps':
+                    case 'number':
+                        input = document.createElement('input');
+                        input.type = 'number'; input.min = 0; input.max = 10;
+                        if (answers[q.key] != null) input.value = answers[q.key];
+                        input.oninput = () => answers[q.key] = input.value;
+                        break;
+                    case 'text':
+                    case 'email':
+                    case 'phone':
+                        input = document.createElement('input');
+                        input.type = (q.type === 'phone') ? 'tel' : q.type;
+                        if (answers[q.key] != null) input.value = answers[q.key];
+                        input.oninput = () => answers[q.key] = input.value;
+                        break;
+                    case 'textarea':
+                        input = document.createElement('textarea');
+                        if (answers[q.key] != null) input.value = answers[q.key];
+                        input.oninput = () => answers[q.key] = input.value;
+                        break;
+                    case 'single-select':
+                    case 'select':
+                        input = document.createElement('select');
+                        qOptions(q.id).forEach(o => {
+                            const opt = document.createElement('option');
+                            opt.value = o.value; opt.textContent = o.label;
+                            if (answers[q.key] === o.value) opt.selected = true;
+                            input.appendChild(opt);
+                        });
+                        input.onchange = () => answers[q.key] = input.value;
+                        break;
+                    case 'radio':
+                        input = document.createElement('div');
+                        qOptions(q.id).forEach(o => {
+                            const lbl = document.createElement('label'); lbl.style.marginRight = '10px';
+                            const r = document.createElement('input'); r.type = 'radio'; r.name = q.key; r.value = o.value;
+                            if (answers[q.key] === o.value) r.checked = true;
+                            r.onchange = () => answers[q.key] = o.value;
+                            lbl.appendChild(r); lbl.appendChild(document.createTextNode(' ' + o.label));
+                            input.appendChild(lbl);
+                        });
+                        break;
+                    case 'date':
+                        input = document.createElement('input'); input.type = 'date';
+                        if (answers[q.key] != null) input.value = answers[q.key];
+                        input.oninput = () => answers[q.key] = input.value;
+                        break;
+                    default:
+                        input = document.createElement('input'); input.type = 'text';
+                        input.oninput = () => answers[q.key] = input.value;
+                }
+
+                field.appendChild(input);
+                wrap.appendChild(field);
+            }
+
+            const last = pageIdx === sections.length - 1;
+            show(el('next'), !last);
+            show(el('submit'), last);
+        }
+
+        el('prev').onclick = () => { pageIdx = Math.max(0, pageIdx - 1); render(); };
+        el('next').onclick = () => {
+            const sec = sections[pageIdx];
+            for (const q of sectionQuestions(sec.id)) {
+                if (q.required && (answers[q.key] == null || answers[q.key] === '')) {
+                    el('msg').textContent = 'Please answer required questions.';
+                    setTimeout(() => el('msg').textContent = '', 2000);
+                    return;
+                }
+            }
+            const nxt = nextSectionIndex(pageIdx);
+            pageIdx = Math.min(sections.length - 1, nxt);
+            render();
+        };
+
+        el('submit').onclick = async () => {
+            const payload = { answers }; // key -> value map
+            const r = await fetch(`/api/Admin/${encodeURIComponent(code)}/submit`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ answers })
+            });
+            if (r.ok) { location.href = '/thank-you.html'; }
+            else { el('msg').textContent = 'Failed to submit.'; }
+        };
+
+
+        loadDefinition().then(render);
+    </script>
+</body>
+</html>

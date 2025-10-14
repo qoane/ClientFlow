@@ -1,0 +1,611 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Kiosk Administration</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0b1020">
+    <!--
+      This admin console allows supervisors to manage the master list of
+      staff members and designate who is actively working on a given
+      day.  All changes are persisted to the SQL database via
+      /api/staff endpoints; the kiosk reads the active roster from
+      /api/staff?active=true and falls back to localStorage if the
+      network is unavailable.  The admin also provides tools to
+      export or clear feedback data collected by the kiosk.
+    -->
+    <style>
+        :root {
+            --bg: #0b1020;
+            --panel: #121936;
+            --panel2: #0f1530;
+            --text: #eef1ff;
+            --muted: #9fb0ff;
+            --accent: #19cba0;
+            --accent2: #89b4ff;
+            --danger: #ef4444;
+            --border: rgba(255,255,255,.08);
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            background: radial-gradient(1200px 800px at 80% -10%, #1b2550 0%, transparent 60%), var(--bg);
+            color: var(--text);
+            font: 14px/1.45 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 { margin-bottom: 16px; font-size: 1.8rem; }
+        h2 { font-size: 1.3rem; margin-top: 24px; margin-bottom: 8px; }
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        .staff-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .staff-table th, .staff-table td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+        .staff-table th { font-weight: 600; color: var(--muted); font-size: 0.85rem; }
+        .staff-table tr:last-child td { border-bottom: none; }
+        .staff-photo {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            object-fit: cover;
+            background: #2c335e;
+        }
+        .toggle {
+            position: relative;
+            display: inline-block;
+            width: 42px;
+            height: 22px;
+        }
+        .toggle input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #4c5a8a;
+            transition: .3s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 3px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+        .toggle input:checked + .slider {
+            background-color: var(--accent);
+        }
+        .toggle input:checked + .slider:before {
+            transform: translateX(20px);
+        }
+        .actions {
+            margin-top: 20px;
+        }
+        .btn {
+            padding: 10px 16px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            margin-right: 12px;
+        }
+        .btn.accent { background: var(--accent); color: #031b15; }
+        .btn.secondary { background: var(--panel2); color: var(--text); border: 1px solid var(--border); }
+        .btn.danger { background: var(--danger); color: #fff; }
+        .muted { color: var(--muted); font-size: 0.9rem; margin-bottom: 16px; }
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+        }
+        .modal.active { display: flex; }
+        .modal-content {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            width: 90%;
+            max-width: 420px;
+        }
+        .modal-content h3 { margin-top: 0; margin-bottom: 12px; }
+        .modal-content input {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--panel2);
+            color: var(--text);
+            margin-bottom: 12px;
+        }
+        .modal-actions { text-align: right; }
+        .modal-actions .btn { margin-left: 8px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Kiosk Administration</h1>
+        <p class="muted">Manage the master staff list, choose who is working today, and export or clear collected feedback.  Data is persisted to the server when available and cached offline for resilience.</p>
+
+        <div class="panel">
+            <div class="panel-header">
+                <h2>Staff Management</h2>
+                <button class="btn accent" id="btnAdd">Add Staff</button>
+            </div>
+            <table class="staff-table" id="staffTable">
+                <thead>
+                    <tr>
+                        <th style="width:48px;">Photo</th>
+                        <th>Name</th>
+                        <th style="width:80px;">Active?</th>
+                        <th style="width:80px;">Remove</th>
+                    </tr>
+                </thead>
+                <tbody id="staffTbody">
+                    <!-- populated by JS -->
+                </tbody>
+            </table>
+            <div class="actions">
+                <button class="btn secondary" id="resetRoster">Reset to Defaults</button>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h2>System Settings</h2>
+            <p class="muted">Configure the kiosk's operating parameters.  These values are persisted to the server and will be used when sending reports and tagging feedback.</p>
+            <div style="display:grid;gap:12px;max-width:500px;">
+                <div>
+                    <label for="branchInput">Branch / Location Name</label>
+                    <input type="text" id="branchInput" placeholder="e.g. Maseru Main" />
+                </div>
+                <div>
+                    <label for="recipientsInput">Report Recipients (comma separated emails)</label>
+                    <input type="text" id="recipientsInput" placeholder="user@example.com, manager@example.com" />
+                </div>
+                <div>
+                    <label for="reportTimeInput">Daily Report Time (HH:mm)</label>
+                    <input type="time" id="reportTimeInput" />
+                </div>
+                <div style="text-align:right;">
+                    <button class="btn accent" id="saveSettings">Save Settings</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h2>Feedback Data</h2>
+            <p class="muted">Export all feedback as CSV or clear the database.  Offline exports fall back to cached responses if the server is unavailable.</p>
+            <div class="actions">
+                <button class="btn accent" id="exportData">Export CSV</button>
+                <button class="btn danger" id="clearData">Clear Data</button>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h2>Quick Links</h2>
+            <div class="actions">
+                <a href="kiosk.html" class="btn accent" style="text-decoration:none">Launch Kiosk</a>
+                <a href="kiosk-dashboard.html" class="btn accent" style="text-decoration:none">Open Dashboard</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for adding/editing staff -->
+    <div class="modal" id="staffModal">
+        <div class="modal-content">
+            <h3 id="modalTitle">Add Staff Member</h3>
+            <input type="text" id="inputName" placeholder="Name" />
+            <input type="text" id="inputPhoto" placeholder="Photo URL (optional)" />
+            <div class="modal-actions">
+                <button class="btn secondary" id="btnCancel">Cancel</button>
+                <button class="btn accent" id="btnSave">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // Read auth token and user info from localStorage.  BranchAdmins are
+            // restricted to their branch; Admins and SuperAdmins can manage all.
+            const authToken = localStorage.getItem('authToken');
+            const userRole = localStorage.getItem('userRole');
+            const userBranchId = localStorage.getItem('branchId');
+            if (!authToken) {
+                // Require login for access to kiosk-admin
+                window.location.href = '/login.html';
+                return;
+            }
+            // Cached staff list. Each element has { id, name, photoUrl, isActive }
+            let staffList = [];
+
+            const tbody = document.getElementById('staffTbody');
+            const modal = document.getElementById('staffModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const inputName = document.getElementById('inputName');
+            const inputPhoto = document.getElementById('inputPhoto');
+            let editId = null;
+
+            // Utility to update the kiosk roster in localStorage
+            function updateLocalRoster() {
+                // Only include staff marked active; map to id/name/photo for kiosk
+                const active = staffList.filter(s => s.isActive).map(s => ({ id: s.id, name: s.name, photo: s.photoUrl || 'assets/icons/meh.svg' }));
+                localStorage.setItem('kiosk_staff', JSON.stringify(active));
+            }
+
+            // Simple helper to call API with auth header
+            async function api(url, opts = {}) {
+                opts.headers = Object.assign({}, opts.headers || {}, {
+                    'Authorization': 'Bearer ' + authToken,
+                    // Only set content-type when sending a body
+                    ...(opts.body ? { 'Content-Type': 'application/json' } : {})
+                });
+                try {
+                    const res = await fetch(url, opts);
+                    if (!res.ok) throw new Error(res.status);
+                    return res.status === 204 ? null : await res.json();
+                } catch (err) {
+                    throw err;
+                }
+            }
+
+            // Expose the API helper and user info globally so functions defined outside
+            // this closure (e.g. loadSettings/saveSettings) can use it.  These are
+            // assigned on the window object intentionally to avoid polluting other
+            // namespaces.
+            window.kioskAdminApi = api;
+            window.kioskUserRole = userRole;
+            window.kioskUserBranchId = userBranchId;
+
+            // Fetch all staff from server
+            async function loadStaff() {
+                try {
+                    // BranchAdmins will only receive their branch's staff due to server-side filtering
+                    const list = await api('/api/staff');
+                    if (list) {
+                        staffList = list;
+                        // Persist to localStorage for offline kiosk
+                        updateLocalRoster();
+                        renderTable();
+                        return;
+                    }
+                } catch (err) {
+                    console.warn('Failed to load staff from server', err);
+                }
+                // Offline fallback: parse stored active roster and assume all are active
+                try {
+                    const roster = JSON.parse(localStorage.getItem('kiosk_staff') || '[]');
+                    staffList = roster.map(r => ({ id: r.id, name: r.name, photoUrl: r.photo, isActive: true }));
+                    renderTable();
+                } catch {
+                    staffList = [];
+                    renderTable();
+                }
+            }
+
+            // Render staff table
+            function renderTable() {
+                tbody.innerHTML = '';
+                if (staffList.length === 0) {
+                    const row = document.createElement('tr');
+                    const cell = document.createElement('td');
+                    cell.colSpan = 4;
+                    cell.style.padding = '12px';
+                    cell.style.color = 'var(--muted)';
+                    cell.textContent = 'No staff defined.';
+                    row.appendChild(cell);
+                    tbody.appendChild(row);
+                    return;
+                }
+                staffList.forEach((staff) => {
+                    const tr = document.createElement('tr');
+                    // Photo
+                    const tdPhoto = document.createElement('td');
+                    const img = document.createElement('img');
+                    img.src = staff.photoUrl || 'assets/icons/meh.svg';
+                    img.className = 'staff-photo';
+                    tdPhoto.appendChild(img);
+                    tr.appendChild(tdPhoto);
+                    // Name
+                    const tdName = document.createElement('td');
+                    tdName.textContent = staff.name;
+                    tr.appendChild(tdName);
+                    // Active toggle
+                    const tdActive = document.createElement('td');
+                    const toggle = document.createElement('label'); toggle.className = 'toggle';
+                    const input = document.createElement('input'); input.type = 'checkbox'; input.checked = staff.isActive;
+                    const slider = document.createElement('span'); slider.className = 'slider';
+                    toggle.appendChild(input); toggle.appendChild(slider);
+                    // On change, update server and local state
+                    input.addEventListener('change', async (ev) => {
+                        const newActive = ev.target.checked;
+                        staff.isActive = newActive;
+                        updateLocalRoster();
+                        try {
+                            await api('/api/staff/' + staff.id, {
+                                method: 'PUT',
+                                body: JSON.stringify({ isActive: newActive })
+                            });
+                        } catch (ex) {
+                            console.warn('Failed to update staff status', ex);
+                        }
+                    });
+                    tdActive.appendChild(toggle);
+                    tr.appendChild(tdActive);
+                    // Remove button
+                    const tdRemove = document.createElement('td');
+                    const removeBtn = document.createElement('button');
+                    removeBtn.className = 'btn danger';
+                    removeBtn.style.padding = '4px 8px';
+                    removeBtn.style.fontSize = '0.75rem';
+                    removeBtn.textContent = 'Remove';
+                    removeBtn.addEventListener('click', async () => {
+                        if (!confirm('Remove ' + staff.name + '?')) return;
+                        // Remove from UI immediately
+                        staffList = staffList.filter(s => s.id !== staff.id);
+                        updateLocalRoster();
+                        renderTable();
+                        try {
+                            await api('/api/staff/' + staff.id, { method: 'DELETE' });
+                        } catch (ex) {
+                            console.warn('Failed to delete staff', ex);
+                        }
+                    });
+                    tdRemove.appendChild(removeBtn);
+                    tr.appendChild(tdRemove);
+                    // Row click to edit name/photo
+                    tr.addEventListener('dblclick', () => {
+                        editId = staff.id;
+                        modalTitle.textContent = 'Edit Staff Member';
+                        inputName.value = staff.name;
+                        inputPhoto.value = staff.photoUrl || '';
+                        showModal();
+                    });
+                    tbody.appendChild(tr);
+                });
+            }
+
+            // Modal helpers
+            function showModal() { modal.classList.add('active'); }
+            function hideModal() { modal.classList.remove('active'); }
+
+            document.getElementById('btnAdd').addEventListener('click', () => {
+                editId = null;
+                modalTitle.textContent = 'Add Staff Member';
+                inputName.value = '';
+                inputPhoto.value = '';
+                showModal();
+            });
+            document.getElementById('btnCancel').addEventListener('click', hideModal);
+            document.getElementById('btnSave').addEventListener('click', async () => {
+                const name = inputName.value.trim();
+                const photoUrl = inputPhoto.value.trim();
+                if (!name) { alert('Name is required'); return; }
+                if (editId) {
+                    // update existing
+                    const staff = staffList.find(s => s.id === editId);
+                    if (!staff) return;
+                    staff.name = name;
+                    staff.photoUrl = photoUrl || null;
+                    updateLocalRoster();
+                    renderTable();
+                    // call update API
+                    try {
+                        await api('/api/staff/' + editId, {
+                            method: 'PUT',
+                            body: JSON.stringify({ name, photoUrl })
+                        });
+                    } catch (ex) {
+                        console.warn('Failed to update staff', ex);
+                    }
+                } else {
+                    // create new
+                    const newStaff = { name, photoUrl, isActive: true };
+                    try {
+                        const created = await api('/api/staff', {
+                            method: 'POST',
+                            body: JSON.stringify(newStaff)
+                        });
+                        if (created) {
+                            staffList.push({ id: created.id, name: created.name, photoUrl: created.photoUrl, isActive: created.isActive });
+                            updateLocalRoster();
+                            renderTable();
+                        }
+                    } catch (err) {
+                        console.warn('Failed to create staff', err);
+                    }
+                }
+                hideModal();
+            });
+
+            // Reset roster to seeded defaults via API
+            document.getElementById('resetRoster').addEventListener('click', async () => {
+                if (!confirm('This will restore the default staff list and clear any custom entries. Continue?')) return;
+                try {
+                    const resetList = await api('/api/staff/reset', { method: 'POST' });
+                    if (resetList) {
+                        staffList = resetList;
+                        updateLocalRoster();
+                        renderTable();
+                    }
+                } catch (ex) {
+                    console.warn('Failed to reset roster', ex);
+                }
+            });
+
+            // Export feedback data to CSV
+            document.getElementById('exportData').addEventListener('click', async () => {
+                let feedback = [];
+                try {
+                    // BranchAdmin only exports their branch's feedback
+                    const endpoint = (userRole === 'BranchAdmin' && userBranchId) ? `/api/feedback?branchId=${encodeURIComponent(userBranchId)}` : '/api/feedback';
+                    const res = await api(endpoint);
+                    if (res) feedback = res;
+                } catch (err) {
+                    console.warn('Could not fetch feedback from server, falling back to local cache', err);
+                    try { feedback = JSON.parse(localStorage.getItem('kiosk_responses') || '[]'); } catch { feedback = []; }
+                }
+                // Prepare staff name lookup
+                const map = {};
+                staffList.forEach(s => { map[s.id] = s.name; });
+                // Build CSV
+                const rows = [['timestamp','phone','staff','time','respect','overall']];
+                feedback.forEach(r => {
+                    const ts = r.createdUtc || r.ts; // r.ts for offline sessions
+                    const dt = ts ? new Date(ts).toISOString() : '';
+                    const phone = r.phone || '';
+                    const staffName = map[r.staffId || r.staff] || r.staff || '';
+                    const timeRating = r.timeRating ?? r.time ?? '';
+                    const respectRating = r.respectRating ?? r.respect ?? '';
+                    const overallRating = r.overallRating ?? r.overall ?? '';
+                    rows.push([dt, phone, staffName, timeRating, respectRating, overallRating]);
+                });
+                const csv = rows.map(row => row.map(item => '"' + ('' + item).replace(/"/g,'""') + '"').join(',')).join('\n');
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = 'kiosk_feedback.csv';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            });
+
+            // Clear all feedback data from server (with offline fallback)
+            document.getElementById('clearData').addEventListener('click', async () => {
+                if (!confirm('This will permanently delete all collected feedback. Continue?')) return;
+                let serverCleared = false;
+                try {
+                    // BranchAdmin clears only their branch's feedback; others clear all
+                    const endpoint = (userRole === 'BranchAdmin' && userBranchId) ? `/api/feedback?branchId=${encodeURIComponent(userBranchId)}` : '/api/feedback';
+                    const resp = await api(endpoint, { method: 'DELETE' });
+                    if (resp === null) serverCleared = true;
+                } catch (err) {
+                    console.warn('Failed to clear data on server', err);
+                }
+                if (!serverCleared) {
+                    // clear local storage fallback
+                    localStorage.removeItem('kiosk_responses');
+                }
+                alert('Feedback data cleared');
+            });
+
+            // On page load
+            loadStaff();
+            loadSettings();
+            // Bind settings save button
+            document.getElementById('saveSettings').addEventListener('click', saveSettings);
+        })();
+
+        // Load settings from server and populate inputs
+        async function loadSettings() {
+            try {
+                // BranchAdmins fetch settings from their own branch; Admins/SuperAdmins use global settings
+                const role = window.kioskUserRole;
+                const branchId = window.kioskUserBranchId;
+                const branchInput = document.getElementById('branchInput');
+                const recipientsInput = document.getElementById('recipientsInput');
+                const timeInput = document.getElementById('reportTimeInput');
+                if (role === 'BranchAdmin' && branchId) {
+                    // Fetch branch details
+                    const b = await window.kioskAdminApi('/api/branches/' + encodeURIComponent(branchId));
+                    if (b) {
+                        branchInput.value = b.name || '';
+                        recipientsInput.value = b.reportRecipients || '';
+                        if (b.reportTime && /^\d{1,2}:\d{2}$/.test(b.reportTime)) {
+                            timeInput.value = b.reportTime;
+                        }
+                        // BranchAdmins cannot change the branch name (it's controlled by admin)
+                        branchInput.disabled = true;
+                    }
+                } else {
+                    // Use the global kioskAdminApi helper to include auth token
+                    const settings = await window.kioskAdminApi('/api/settings');
+                    if (settings) {
+                        const map = {};
+                        settings.forEach(s => { map[s.key] = s.value; });
+                        branchInput.value = map['BranchName'] || '';
+                        recipientsInput.value = map['ReportRecipients'] || '';
+                        const rt = map['ReportTime'] || '';
+                        if (/^\d{1,2}:\d{2}$/.test(rt)) {
+                            timeInput.value = rt;
+                        }
+                    }
+                    // Admins/SuperAdmins can modify branch name
+                    branchInput.disabled = false;
+                }
+            } catch (err) {
+                console.warn('Failed to load settings', err);
+            }
+        }
+
+        // Save settings to server
+        async function saveSettings() {
+            const branch = document.getElementById('branchInput').value.trim();
+            const recipients = document.getElementById('recipientsInput').value.trim();
+            const time = document.getElementById('reportTimeInput').value.trim();
+            const role = window.kioskUserRole;
+            const branchId = window.kioskUserBranchId;
+            try {
+                if (role === 'BranchAdmin' && branchId) {
+                    // Update branch-specific settings
+                    await window.kioskAdminApi('/api/branches/' + encodeURIComponent(branchId), {
+                        method: 'PUT',
+                        body: JSON.stringify({ name: branch, reportRecipients: recipients, reportTime: time })
+                    });
+                    alert('Branch settings saved');
+                } else {
+                    // Global settings are stored in /api/settings
+                    const items = [
+                        { key: 'BranchName', value: branch },
+                        { key: 'ReportRecipients', value: recipients },
+                        { key: 'ReportTime', value: time }
+                    ];
+                    const resp = await window.kioskAdminApi('/api/settings', {
+                        method: 'POST',
+                        body: JSON.stringify(items)
+                    });
+                    if (resp === null || Array.isArray(resp)) {
+                        if (branch) localStorage.setItem('kiosk_branch', branch);
+                        alert('Settings saved');
+                    } else {
+                        alert('Failed to save settings');
+                    }
+                }
+            } catch (err) {
+                console.error('Failed to save settings', err);
+                alert('Error saving settings');
+            }
+        }
+    </script>
+</body>
+</html>

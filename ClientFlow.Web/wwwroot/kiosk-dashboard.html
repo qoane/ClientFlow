@@ -1,0 +1,611 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Feedback Dashboard</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0b1020">
+
+    <!-- Libraries (CDN) -->
+    <link rel="stylesheet" href="https://unpkg.com/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/tabulator-tables@5.6.2/dist/css/tabulator.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <script src="https://unpkg.com/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+    <script src="https://unpkg.com/tabulator-tables@5.6.2/dist/js/tabulator.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+
+    <style>
+        :root {
+            --bg: #0b1020;
+            --panel: #121936;
+            --panel2: #0f1530;
+            --text: #eef1ff;
+            --muted: #9fb0ff;
+            --accent: #19cba0;
+            --accent2: #89b4ff;
+            --border: rgba(255,255,255,.08);
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        body {
+            margin: 0;
+            background: radial-gradient(1200px 800px at 80% -10%, #1b2550 0%, transparent 60%), var(--bg);
+            color: var(--text);
+            font: 14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif
+        }
+
+        .container {
+            max-width: 1320px;
+            margin: 0 auto;
+            padding: 20px
+        }
+
+        h1 {
+            margin: 0 0 16px
+        }
+
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 16px
+        }
+
+        .row {
+            display: grid;
+            gap: 16px
+        }
+
+            .row.summaries {
+                grid-template-columns: repeat(5,minmax(160px,1fr))
+            }
+
+        .card h3 {
+            margin: 0 0 6px;
+            font-size: .9rem;
+            color: var(--muted)
+        }
+
+        .card span {
+            font-size: 1.6rem;
+            font-weight: 800
+        }
+
+        .filters {
+            display: grid;
+            grid-template-columns: repeat(6,minmax(120px,1fr));
+            gap: 10px;
+            margin: 10px 0 18px
+        }
+
+        select, input {
+            width: 100%;
+            padding: 8px 10px;
+            border-radius: 8px;
+            border: 1px solid #2a356b;
+            background: #0f1530;
+            color: #dfe6ff
+        }
+
+        button.btn {
+            padding: 10px 14px;
+            border-radius: 8px;
+            border: 0;
+            background: var(--accent);
+            color: #03261e;
+            font-weight: 700;
+            cursor: pointer
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 2fr 2fr 2fr;
+            gap: 16px
+        }
+
+        .grid2 {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 16px;
+            margin-top: 16px
+        }
+
+        #map {
+            height: 390px;
+            border-radius: 12px;
+            overflow: hidden
+        }
+
+        .chart-wrap {
+            position: relative;
+            height: 300px
+        }
+
+        .footer {
+            opacity: .6;
+            font-size: .85rem;
+            margin-top: 14px
+        }
+
+        .badge {
+            background: #1a254f;
+            padding: 4px 8px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            font-weight: 600
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Feedback Dashboard <span class="badge" id="activeFilterLabel">All Time · All Branches</span></h1>
+
+        <!-- Filters -->
+        <div class="panel">
+            <div class="filters">
+                <input id="dateFrom" placeholder="From (date)">
+                <input id="dateTo" placeholder="To (date)">
+                <select id="branchSel"><option value="">All branches</option></select>
+                <select id="staffSel"><option value="">All staff</option></select>
+                <select id="minOverall"><option value="">Min overall</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select>
+                <input id="searchBox" placeholder="Search phone/branch">
+            </div>
+            <div class="actions">
+                <button class="btn" id="applyFilters">Apply</button>
+                <button class="btn" id="clearFilters">Clear</button>
+                <button class="btn" id="exportCsv">Export CSV</button>
+                <button class="btn" id="exportPdf">Export PDF</button>
+                <button class="btn" id="openKiosk">Launch Kiosk</button>
+                <button class="btn" id="openAdmin">Admin</button>
+            </div>
+        </div>
+
+        <!-- Summaries -->
+        <div class="row summaries">
+            <div class="card panel"><h3>Total Responses</h3><span id="totResp">0</span></div>
+            <div class="card panel"><h3>Avg. Time</h3><span id="avgTime">0</span></div>
+            <div class="card panel"><h3>Avg. Respect</h3><span id="avgRespect">0</span></div>
+            <div class="card panel"><h3>Avg. Overall</h3><span id="avgOverall">0</span></div>
+            <div class="card panel"><h3>Avg. Duration (s)</h3><span id="avgDuration">0</span></div>
+        </div>
+
+        <!-- Charts -->
+        <div class="grid">
+            <div class="panel"><h3>Time rating</h3><div class="chart-wrap"><canvas id="cTime"></canvas></div></div>
+            <div class="panel"><h3>Respect rating</h3><div class="chart-wrap"><canvas id="cRespect"></canvas></div></div>
+            <div class="panel"><h3>Overall rating</h3><div class="chart-wrap"><canvas id="cOverall"></canvas></div></div>
+        </div>
+
+        <div class="grid2">
+            <div class="panel"><h3>Trend (daily volume & avg overall)</h3><div class="chart-wrap" style="height:340px"><canvas id="cTrend"></canvas></div></div>
+            <div class="panel"><h3>Duration distribution</h3><div class="chart-wrap"><canvas id="cDur"></canvas></div></div>
+        </div>
+
+        <div class="grid2" style="margin-top:16px">
+            <div class="panel"><h3>Responses by branch</h3><div class="chart-wrap"><canvas id="cBranch"></canvas></div></div>
+            <div class="panel"><h3>Map of offices</h3><div id="map"></div></div>
+        </div>
+
+        <!-- Table -->
+        <div class="panel" style="margin-top:16px">
+            <h3>All feedback</h3>
+            <div id="table"></div>
+        </div>
+
+        <div class="footer">Tip: click any legend item to toggle series; right-click a chart to save as image (or use Export PDF).</div>
+    </div>
+
+    <script>
+        Chart.register(ChartDataLabels);
+        // Require authentication for dashboard pages.  Redirect to login if no auth token.
+        const authToken = localStorage.getItem('authToken');
+        const userRole = localStorage.getItem('userRole');
+        const userBranchId = localStorage.getItem('branchId');
+        if (!authToken) {
+            window.location.href = '/login.html';
+        }
+        const els = {
+            from: document.getElementById('dateFrom'),
+            to: document.getElementById('dateTo'),
+            branch: document.getElementById('branchSel'),
+            staff: document.getElementById('staffSel'),
+            minOverall: document.getElementById('minOverall'),
+            search: document.getElementById('searchBox'),
+            label: document.getElementById('activeFilterLabel'),
+            tot: document.getElementById('totResp'), t: document.getElementById('avgTime'),
+            r: document.getElementById('avgRespect'), o: document.getElementById('avgOverall'),
+            d: document.getElementById('avgDuration')
+        };
+        flatpickr(els.from, { dateFormat: "Y-m-d" });
+        flatpickr(els.to, { dateFormat: "Y-m-d" });
+
+        const ratingLabels = ['1', '2', '3', '4', '5'];
+        let staffLookup = {};
+        let branchesGeo = [];
+        let summary = null;
+        let table; // Tabulator instance
+        let charts = {};
+
+        // Store the last total number of feedback responses so we can play a
+        // sound when new feedback is received in the live dashboard.  This
+        // variable is initialised on first load.  Each time apply() runs we
+        // compare the new summary.total against lastTotal and play a short
+        // beep if it has increased.  The beep uses the Web Audio API and
+        // will be ignored by browsers that block autoplay.
+        let lastTotal;
+
+        // Play a short beep.  Uses AudioContext to generate a sine wave.
+        function playBeep() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, ctx.currentTime);
+                osc.connect(ctx.destination);
+                osc.start();
+                setTimeout(() => { osc.stop(); ctx.close(); }, 150);
+            } catch (e) {
+                // Fallback: no sound if AudioContext fails (e.g. autoplay restrictions)
+                console.debug('Beep suppressed', e);
+            }
+        }
+
+        function qparams() {
+            const p = new URLSearchParams();
+            if (els.from.value) p.set('from', els.from.value + 'T00:00:00Z');
+            if (els.to.value) p.set('to', els.to.value + 'T23:59:59Z');
+            // Use branchName parameter for filtering; restrict BranchAdmins to their branch
+            if (userRole === 'BranchAdmin' && userBranchId) {
+                // pass branchId query param
+                p.set('branchId', userBranchId);
+            } else if (els.branch.value) {
+                p.set('branchName', els.branch.value);
+            }
+            if (els.staff.value) p.set('staffId', els.staff.value);
+            if (els.minOverall.value) p.set('minOverall', els.minOverall.value);
+            if (els.search.value) p.set('q', els.search.value.trim());
+            return p.toString() ? ('?' + p.toString()) : '';
+        }
+
+        async function fetchJson(url, opts = {}) {
+            // Always include auth token if present
+            opts.headers = Object.assign({}, opts.headers || {}, { 'Authorization': 'Bearer ' + authToken });
+            try {
+                const r = await fetch(url, opts);
+                if (!r.ok) throw new Error(r.status);
+                return await r.json();
+            } catch (e) {
+                console.warn('fetch failed', url, e);
+                return null;
+            }
+        }
+
+        async function loadLookups() {
+            const staff = await fetchJson('/api/staff');
+            if (staff) {
+                staffLookup = {};
+                staff.forEach(s => staffLookup[s.id] = s.name);
+                // fill select
+                els.staff.innerHTML = '<option value="">All staff</option>' +
+                    staff.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+                // offline kiosk roster refresh
+                const active = staff.filter(s => s.isActive).map(s => ({ id: s.id, name: s.name, photo: s.photoUrl || 'assets/icons/meh.svg' }));
+                localStorage.setItem('kiosk_staff', JSON.stringify(active));
+            } else {
+                // fallback from localStorage
+                try {
+                    const roster = JSON.parse(localStorage.getItem('kiosk_staff') || '[]');
+                    staffLookup = Object.fromEntries(roster.map(r => [r.id, r.name]));
+                    els.staff.innerHTML = '<option value="">All staff</option>' +
+                        roster.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+                } catch { }
+            }
+
+            const br = await fetchJson('/api/branches');
+            if (br) {
+                branchesGeo = br;
+                if (userRole === 'BranchAdmin') {
+                    // BranchAdmins: show only their own branch and disable selector
+                    // Find branch name from returned list by matching branchId
+                    let branchName = '';
+                    if (userBranchId) {
+                        const match = br.find(b => (b.id || '').toLowerCase() === userBranchId.toLowerCase());
+                        branchName = match ? match.name : '';
+                    }
+                    els.branch.innerHTML = `<option>${branchName}</option>`;
+                    els.branch.disabled = true;
+                } else {
+                    els.branch.innerHTML = '<option value="">All branches</option>' +
+                        br.map(b => `<option>${b.name}</option>`).join('');
+                }
+            } else {
+                // fallback from feedback cache
+                const fb = await loadFeedbackLocal();
+                const unique = [...new Set(fb.map(x => x.branch || 'Unknown'))];
+                els.branch.innerHTML = '<option value="">All branches</option>' +
+                    unique.map(b => `<option>${b}</option>`).join('');
+            }
+        }
+
+        async function loadSummary() {
+            const s = await fetchJson('/api/feedback/summary' + qparams());
+            if (s) { summary = s; return; }
+            // fallback compute from cached offline feedback
+            const data = await loadFeedbackLocal();
+            // apply extremely simple client filters matching the UI (subset of server filters)
+            let rows = data;
+            if (els.branch.value) rows = rows.filter(x => (x.branch || '') === els.branch.value);
+            if (els.staff.value) rows = rows.filter(x => (x.staffId || x.staff) === els.staff.value);
+            if (els.minOverall.value) rows = rows.filter(x => (x.overallRating || x.overall || 0) >= parseInt(els.minOverall.value));
+            const avg = arr => arr.length ? arr.reduce((a, b) => a + b) / arr.length : 0;
+            const val = (x, a, b) => x[a] ?? x[b] ?? 0;
+            const times = rows.map(x => val(x, 'timeRating', 'time')).filter(Boolean);
+            const respects = rows.map(x => val(x, 'respectRating', 'respect')).filter(Boolean);
+            const overalls = rows.map(x => val(x, 'overallRating', 'overall')).filter(Boolean);
+            const durations = rows.map(x => x.durationSeconds ?? x.duration ?? 0);
+            summary = {
+                total: rows.length,
+                avgTime: avg(times), avgRespect: avg(respects), avgOverall: avg(overalls),
+                avgDuration: avg(durations),
+                timeCounts: [1, 2, 3, 4, 5].map(i => ({ rating: i, count: times.filter(v => v === i).length })),
+                respectCounts: [1, 2, 3, 4, 5].map(i => ({ rating: i, count: respects.filter(v => v === i).length })),
+                overallCounts: [1, 2, 3, 4, 5].map(i => ({ rating: i, count: overalls.filter(v => v === i).length })),
+                durationBuckets: [
+                    { label: '<30s', count: durations.filter(d => d > 0 && d < 30).length },
+                    { label: '30-60s', count: durations.filter(d => d >= 30 && d < 60).length },
+                    { label: '60-90s', count: durations.filter(d => d >= 60 && d < 90).length },
+                    { label: '>=90s', count: durations.filter(d => d >= 90).length },
+                ],
+                staffCounts: (() => { const c = {}; rows.forEach(r => { const id = r.staffId ?? r.staff; if (!id) return; c[id] = (c[id] || 0) + 1; }); return Object.keys(c).map(k => ({ staffId: k, count: c[k] })); })(),
+                branchCounts: (() => { const c = {}; rows.forEach(r => { const b = r.branch || 'Unknown'; c[b] = (c[b] || 0) + 1; }); return Object.keys(c).map(b => ({ branch: b, count: c[b] })); })(),
+                series: [] // omitted in offline fallback
+            };
+        }
+
+        async function loadFeedbackFull() {
+            const data = await fetchJson('/api/feedback' + qparams());
+            if (data) return data;
+            return await loadFeedbackLocal();
+        }
+        async function loadFeedbackLocal() {
+            try { return JSON.parse(localStorage.getItem('kiosk_responses') || '[]'); } catch { return [] }
+        }
+
+        function fmt(n) { return (n ?? 0).toFixed(2); }
+
+        function refreshCards() {
+            els.tot.textContent = summary.total;
+            els.t.textContent = fmt(summary.avgTime);
+            els.r.textContent = fmt(summary.avgRespect);
+            els.o.textContent = fmt(summary.avgOverall);
+            els.d.textContent = fmt(summary.avgDuration);
+
+            const parts = [];
+            parts.push(els.from.value && els.to.value ? `${els.from.value} → ${els.to.value}` : 'All Time');
+            parts.push(els.branch.value || 'All Branches');
+            if (els.staff.value) parts.push(staffLookup[els.staff.value] || 'Staff');
+            if (els.minOverall.value) parts.push(`≥ Overall ${els.minOverall.value}`);
+            els.label.textContent = parts.join(' · ');
+        }
+
+        function mkBar(id, counts, label) {
+            const max = Math.max(1, ...counts);
+            const data = { labels: ratingLabels, datasets: [{ label, data: counts, borderWidth: 1 }] };
+            const ctx = document.getElementById(id).getContext('2d');
+            charts[id]?.destroy();
+            charts[id] = new Chart(ctx, {
+                type: 'bar',
+                data,
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false }, datalabels: { anchor: 'end', align: 'top', formatter: Math.round } },
+                    scales: { y: { beginAtZero: true, suggestedMax: max + 1 } }
+                }
+            });
+        }
+
+        function mkDoughnut(id, labels, counts) {
+            const ctx = document.getElementById(id).getContext('2d');
+            charts[id]?.destroy();
+            charts[id] = new Chart(ctx, {
+                type: 'doughnut',
+                data: { labels, datasets: [{ data: counts }] },
+                options: { responsive: true, plugins: { legend: { position: 'bottom' }, datalabels: { formatter: (v) => v } } }
+            });
+        }
+
+        function mkLine(id, points) {
+            const ctx = document.getElementById(id).getContext('2d');
+            charts[id]?.destroy();
+            charts[id] = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: points.map(p => p.date?.substring(0, 10) ?? new Date(p.date).toISOString().substring(0, 10)),
+                    datasets: [
+                        { label: 'Responses', data: points.map(p => p.count), yAxisID: 'y', tension: .25 },
+                        { label: 'Avg Overall', data: points.map(p => p.avgOverall), yAxisID: 'y1', tension: .25 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: { beginAtZero: true, position: 'left' },
+                        y1: { beginAtZero: true, position: 'right', min: 1, max: 5 }
+                    }
+                }
+            });
+        }
+
+        function renderCharts() {
+            mkBar('cTime', summary.timeCounts.map(x => x.count), 'Time');
+            mkBar('cRespect', summary.respectCounts.map(x => x.count), 'Respect');
+            mkBar('cOverall', summary.overallCounts.map(x => x.count), 'Overall');
+            mkDoughnut('cDur', summary.durationBuckets.map(x => x.label), summary.durationBuckets.map(x => x.count));
+            mkDoughnut('cBranch', summary.branchCounts.map(x => x.branch), summary.branchCounts.map(x => x.count));
+            if (summary.series && summary.series.length) { mkLine('cTrend', summary.series); }
+        }
+
+        let map;
+        function renderMap() {
+            if (!map) {
+                map = L.map('map').setView([-29.31, 27.48], 7);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
+            }
+            // Clear layers
+            map.eachLayer(l => { if (l instanceof L.CircleMarker) map.removeLayer(l); });
+
+            const counts = Object.fromEntries(summary.branchCounts.map(b => [b.branch, b.count]));
+            branchesGeo.forEach(b => {
+                const count = counts[b.name] || 0;
+                const radius = 8 + Math.sqrt(count) * 4;
+                const color = count > 0 ? '#19cba0' : '#6b7280';
+                L.circleMarker([b.lat, b.lng], { radius, color, fillColor: color, fillOpacity: .6, weight: 1 })
+                    .addTo(map)
+                    .bindPopup(`<b>${b.name}</b><br/>Responses: ${count}`);
+            });
+        }
+
+        async function renderTable() {
+            const rows = await loadFeedbackFull();
+            const normalized = rows.map(r => ({
+                created: r.createdUtc || r.ts || null,
+                branch: r.branch || '',
+                phone: r.phone || '',
+                staff: staffLookup[r.staffId] || r.staff || '',
+                time: r.timeRating ?? r.time ?? null,
+                respect: r.respectRating ?? r.respect ?? null,
+                overall: r.overallRating ?? r.overall ?? null,
+                duration: r.durationSeconds ?? r.duration ?? null
+            }));
+            if (table) { table.replaceData(normalized); return; }
+            table = new Tabulator("#table", {
+                data: normalized,
+                layout: "fitColumns",
+                height: 420,
+                pagination: true, paginationSize: 10, paginationSizeSelector: [10, 20, 50, 100],
+                columns: [
+                    { title: "Timestamp", field: "created", sorter: "datetime", hozAlign: "left", width: 200, formatter: (cell) => cell.getValue() ? new Date(cell.getValue()).toLocaleString() : '' },
+                    { title: "Branch", field: "branch", headerFilter: "input" },
+                    { title: "Staff", field: "staff", headerFilter: "input" },
+                    { title: "Phone", field: "phone", headerFilter: "input" },
+                    { title: "Time", field: "time", sorter: "number" },
+                    { title: "Respect", field: "respect", sorter: "number" },
+                    { title: "Overall", field: "overall", sorter: "number" },
+                    { title: "Duration (s)", field: "duration", sorter: "number" },
+                ]
+            });
+        }
+
+        function exportCsvClient(rows) {
+            const head = ['timestamp', 'branch', 'staff', 'phone', 'time', 'respect', 'overall', 'duration'];
+            const csv = [head.join(',')].concat(rows.map(r => [
+                r.created ? new Date(r.created).toISOString() : '',
+                `"${(r.branch || '').replaceAll('"', '""')}"`,
+                `"${(r.staff || '').replaceAll('"', '""')}"`,
+                `"${(r.phone || '').replaceAll('"', '""')}"`,
+                r.time ?? '',
+                r.respect ?? '',
+                r.overall ?? '',
+                r.duration ?? ''
+            ].join(','))).join('\n');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = 'kiosk_feedback.csv'; a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        async function exportPdfClient() {
+            const rows = await loadFeedbackFull();
+            const norm = rows.map(r => ({
+                created: r.createdUtc || r.ts || null,
+                branch: r.branch || '',
+                staff: staffLookup[r.staffId] || r.staff || '',
+                phone: r.phone || '',
+                time: r.timeRating ?? r.time ?? null,
+                respect: r.respectRating ?? r.respect ?? null,
+                overall: r.overallRating ?? r.overall ?? null,
+                duration: r.durationSeconds ?? r.duration ?? null
+            }));
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ orientation: 'landscape' });
+            doc.setFontSize(16);
+            doc.text("Liberty Feedback Report", 14, 16);
+            doc.setFontSize(10);
+            doc.text(els.label.textContent, 14, 22);
+
+            // Summary row
+            doc.text(`Total: ${summary.total} | Avg Time: ${fmt(summary.avgTime)} | Avg Respect: ${fmt(summary.avgRespect)} | Avg Overall: ${fmt(summary.avgOverall)} | Avg Duration: ${fmt(summary.avgDuration)}s`, 14, 28);
+
+            // Table
+            const body = norm.map(r => [
+                r.created ? new Date(r.created).toLocaleString() : '',
+                r.branch, r.staff, r.phone, r.time ?? '', r.respect ?? '', r.overall ?? '', r.duration ?? ''
+            ]);
+            doc.autoTable({
+                head: [['Timestamp', 'Branch', 'Staff', 'Phone', 'Time', 'Respect', 'Overall', 'Duration (s)']],
+                body, startY: 32, styles: { fontSize: 8 }
+            });
+
+            doc.save('kiosk_feedback.pdf');
+        }
+
+        async function apply() {
+            await loadSummary();
+            // Compare current summary total with previous and beep if increased
+            if (summary && typeof lastTotal === 'number' && summary.total > lastTotal) {
+                playBeep();
+            }
+            lastTotal = summary ? summary.total : lastTotal;
+            refreshCards();
+            renderCharts();
+            renderMap();
+            await renderTable();
+        }
+
+        document.getElementById('applyFilters').addEventListener('click', apply);
+        document.getElementById('clearFilters').addEventListener('click', async () => {
+            els.from.value = ''; els.to.value = ''; els.branch.value = ''; els.staff.value = ''; els.minOverall.value = ''; els.search.value = '';
+            await apply();
+        });
+        document.getElementById('exportCsv').addEventListener('click', async () => {
+            const rows = await loadFeedbackFull();
+            const norm = rows.map(r => ({
+                created: r.createdUtc || r.ts || null,
+                branch: r.branch || '',
+                staff: staffLookup[r.staffId] || r.staff || '',
+                phone: r.phone || '',
+                time: r.timeRating ?? r.time ?? null,
+                respect: r.respectRating ?? r.respect ?? null,
+                overall: r.overallRating ?? r.overall ?? null,
+                duration: r.durationSeconds ?? r.duration ?? null
+            }));
+            exportCsvClient(norm);
+        });
+        document.getElementById('exportPdf').addEventListener('click', exportPdfClient);
+        document.getElementById('openKiosk').addEventListener('click', () => location.href = 'kiosk.html');
+        document.getElementById('openAdmin').addEventListener('click', () => location.href = 'kiosk-admin.html');
+
+        // Init
+        (async function () {
+            await loadLookups();
+            await apply();
+            if ('serviceWorker' in navigator) { navigator.serviceWorker.register('/sw.js').catch(() => { }); }
+        })();
+    </script>
+</body>
+</html>

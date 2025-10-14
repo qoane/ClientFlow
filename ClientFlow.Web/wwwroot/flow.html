@@ -1,0 +1,1024 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ClientFlow — Feedback Kiosk</title>
+    <!-- QR library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
+    <style>
+        :root {
+            --bg: #0b1020;
+            --panel: #121936;
+            --panel2: #0f1530;
+            --muted: #9fb0ff;
+            --text: #eef1ff;
+            --accent: #6cf0c2;
+            --accent2: #89b4ff;
+            --border: rgba(255,255,255,.08);
+            --ok: #22c55e;
+            --warn: #ffd166;
+            --bad: #ff6b6b;
+            --amber: #ffc857;
+            --green: #3bb98f;
+            --red: #f96a6a;
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        html, body {
+            height: 100%
+        }
+
+        body {
+            margin: 0;
+            background: radial-gradient(1200px 800px at 80% -10%,#1b2550 0%,transparent 60%),var(--bg);
+            color: var(--text);
+            font: 15px/1.5 system-ui,-apple-system,Segoe UI,Roboto
+        }
+
+        .app {
+            display: grid;
+            grid-template-rows: 64px 1fr;
+            min-height: 100vh
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 0 20px;
+            border-bottom: 1px solid var(--border);
+            background: linear-gradient(180deg,#141c3f,#0e1533)
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700
+        }
+
+        .logo {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            background: conic-gradient(from 210deg,var(--accent),var(--accent2));
+            box-shadow: 0 0 0 2px rgba(255,255,255,.07) inset
+        }
+
+        .tag {
+            padding: 2px 8px;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            color: #b9c6ff;
+            font-size: 12px
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 12px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: linear-gradient(180deg,#1a2248,#141c3f);
+            color: #e9eeff;
+            cursor: pointer;
+            transition: transform .12s ease
+        }
+
+            .btn:hover {
+                transform: translateY(-1px)
+            }
+
+            .btn.accent {
+                background: linear-gradient(180deg,#19cba0,#0dbb93);
+                color: #031b15;
+                border: none
+            }
+
+            .btn.danger {
+                background: linear-gradient(180deg,#ef4444,#dc2626);
+                color: #fff;
+                border: none
+            }
+
+        .toolbar {
+            margin-left: auto;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap
+        }
+
+        .shell {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+            padding: 12px
+        }
+
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,.15);
+            overflow: hidden
+        }
+
+        .head {
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between
+        }
+
+        .body {
+            padding: 16px 18px
+        }
+
+        .stepper {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px
+        }
+
+        .step {
+            flex: 1;
+            height: 6px;
+            border-radius: 999px;
+            background: #0e1431;
+            border: 1px solid var(--border);
+            overflow: hidden
+        }
+
+            .step > div {
+                height: 100%;
+                width: 0%;
+                background: linear-gradient(90deg,#19cba0,#0dbb93)
+            }
+
+        .section-title {
+            font-weight: 700;
+            margin: 6px 0 10px
+        }
+
+        .gridFaces {
+            display: grid;
+            grid-template-columns: repeat(3,minmax(0,1fr));
+            gap: 10px
+        }
+
+        @media (max-width:900px) {
+            .gridFaces {
+                grid-template-columns: repeat(2,1fr)
+            }
+        }
+
+        .face {
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 10px;
+            background: #0e1431;
+            display: grid;
+            gap: 6px;
+            justify-items: center;
+            cursor: pointer;
+            position: relative;
+            transition: transform .14s ease, box-shadow .14s ease
+        }
+
+            .face:after {
+                content: "";
+                position: absolute;
+                inset: 0;
+                border-radius: 14px;
+                box-shadow: 0 0 0 0 rgba(108,240,194,.0);
+                transition: box-shadow .18s ease
+            }
+
+            .face:hover {
+                transform: translateY(-2px)
+            }
+
+            .face.selected:after {
+                box-shadow: 0 0 0 3px rgba(108,240,194,.35)
+            }
+
+            .face img {
+                width: 86px;
+                height: 86px;
+                border-radius: 12px;
+                object-fit: cover;
+                border: 1px solid var(--border);
+                animation: pop .3s ease
+            }
+
+            .face .nm {
+                color: #cfe0ff;
+                font-weight: 600;
+                font-size: 14px;
+                text-align: center
+            }
+
+            .face .role {
+                color: #9fb0ff;
+                font-size: 12px
+            }
+
+        .controls {
+            display: flex;
+            gap: 8px;
+            margin-top: 14px;
+            justify-content: flex-end
+        }
+
+        .qblock {
+            margin: 10px 0;
+            background: #0e1431;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 12px
+        }
+
+        .qtitle {
+            color: #cfe0ff;
+            margin-bottom: 8px;
+            font-weight: 600
+        }
+
+        .rowBtns {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px
+        }
+
+        .opt {
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: #0f1530;
+            cursor: pointer;
+            transition: transform .12s ease, box-shadow .12s ease
+        }
+
+            .opt:hover {
+                transform: translateY(-1px)
+            }
+
+            .opt.sel {
+                box-shadow: 0 0 0 2px #19cba044
+            }
+
+        .stars {
+            display: flex;
+            gap: 6px
+        }
+
+        .star {
+            font-size: 26px;
+            cursor: pointer;
+            opacity: .65;
+            transition: transform .12s ease, opacity .12s ease
+        }
+
+            .star:hover {
+                transform: scale(1.08)
+            }
+
+            .star.sel {
+                opacity: 1
+            }
+
+        .npsRow {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap
+        }
+
+        .npsBtn {
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #0f1530;
+            cursor: pointer;
+            transition: transform .12s ease, box-shadow .12s ease
+        }
+
+            .npsBtn:hover {
+                transform: translateY(-1px)
+            }
+
+            .npsBtn.sel {
+                box-shadow: 0 0 0 2px #19cba044
+            }
+
+        input[type="text"], input[type="tel"], input[type="email"], textarea, select {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: var(--panel2);
+            color: var(--text);
+            transition: box-shadow .14s ease
+        }
+
+        textarea {
+            min-height: 84px
+        }
+
+            input:focus, textarea:focus {
+                outline: none;
+                box-shadow: 0 0 0 2px #19cba033
+            }
+
+        .hint {
+            color: #9fb0ff;
+            opacity: .9
+        }
+
+        .toast {
+            position: fixed;
+            right: 18px;
+            bottom: 18px;
+            background: #0f1530;
+            border: 1px solid var(--border);
+            padding: 10px 14px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,.3)
+        }
+
+        .modal {
+            position: fixed;
+            inset: 0;
+            display: none;
+            background: rgba(0,0,0,.6);
+            align-items: center;
+            justify-content: center;
+            z-index: 60
+        }
+
+            .modal > div {
+                background: var(--panel);
+                border: 1px solid var(--border);
+                border-radius: 16px;
+                max-width: 860px;
+                width: 92%;
+                padding: 16px;
+                animation: slideUp .22s ease
+            }
+
+        .table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 8px
+        }
+
+            .table th {
+                color: #cfe0ff;
+                text-align: left;
+                font-weight: 600
+            }
+
+            .table td {
+                background: #0e1431;
+                border: 1px solid var(--border);
+                padding: 10px;
+                border-radius: 10px
+            }
+
+        .footer-note {
+            color: #9fb0ff;
+            font-size: 12px;
+            margin-top: 10px
+        }
+
+        /* Corner Hand-off Card */
+        .corner {
+            position: fixed;
+            left: 14px;
+            bottom: 14px;
+            z-index: 40;
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 10px;
+            align-items: center;
+            background: linear-gradient(180deg,#131a3a,#0f1530);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 10px 12px;
+            box-shadow: 0 12px 30px rgba(0,0,0,.35);
+            animation: float 6s ease-in-out infinite;
+        }
+
+            .corner .mini {
+                width: 72px;
+                height: 72px;
+                border-radius: 12px;
+                background: #0b1028;
+                border: 1px solid var(--border);
+                display: grid;
+                place-items: center;
+                overflow: hidden
+            }
+
+            .corner .copy {
+                font-size: 12px;
+                color: #cfe0ff
+            }
+
+                .corner .copy b {
+                    color: #89b4ff
+                }
+
+            .corner .cta {
+                display: flex;
+                gap: 8px;
+                margin-top: 6px
+            }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 999px;
+            background: rgba(255,255,255,.08);
+            border: 1px solid var(--border);
+            font-size: 12px
+        }
+
+        /* Handoff Modal extra styling */
+        .qrWrap {
+            display: grid;
+            grid-template-columns: 240px 1fr;
+            gap: 16px;
+            align-items: center;
+        }
+
+        @media (max-width:800px) {
+            .qrWrap {
+                grid-template-columns: 1fr
+            }
+        }
+
+        .qrBox {
+            width: 240px;
+            height: 240px;
+            border-radius: 16px;
+            background: #0b1028;
+            border: 1px solid var(--border);
+            display: grid;
+            place-items: center;
+            box-shadow: 0 0 0 0 rgba(108,240,194,.0);
+            animation: glow 2.8s ease-in-out infinite;
+        }
+
+        .shareRow {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 10px
+        }
+
+        @keyframes pop {
+            from {
+                transform: scale(.96);
+                opacity: .7
+            }
+
+            to {
+                transform: scale(1);
+                opacity: 1
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(8px);
+                opacity: 0
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1
+            }
+        }
+
+        @keyframes float {
+            0%,100% {
+                transform: translateY(0)
+            }
+
+            50% {
+                transform: translateY(-3px)
+            }
+        }
+
+        @keyframes glow {
+            0%,100% {
+                box-shadow: 0 0 0 0 rgba(108,240,194,.0)
+            }
+
+            50% {
+                box-shadow: 0 0 0 4px rgba(108,240,194,.18)
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <header>
+            <div class="brand"><div class="logo"></div> ClientFlow — Kiosk <span class="tag">Offline (localStorage)</span></div>
+            <div class="toolbar">
+                <button class="btn" id="btnRoster">Roster</button>
+                <button class="btn" id="btnReset">Reset data</button>
+                <button class="btn accent" id="btnHandoff">Finish @ Home</button>
+            </div>
+        </header>
+
+        <div class="shell">
+            <section class="panel">
+                <div class="head">
+                    <strong>Feedback</strong>
+                    <span class="tag" id="stepLabel">Step 1 of 4</span>
+                </div>
+                <div class="body">
+                    <div class="stepper">
+                        <div class="step"><div id="s1"></div></div>
+                        <div class="step"><div id="s2"></div></div>
+                        <div class="step"><div id="s3"></div></div>
+                        <div class="step"><div id="s4"></div></div>
+                    </div>
+
+                    <!-- STEP 1: STAFF -->
+                    <div id="step1">
+                        <div class="section-title">I was assisted by</div>
+                        <div class="gridFaces" id="faces"></div>
+                        <div class="controls">
+                            <label class="opt"><input type="checkbox" id="chkUnknown"> Not sure / Multiple staff</label>
+                            <button class="btn accent" id="next1">Next</button>
+                        </div>
+                    </div>
+
+                    <!-- STEP 2: EXPERIENCE -->
+                    <div id="step2" style="display:none">
+                        <div class="qblock">
+                            <div class="qtitle">Was your query handled within a reasonable time?</div>
+                            <div class="rowBtns" data-name="speed">
+                                <div class="opt" data-val="1">Not at all</div>
+                                <div class="opt" data-val="2">No</div>
+                                <div class="opt" data-val="3">Neutral</div>
+                                <div class="opt" data-val="4">Yes, mostly</div>
+                                <div class="opt" data-val="5">Absolutely</div>
+                            </div>
+                        </div>
+                        <div class="qblock">
+                            <div class="qtitle">Were you treated professionally and with respect?</div>
+                            <div class="rowBtns" data-name="respect">
+                                <div class="opt" data-val="1">Not at all</div>
+                                <div class="opt" data-val="2">No</div>
+                                <div class="opt" data-val="3">Neutral</div>
+                                <div class="opt" data-val="4">Yes, mostly</div>
+                                <div class="opt" data-val="5">Absolutely</div>
+                            </div>
+                        </div>
+                        <div class="qblock">
+                            <div class="qtitle">Overall service rating</div>
+                            <div class="stars" id="stars">
+                                <span class="star" data-val="1">★</span>
+                                <span class="star" data-val="2">★</span>
+                                <span class="star" data-val="3">★</span>
+                                <span class="star" data-val="4">★</span>
+                                <span class="star" data-val="5">★</span>
+                            </div>
+                        </div>
+                        <div class="controls">
+                            <button class="btn" id="back2">Back</button>
+                            <button class="btn accent" id="next2">Next</button>
+                        </div>
+                    </div>
+
+                    <!-- STEP 3: NPS -->
+                    <div id="step3" style="display:none">
+                        <div class="qblock">
+                            <div class="qtitle">How likely are you to recommend us to a friend or colleague?</div>
+                            <div class="hint" style="margin-bottom:6px">0 = Not at all likely, 10 = Extremely likely</div>
+                            <div class="npsRow" id="npsRow"></div>
+                        </div>
+                        <div class="qblock">
+                            <div class="qtitle">Was your issue resolved today?</div>
+                            <div class="rowBtns" data-name="resolved">
+                                <div class="opt" data-val="yes">Yes</div>
+                                <div class="opt" data-val="no">No</div>
+                            </div>
+                        </div>
+                        <div class="controls">
+                            <button class="btn" id="back3">Back</button>
+                            <button class="btn accent" id="next3">Next</button>
+                        </div>
+                    </div>
+
+                    <!-- STEP 4: COMMENTS & CONTACT -->
+                    <div id="step4" style="display:none">
+                        <div class="qblock">
+                            <div class="qtitle">What went well?</div>
+                            <textarea id="kudos" placeholder="Optional"></textarea>
+                        </div>
+                        <div class="qblock">
+                            <div class="qtitle">What could we improve?</div>
+                            <textarea id="improve" placeholder="Optional (required if low ratings)"></textarea>
+                        </div>
+                        <div class="qblock">
+                            <div class="rowBtns" style="align-items:center">
+                                <label class="opt"><input type="checkbox" id="consent"> May we contact you about your feedback?</label>
+                            </div>
+                            <div id="contactWrap" style="display:none;margin-top:8px" class="grid2">
+                                <div><input type="text" id="contactName" placeholder="Name (optional)"></div>
+                                <div><input type="tel" id="contactPhone" placeholder="Phone (optional)"></div>
+                                <div><input type="email" id="contactEmail" placeholder="Email (optional)"></div>
+                            </div>
+                        </div>
+                        <div class="controls">
+                            <button class="btn" id="back4">Back</button>
+                            <button class="btn accent" id="submit">Submit</button>
+                        </div>
+                        <div class="footer-note">At any time you can press <b>Finish @ Home</b> and we’ll generate a unique QR code. You can also use it to answer our longer survey to help us serve you even better.</div>
+                    </div>
+
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- CORNER SESSION CARD -->
+    <div class="corner" id="cornerCard" title="Scan to keep this session on your phone">
+        <div class="mini"><div id="miniQR"></div></div>
+        <div>
+            <div class="copy">Session link <span class="badge" id="sessCode">—</span></div>
+            <div class="copy" style="margin-top:4px">Scan or tap <b>Finish @ Home</b> anytime.</div>
+            <div class="cta">
+                <button class="btn" id="btnCopySess">Copy link</button>
+                <button class="btn accent" id="btnHandoff2">Finish @ Home</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ROSTER MODAL -->
+    <div class="modal" id="rosterModal">
+        <div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+                <strong>Roster • On duty today</strong>
+                <div style="display:flex;gap:8px">
+                    <button class="btn" id="seedStaff">Seed sample staff</button>
+                    <button class="btn" id="closeRoster">✕</button>
+                </div>
+            </div>
+            <table class="table">
+                <thead><tr><th>Photo</th><th>Name</th><th>Role</th><th>On duty</th></tr></thead>
+                <tbody id="rosterBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- HANDOFF MODAL -->
+    <div class="modal" id="handoffModal">
+        <div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+                <strong>Finish @ Home</strong>
+                <button class="btn" id="closeHandoff">✕</button>
+            </div>
+            <div class="qrWrap">
+                <div class="qrBox"><div id="bigQR"></div></div>
+                <div>
+                    <div class="hint" style="margin-bottom:6px">We’ll send a personal link so you can continue on your phone.</div>
+                    <div class="grid2" style="margin-bottom:10px">
+                        <div><input type="text" id="hoName" placeholder="Your name"></div>
+                        <div><input type="tel" id="hoPhone" placeholder="Mobile number"></div>
+                    </div>
+                    <div class="grid2" style="margin-bottom:10px">
+                        <div><input type="email" id="hoEmail" placeholder="Email (optional)"></div>
+                        <div><input type="text" id="hoRef" placeholder="Reference (optional)"></div>
+                    </div>
+                    <div class="shareRow">
+                        <button class="btn accent" id="btnGenerate">Generate my QR</button>
+                        <button class="btn" id="btnCopyLink" disabled>Copy link</button>
+                        <button class="btn" id="btnSaveQR" disabled>Download QR</button>
+                    </div>
+                    <div class="hint" id="hoStatus" style="margin-top:8px">Enter your details and tap “Generate my QR”.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* ---------- Local storage keys ---------- */
+        const LS_STAFF = 'cf_staff';
+        const LS_RESP = 'cf_responses';
+        const LS_LOC = 'cf_location';
+        const LS_HANDOFFS = 'cf_handoffs';
+        const LS_SESSION = 'cf_session_id';
+
+        const toast = (m) => { const t = document.createElement('div'); t.className = 'toast'; t.textContent = m; document.body.appendChild(t); setTimeout(() => t.remove(), 1800); };
+        const rnd = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+        const newId = () => crypto.randomUUID ? crypto.randomUUID() : ('id_' + Math.random().toString(36).slice(2));
+        const esc = s => (s || '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+        /* ---------- Seed staff if empty ---------- */
+        function seedIfEmpty() {
+            if (localStorage.getItem(LS_STAFF)) return;
+            const sample = [
+                { id: newId(), name: 'Lerato Mokoena', role: 'Advisor', photo: `https://i.pravatar.cc/150?img=1`, onDuty: true },
+                { id: newId(), name: 'Thabo Nkhahle', role: 'Agent', photo: `https://i.pravatar.cc/150?img=2`, onDuty: true },
+                { id: newId(), name: 'Naleli Seotsi', role: 'Consultant', photo: `https://i.pravatar.cc/150?img=3`, onDuty: false },
+                { id: newId(), name: 'Mpho Sello', role: 'Agent', photo: `https://i.pravatar.cc/150?img=4`, onDuty: false },
+                { id: newId(), name: 'Palesa T.', role: 'Advisor', photo: `https://i.pravatar.cc/150?img=5`, onDuty: true },
+                { id: newId(), name: 'Tumelo K.', role: 'Consultant', photo: `https://i.pravatar.cc/150?img=6`, onDuty: false }
+            ];
+            localStorage.setItem(LS_STAFF, JSON.stringify(sample));
+        }
+        seedIfEmpty();
+
+        /* ---------- Session QR (corner) ---------- */
+        function getSessionId() {
+            let id = localStorage.getItem(LS_SESSION);
+            if (!id) { id = 'S-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8).toUpperCase(); localStorage.setItem(LS_SESSION, id); }
+            return id;
+        }
+        function buildSessionUrl(sess) {
+            const origin = location.origin || (location.protocol + '//' + location.host);
+            // In a real deployment this would be your remote/continue page
+            return `${origin}/survey.html?session=${encodeURIComponent(sess)}`;
+        }
+        function drawMiniQR() {
+            const sess = getSessionId();
+            document.getElementById('sessCode').textContent = sess;
+            const mini = document.getElementById('miniQR'); mini.innerHTML = '';
+            new QRCode(mini, { text: buildSessionUrl(sess), width: 64, height: 64, colorDark: "#6cf0c2", colorLight: "#0b1028", correctLevel: QRCode.CorrectLevel.M });
+        }
+        function copyText(txt) { navigator.clipboard?.writeText(txt).then(() => toast('Copied ✓')).catch(() => toast('Copy failed')); }
+
+        /* ---------- State for survey ---------- */
+        let state = {
+            step: 1,
+            selectedStaff: [], // ids
+            unknown: false,
+            speed: null, respect: null, overall: null,
+            nps: null, resolved: null,
+            kudos: '', improve: '', consent: false, contactName: '', contactPhone: '', contactEmail: ''
+        };
+
+        /* ---------- DOM refs ---------- */
+        const stepEls = [null, 'step1', 'step2', 'step3', 'step4'].map(id => id ? document.getElementById(id) : null);
+        const progressEls = [null, 's1', 's2', 's3', 's4'].map(id => id ? document.getElementById(id) : null);
+        const stepLabel = document.getElementById('stepLabel');
+
+        function setStep(n) {
+            state.step = n;
+            stepEls.forEach((el, i) => { if (!el) return; el.style.display = (i === n) ? '' : 'none'; });
+            progressEls.forEach((bar, i) => { if (!bar) return; bar.style.width = (i <= n ? '100%' : '0%'); });
+            stepLabel.textContent = `Step ${n} of 4`;
+        }
+
+        function getStaff() { try { return JSON.parse(localStorage.getItem(LS_STAFF) || '[]'); } catch { return []; } }
+        function saveStaff(arr) { localStorage.setItem(LS_STAFF, JSON.stringify(arr)); }
+
+        function renderFaces() {
+            const host = document.getElementById('faces'); host.innerHTML = '';
+            const staff = getStaff().filter(s => s.onDuty);
+            staff.forEach(p => {
+                const card = document.createElement('div'); card.className = 'face'; card.dataset.id = p.id;
+                card.innerHTML = `<img src="${p.photo}" alt=""><div class="nm">${esc(p.name)}</div><div class="role">${esc(p.role || '')}</div>`;
+                if (state.selectedStaff.includes(p.id)) card.classList.add('selected');
+                card.onclick = () => {
+                    const idx = state.selectedStaff.indexOf(p.id);
+                    if (idx >= 0) { state.selectedStaff.splice(idx, 1); card.classList.remove('selected'); }
+                    else { state.selectedStaff.push(p.id); card.classList.add('selected'); }
+                };
+                host.appendChild(card);
+            });
+        }
+        function bindRowBtns() {
+            document.querySelectorAll('.rowBtns').forEach(row => {
+                row.querySelectorAll('.opt').forEach(o => {
+                    o.onclick = () => {
+                        const name = row.dataset.name;
+                        row.querySelectorAll('.opt').forEach(x => x.classList.remove('sel'));
+                        o.classList.add('sel');
+                        state[name] = o.dataset.val;
+                    };
+                });
+            });
+        }
+        function bindStars() {
+            const stars = document.querySelectorAll('#stars .star');
+            stars.forEach(s => {
+                s.onclick = () => {
+                    const v = +s.dataset.val;
+                    state.overall = v;
+                    stars.forEach(x => x.classList.toggle('sel', +x.dataset.val <= v));
+                };
+            });
+        }
+        function renderNps() {
+            const host = document.getElementById('npsRow'); host.innerHTML = '';
+            for (let i = 0; i <= 10; i++) {
+                const b = document.createElement('div'); b.className = 'npsBtn'; b.textContent = i; b.dataset.val = i;
+                b.onclick = () => {
+                    state.nps = i;
+                    host.querySelectorAll('.npsBtn').forEach(x => x.classList.remove('sel'));
+                    b.classList.add('sel');
+                };
+                host.appendChild(b);
+            }
+        }
+
+        document.getElementById('chkUnknown').onchange = (e) => { state.unknown = e.target.checked; };
+
+        document.getElementById('next1').onclick = () => {
+            if (!state.unknown && state.selectedStaff.length === 0) { toast('Please pick who assisted you or choose "Not sure"'); return; }
+            setStep(2);
+        };
+        document.getElementById('back2').onclick = () => setStep(1);
+        document.getElementById('next2').onclick = () => {
+            if (!state.speed || !state.respect || !state.overall) { toast('Please answer all three'); return; }
+            setStep(3);
+        };
+        document.getElementById('back3').onclick = () => setStep(2);
+        document.getElementById('next3').onclick = () => {
+            if (state.nps === null || !state.resolved) { toast('Please choose NPS & resolution'); return; }
+            setStep(4);
+        };
+        document.getElementById('back4').onclick = () => setStep(3);
+
+        document.getElementById('consent').onchange = (e) => {
+            state.consent = e.target.checked;
+            document.getElementById('contactWrap').style.display = state.consent ? '' : 'none';
+        };
+
+        document.getElementById('submit').onclick = () => {
+            state.kudos = document.getElementById('kudos').value.trim();
+            state.improve = document.getElementById('improve').value.trim();
+            state.contactName = document.getElementById('contactName').value.trim();
+            state.contactPhone = document.getElementById('contactPhone').value.trim();
+            state.contactEmail = document.getElementById('contactEmail').value.trim();
+
+            const low = (+state.overall <= 2) || (+state.nps <= 6) || (+state.speed <= 2) || (+state.respect <= 2);
+            if (low && !state.improve) { toast('Please add a short improvement comment'); return; }
+
+            const rec = {
+                id: newId(), ts: Date.now(),
+                staffIds: state.unknown ? [] : state.selectedStaff.slice(),
+                speed: +state.speed, respect: +state.respect, overall: +state.overall,
+                nps: +state.nps, resolved: state.resolved === 'yes',
+                kudos: state.kudos, improve: state.improve,
+                consent: !!state.consent, contactName: state.contactName, contactPhone: state.contactPhone, contactEmail: state.contactEmail,
+                location: localStorage.getItem(LS_LOC) || 'HQ'
+            };
+            const arr = JSON.parse(localStorage.getItem(LS_RESP) || '[]'); arr.push(rec);
+            localStorage.setItem(LS_RESP, JSON.stringify(arr));
+            localStorage.setItem('cf_last_submit', String(Date.now())); // ping dashboard
+
+            toast('Thank you! Submitted ✓');
+            setTimeout(() => resetFlow(), 1200);
+        };
+
+        /* ---------- Roster modal ---------- */
+        const rosterModal = document.getElementById('rosterModal');
+        document.getElementById('btnRoster').onclick = () => { renderRoster(); rosterModal.style.display = 'flex'; };
+        document.getElementById('closeRoster').onclick = () => rosterModal.style.display = 'none';
+        document.getElementById('seedStaff').onclick = () => {
+            localStorage.removeItem(LS_STAFF);
+            seedIfEmpty();
+            renderRoster(); renderFaces(); toast('Seeded demo staff');
+        };
+        function renderRoster() {
+            const tbody = document.getElementById('rosterBody'); tbody.innerHTML = '';
+            getStaff().forEach(p => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+          <td><img src="${p.photo}" style="width:44px;height:44px;border-radius:10px;object-fit:cover;border:1px solid var(--border)"></td>
+          <td>${esc(p.name)}</td>
+          <td><input type="text" value="${esc(p.role || '')}" data-role style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--border);background:#0f1530;color:#e9eeff"></td>
+          <td><input type="checkbox" ${p.onDuty ? 'checked' : ''} data-duty></td>
+        `;
+                const role = tr.querySelector('[data-role]'); role.onchange = () => { p.role = role.value; saveStaff(getStaff().map(s => s.id === p.id ? p : s)); renderFaces(); };
+                const duty = tr.querySelector('[data-duty]'); duty.onchange = () => { p.onDuty = duty.checked; saveStaff(getStaff().map(s => s.id === p.id ? p : s)); renderFaces(); };
+                tbody.appendChild(tr);
+            });
+        }
+
+        /* ---------- Finish @ Home (handoff) ---------- */
+        const handoffModal = document.getElementById('handoffModal');
+        const btnHandoff = document.getElementById('btnHandoff');
+        const btnHandoff2 = document.getElementById('btnHandoff2');
+        const btnCopySess = document.getElementById('btnCopySess');
+        const hoStatus = document.getElementById('hoStatus');
+        let currentHandoff = null; // {token, url}
+
+        function openHandoff() { handoffModal.style.display = 'flex'; drawBigQR(null); }
+        function closeHandoff() { handoffModal.style.display = 'none'; }
+        function drawBigQR(url) {
+            const box = document.getElementById('bigQR'); box.innerHTML = '';
+            if (!url) { box.innerHTML = '<div class="hint" style="text-align:center">Your personal QR will appear here</div>'; return; }
+            new QRCode(box, { text: url, width: 220, height: 220, colorDark: "#6cf0c2", colorLight: "#0b1028", correctLevel: QRCode.CorrectLevel.H });
+        }
+        function buildHandoffUrl(token) {
+            const origin = location.origin || (location.protocol + '//' + location.host);
+            // This could be a longer survey page in your app
+            return `${origin}/survey.html?code=${encodeURIComponent(token)}`;
+        }
+        function saveHandoff(rec) {
+            const arr = JSON.parse(localStorage.getItem(LS_HANDOFFS) || '[]'); arr.push(rec);
+            localStorage.setItem(LS_HANDOFFS, JSON.stringify(arr));
+        }
+        function generateToken() {
+            return 'H-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).slice(2, 8).toUpperCase();
+        }
+        function resetFlow() {
+            state = { step: 1, selectedStaff: [], unknown: false, speed: null, respect: null, overall: null, nps: null, resolved: null, kudos: '', improve: '', consent: false, contactName: '', contactPhone: '', contactEmail: '' };
+            document.getElementById('chkUnknown').checked = false;
+            document.getElementById('kudos').value = ''; document.getElementById('improve').value = '';
+            document.getElementById('consent').checked = false; document.getElementById('contactName').value = ''; document.getElementById('contactPhone').value = ''; document.getElementById('contactEmail').value = '';
+            document.getElementById('contactWrap').style.display = 'none';
+            renderFaces(); renderNps(); bindRowBtns(); bindStars(); setStep(1);
+        }
+
+        /* Wire handoff UI */
+        btnHandoff.onclick = openHandoff;
+        btnHandoff2.onclick = openHandoff;
+        document.getElementById('closeHandoff').onclick = closeHandoff;
+        document.getElementById('btnCopySess').onclick = () => copyText(buildSessionUrl(getSessionId()));
+
+        document.getElementById('btnGenerate').onclick = () => {
+            const name = document.getElementById('hoName').value.trim();
+            const phone = document.getElementById('hoPhone').value.trim();
+            const email = document.getElementById('hoEmail').value.trim();
+            const ref = document.getElementById('hoRef').value.trim();
+            if (!name || !phone) { hoStatus.textContent = 'Please enter your name and mobile number.'; return; }
+
+            const token = generateToken();
+            const url = buildHandoffUrl(token);
+            currentHandoff = { token, url };
+
+            // Persist a minimal stub (we're not finishing storage logic for now)
+            const stub = {
+                token, url, createdAt: Date.now(),
+                person: { name, phone, email, ref },
+                // snapshot of partial answers, in case you want to pre-fill later:
+                snapshot: {
+                    staffIds: state.unknown ? [] : state.selectedStaff.slice(),
+                    speed: state.speed, respect: state.respect, overall: state.overall, nps: state.nps,
+                    kudos: document.getElementById('kudos').value.trim(),
+                    improve: document.getElementById('improve').value.trim()
+                }
+            };
+            saveHandoff(stub);
+
+            drawBigQR(url);
+            hoStatus.innerHTML = `Your link: <span class="badge">${url}</span>`;
+            document.getElementById('btnCopyLink').disabled = false;
+            document.getElementById('btnSaveQR').disabled = false;
+
+            // auto-restart kiosk after a short beat so next client can go
+            setTimeout(() => { closeHandoff(); resetFlow(); toast('Hand-off created ✓'); }, 1800);
+        };
+
+        document.getElementById('btnCopyLink').onclick = () => {
+            if (currentHandoff) copyText(currentHandoff.url);
+        };
+
+        document.getElementById('btnSaveQR').onclick = () => {
+            const box = document.getElementById('bigQR');
+            const canvas = box.querySelector('canvas');
+            const img = box.querySelector('img');
+            let dataUrl = null;
+            if (canvas) { dataUrl = canvas.toDataURL('image/png'); }
+            else if (img) { dataUrl = img.src; }
+            if (!dataUrl) { toast('No QR to save'); return; }
+            const a = document.createElement('a');
+            a.href = dataUrl; a.download = 'clientflow-qr.png'; a.click();
+        };
+
+        /* ---------- Reset data ---------- */
+        document.getElementById('btnReset').onclick = () => {
+            if (!confirm('Clear all local responses?')) return;
+            localStorage.removeItem(LS_RESP);
+            toast('Cleared responses');
+        };
+
+        /* ---------- Init ---------- */
+        function init() {
+            drawMiniQR();
+            renderFaces(); renderNps(); bindRowBtns(); bindStars(); setStep(1);
+            document.getElementById('btnCopySess').disabled = false;
+        }
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

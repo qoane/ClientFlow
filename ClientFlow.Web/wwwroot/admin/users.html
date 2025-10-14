@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>ClientFlow — Users</title>
+    <style>
+        :root {
+            --bg: #0b1020;
+            --panel: #121936;
+            --panel2: #0f1530;
+            --border: rgba(255,255,255,.08);
+            --muted: #9fb0ff;
+            --text: #eef1ff;
+            --accent: #6cf0c2;
+            --accent2: #89b4ff;
+            --danger: #ff6b6b;
+        }
+        * { box-sizing: border-box; }
+        html, body { height: 100%; margin: 0; }
+        body {
+            background: radial-gradient(1200px 800px at 80% -10%,#1b2550 0%,transparent 60%),var(--bg);
+            color: var(--text);
+            font-family: system-ui,-apple-system,Segoe UI,Roboto;
+            display: grid;
+            grid-template-rows: 64px 1fr;
+        }
+        header { display:flex; align-items:center; gap:16px; padding:0 20px; border-bottom:1px solid var(--border); background: linear-gradient(180deg,#141c3f,#0e1533); }
+        .brand { display:flex; align-items:center; gap:10px; font-weight:700; }
+        .logo { width:28px; height:28px; border-radius:8px; background:conic-gradient(from 210deg,var(--accent),var(--accent2)); box-shadow:0 0 0 2px rgba(255,255,255,.07) inset; }
+        .toolbar { margin-left:auto; }
+        .toolbar button { padding:8px 12px; border-radius:10px; border:1px solid var(--border); background: linear-gradient(180deg,#1a2248,#141c3f); color: var(--text); cursor:pointer; }
+        .shell { display:grid; grid-template-columns:220px 1fr; gap:12px; height:100%; }
+        @media (max-width:900px){ .shell { grid-template-columns:1fr; } }
+        nav { padding:12px; display:flex; flex-direction:column; gap:10px; }
+        nav a { text-decoration:none; color:var(--text); padding:10px 12px; border:1px solid var(--border); border-radius:12px; background: linear-gradient(180deg,#1a2248,#141c3f); }
+        nav a.active { box-shadow:0 0 0 2px #19cba044; }
+        main { padding:12px; overflow-y:auto; }
+        .card { background: var(--panel); border:1px solid var(--border); border-radius:16px; padding:16px; box-shadow:0 10px 30px rgba(0,0,0,.15); }
+        table { width:100%; border-collapse:collapse; }
+        th,td { padding:8px 10px; border-bottom:1px solid var(--border); }
+        th { text-align:left; color: var(--muted); }
+        tr:hover { background: var(--panel2); }
+        .actions button { margin-right:6px; padding:4px 8px; border-radius:6px; border:1px solid var(--border); background: linear-gradient(180deg,#1a2248,#141c3f); color: var(--text); cursor:pointer; font-size:12px; }
+        .actions button.delete { background: linear-gradient(180deg,#ef4444,#dc2626); border:none; color:#fff; }
+        form input, form select { width:100%; padding:8px 10px; border-radius:10px; border:1px solid var(--border); background:#0f1530; color: var(--text); margin-bottom:8px; }
+        form label { font-size:12px; color: var(--muted); display:block; margin-top:8px; }
+        form button { padding:8px 12px; border:none; border-radius:10px; background: linear-gradient(180deg,#19cba0,#0dbb93); color:#031b15; cursor:pointer; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="brand"><div class="logo"></div><div>ClientFlow</div></div>
+        <div class="toolbar"><span id="userEmail" style="margin-right:16px;"></span><button id="signOut">Sign Out</button></div>
+    </header>
+    <div class="shell">
+        <nav>
+            <a href="/admin/dashboard.html">Dashboard</a>
+            <a href="/admin/branches.html">Branches</a>
+            <a href="/admin/users.html" class="active">Users</a>
+            <a href="/admin/settings.html">Settings</a>
+            <a href="/admin/flow-dash.html">Surveys</a>
+            <a href="/kiosk-dashboard.html" target="_blank">Kiosk Dashboard</a>
+        </nav>
+        <main>
+            <h1>Users</h1>
+            <div id="userList" class="card" style="margin-bottom:20px; overflow-x:auto;"></div>
+            <div id="createForm" class="card" style="display:none;"></div>
+            <button id="addBtn" style="margin-bottom:12px;">Add User</button>
+        </main>
+    </div>
+    <script>
+        const token = localStorage.getItem('authToken');
+        if (!token) { window.location.href = '/login.html'; }
+        // Display logged in user's email
+        const userEmailSpan = document.getElementById('userEmail');
+        if (userEmailSpan) userEmailSpan.textContent = localStorage.getItem('userEmail') || '';
+        const role = localStorage.getItem('userRole');
+        const branchId = localStorage.getItem('branchId');
+        document.getElementById('signOut').addEventListener('click', () => { localStorage.clear(); window.location.href = '/login.html'; });
+        const listDiv = document.getElementById('userList');
+        const createDiv = document.getElementById('createForm');
+        const addBtn = document.getElementById('addBtn');
+        if (role !== 'SuperAdmin') {
+            // Only SuperAdmins can create users
+            addBtn.style.display = 'none';
+        }
+        addBtn.addEventListener('click', () => { showCreateForm(); });
+        async function api(url, opts = {}) {
+            opts.headers = Object.assign({}, opts.headers || {}, { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' });
+            const res = await fetch(url, opts);
+            if (!res.ok) throw new Error(await res.text());
+            return res.status === 204 ? null : res.json();
+        }
+        function showCreateForm() {
+            createDiv.innerHTML = '';
+            const form = document.createElement('form');
+            form.innerHTML = `
+                <h2>Create User</h2>
+                <label>Email</label>
+                <input type="email" id="newEmail" required />
+                <label>Password</label>
+                <input type="password" id="newPass" required />
+                <label>Role</label>
+                <select id="newRole">
+                    <option value="BranchAdmin">Branch Admin</option>
+                    <option value="Admin">Admin</option>
+                    <option value="SuperAdmin">Super Admin</option>
+                </select>
+                <label>Branch (optional)</label>
+                <select id="newBranch"></select>
+                <button type="submit">Create</button>
+                <button type="button" id="cancelCreate" style="margin-left:8px;">Cancel</button>
+            `;
+            createDiv.appendChild(form);
+            createDiv.style.display = '';
+            document.getElementById('cancelCreate').addEventListener('click', () => { createDiv.style.display = 'none'; });
+            // populate branches
+            loadBranchesInto('newBranch');
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('newEmail').value.trim();
+                const password = document.getElementById('newPass').value;
+                const roleSel = document.getElementById('newRole').value;
+                const bId = document.getElementById('newBranch').value || null;
+                try {
+                    await api('/api/users', { method:'POST', body: JSON.stringify({ email, password, role: roleSel, branchId: bId || null }) });
+                    createDiv.style.display = 'none';
+                    loadUsers();
+                } catch (err) {
+                    alert('Error creating user: ' + err.message);
+                }
+            });
+        }
+        function showList(users) {
+            let html = '<table><tr><th>Email</th><th>Role</th><th>Branch</th><th>Actions</th></tr>';
+            users.forEach(u => {
+                html += `<tr data-id="${u.id}"><td>${u.email}</td><td>${u.role}</td><td>${u.branchId ?? ''}</td><td class="actions">`;
+                if (role === 'SuperAdmin') {
+                    html += `<button class="delete">Delete</button>`;
+                }
+                html += '</td></tr>';
+            });
+            html += '</table>';
+            listDiv.innerHTML = html;
+            listDiv.querySelectorAll('.delete').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const id = e.target.closest('tr').dataset.id;
+                    if (confirm('Delete this user?')) {
+                        try {
+                            await api('/api/users/' + id, { method:'DELETE' });
+                            loadUsers();
+                        } catch (err) {
+                            alert('Error deleting: ' + err.message);
+                        }
+                    }
+                });
+            });
+        }
+        async function loadBranchesInto(selectId) {
+            try {
+                const select = document.getElementById(selectId);
+                const branches = await api('/api/branches');
+                select.innerHTML = '<option value="">-- none --</option>';
+                branches.forEach(b => {
+                    select.innerHTML += `<option value="${b.id}">${b.name}</option>`;
+                });
+            } catch (err) {
+                console.error(err);
+            }
+        }
+        async function loadUsers() {
+            try {
+                let users = await api('/api/users');
+                // BranchAdmin sees only themselves
+                if (role === 'BranchAdmin') {
+                    const uid = localStorage.getItem('userId');
+                    users = users.filter(u => u.id === uid);
+                }
+                showList(users);
+            } catch (err) {
+                listDiv.innerHTML = '<p>Error loading users: ' + err.message + '</p>';
+            }
+        }
+        loadUsers();
+    </script>
+</body>
+</html>

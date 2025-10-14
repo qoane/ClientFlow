@@ -1,0 +1,916 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>ClientFlow — Super Admin Settings</title>
+    <style>
+        :root {
+            --bg: #0b1020;
+            --panel: #121936;
+            --panel2: #0f1530;
+            --muted: #9fb0ff;
+            --text: #eef1ff;
+            --accent: #6cf0c2;
+            --accent2: #89b4ff;
+            --danger: #ff6b6b;
+            --warn: #ffd166;
+            --ok: #22c55e;
+            --border: rgba(255,255,255,.08);
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        html, body {
+            height: 100%
+        }
+
+        body {
+            margin: 0;
+            background: radial-gradient(1200px 800px at 80% -10%,#1b2550 0%,transparent 60%),var(--bg);
+            color: var(--text);
+            font: 14px/1.45 system-ui,-apple-system,Segoe UI,Roboto
+        }
+
+        /* Shell & header */
+        .app {
+            display: grid;
+            grid-template-rows: 64px 1fr;
+            min-height: 100vh
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 0 20px;
+            border-bottom: 1px solid var(--border);
+            background: linear-gradient(180deg,#141c3f,#0e1533)
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700
+        }
+
+        .logo {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            background: conic-gradient(from 210deg,var(--accent),var(--accent2));
+            box-shadow: 0 0 0 2px rgba(255,255,255,.07) inset
+        }
+
+        .tag {
+            padding: 2px 8px;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            color: #b9c6ff;
+            font-size: 12px
+        }
+
+        .toolbar {
+            margin-left: auto;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: linear-gradient(180deg,#1a2248,#141c3f);
+            color: #e9eeff;
+            cursor: pointer;
+            user-select: none
+        }
+
+            .btn:disabled {
+                opacity: .6;
+                cursor: not-allowed
+            }
+
+            .btn.accent {
+                background: linear-gradient(180deg,#19cba0,#0dbb93);
+                color: #031b15;
+                border: none
+            }
+
+            .btn.danger {
+                background: linear-gradient(180deg,#ef4444,#dc2626);
+                color: #fff;
+                border: none
+            }
+
+            .btn.ghost {
+                background: transparent;
+                border: 1px solid var(--border)
+            }
+
+        .icon {
+            opacity: .9
+        }
+
+        /* Layout */
+        .shell {
+            display: grid;
+            grid-template-columns: 260px 1fr;
+            gap: 12px;
+            padding: 12px
+        }
+
+        @media (max-width:1060px) {
+            .shell {
+                grid-template-columns: 1fr
+            }
+        }
+
+        .side {
+            display: grid;
+            gap: 10px;
+            height: max-content;
+            position: sticky;
+            top: 12px
+        }
+
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,.15);
+            overflow: hidden
+        }
+
+        .head {
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between
+        }
+
+        .body {
+            padding: 12px 14px
+        }
+
+        .muted {
+            color: var(--muted)
+        }
+
+        /* Nav */
+        .nav a {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: linear-gradient(180deg,#1a2248,#141c3f);
+            text-decoration: none;
+            color: #e9eeff
+        }
+
+            .nav a.active {
+                box-shadow: 0 0 0 2px #19cba044
+            }
+
+        .nav .small {
+            font-size: 12px;
+            color: #b9c6ff
+        }
+
+        /* Forms */
+        label {
+            font-size: 12px;
+            color: #b9c6ff
+        }
+
+        input[type="text"], input[type="email"], input[type="file"], input[type="number"], select, textarea {
+            width: 100%;
+            padding: 8px 10px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: var(--panel2);
+            color: var(--text)
+        }
+
+        textarea {
+            min-height: 80px
+        }
+
+        .grid2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px
+        }
+
+        .grid3 {
+            display: grid;
+            grid-template-columns: repeat(3,1fr);
+            gap: 10px
+        }
+
+        .row {
+            display: flex;
+            gap: 8px;
+            align-items: center
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 42px;
+            height: 24px
+        }
+
+            .switch input {
+                display: none
+            }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background: #263058;
+            border: 1px solid var(--border);
+            transition: .2s;
+            border-radius: 999px
+        }
+
+            .slider:before {
+                content: "";
+                position: absolute;
+                height: 18px;
+                width: 18px;
+                left: 3px;
+                top: 2px;
+                background: #cfe0ff;
+                border-radius: 50%;
+                transition: .2s
+            }
+
+        .switch input:checked + .slider {
+            background: #0dbb93
+        }
+
+            .switch input:checked + .slider:before {
+                transform: translateX(18px);
+                background: #031b15
+            }
+
+        /* Tables (mini) */
+        .table {
+            width: 100%;
+            border-collapse: collapse
+        }
+
+            .table th, .table td {
+                padding: 8px;
+                border-bottom: 1px solid var(--border)
+            }
+
+            .table thead th {
+                color: #cfe0ff;
+                background: #0c1330;
+                text-align: left
+            }
+
+        .chip {
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            padding: 2px 8px;
+            font-size: 12px;
+            color: #cfe0ff;
+            background: rgba(255,255,255,.03)
+        }
+
+        .hl {
+            color: #89b4ff
+        }
+
+        /* Modal */
+        .modal {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,0,0,.55);
+            z-index: 50
+        }
+
+            .modal .dialog {
+                background: var(--panel);
+                border: 1px solid var(--border);
+                border-radius: 16px;
+                max-width: 760px;
+                width: 92%
+            }
+
+            .modal .head {
+                border-bottom: 1px solid var(--border)
+            }
+
+            .modal .foot {
+                display: flex;
+                gap: 8px;
+                justify-content: flex-end;
+                padding: 12px 14px;
+                border-top: 1px solid var(--border)
+            }
+
+        .toast {
+            position: fixed;
+            right: 18px;
+            bottom: 18px;
+            background: #0f1530;
+            border: 1px solid var(--border);
+            padding: 10px 14px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,.3)
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <header>
+            <div class="brand"><div class="logo"></div> ClientFlow — <span class="hl">Super Admin</span> Settings <span class="tag">Mock • Local Only</span></div>
+            <div class="toolbar">
+                <button class="btn ghost" id="btnImport">Import JSON</button>
+                <button class="btn" id="btnExport">Export JSON</button>
+                <button class="btn accent" id="btnSave">Save Changes</button>
+            </div>
+        </header>
+
+        <div class="shell">
+            <!-- LEFT NAV -->
+            <aside class="side">
+                <div class="panel">
+                    <div class="head"><strong>Sections</strong></div>
+                    <div class="body nav" id="nav">
+                        <a href="#branding" class="active">Branding <span class="small" style="margin-left:auto">logo, colors</span></a>
+                        <a href="#email">Email & Reports <span class="small" style="margin-left:auto">schedules</span></a>
+                        <a href="#users">User Management <span class="small" style="margin-left:auto">roles, status</span></a>
+                        <a href="#roles">Types of Users</a>
+                        <a href="#kiosks">Kiosk Locations</a>
+                        <a href="#features">Features & Toggles</a>
+                        <a href="#security">Security & Access</a>
+                        <a href="#integrations">Integrations</a>
+                        <a href="#audit">Audit Log</a>
+                    </div>
+                </div>
+                <div class="panel">
+                    <div class="head"><strong>Theme</strong><span class="tag">Live</span></div>
+                    <div class="body grid3">
+                        <div><label>Accent</label><input type="color" id="colAccent" value="#6cf0c2"></div>
+                        <div><label>Panel</label><input type="color" id="colPanel" value="#0f1530"></div>
+                        <div><label>Logo (preview)</label><div id="previewLogo" style="height:40px;border:1px dashed var(--border);border-radius:10px;display:flex;align-items:center;justify-content:center">—</div></div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- RIGHT CONTENT -->
+            <main style="display:grid;gap:12px">
+
+                <!-- Branding -->
+                <section id="branding" class="panel">
+                    <div class="head">
+                        <strong>Branding</strong>
+                        <span class="chip">Company identity & styling</span>
+                    </div>
+                    <div class="body grid2">
+                        <div>
+                            <div class="grid2">
+                                <div><label>Company Name</label><input id="companyName" placeholder="BeeOnline / Liberty Life Lesotho"></div>
+                                <div><label>Tagline</label><input id="companyTagline" placeholder="Delight in every interaction"></div>
+                            </div>
+                            <div class="grid2" style="margin-top:10px">
+                                <div><label>Primary Email</label><input id="companyEmail" type="email" placeholder="admin@company.com"></div>
+                                <div><label>Support Phone</label><input id="companyPhone" type="text" placeholder="+266 ..."></div>
+                            </div>
+                            <div style="margin-top:10px">
+                                <label>Custom CSS (scoped hints)</label>
+                                <textarea id="customCss" placeholder=":root { --accent:#19cba0; }"></textarea>
+                            </div>
+                        </div>
+                        <div>
+                            <div><label>Logo Upload</label><input id="logoInput" type="file" accept="image/*"></div>
+                            <div class="row" style="margin-top:10px">
+                                <label>Dark Header</label>
+                                <label class="switch"><input id="darkHeader" type="checkbox" checked><span class="slider"></span></label>
+                            </div>
+                            <div class="row">
+                                <label>Show “beta” tag</label>
+                                <label class="switch"><input id="showBeta" type="checkbox"><span class="slider"></span></label>
+                            </div>
+                            <div class="row">
+                                <label>Compact mode</label>
+                                <label class="switch"><input id="compact" type="checkbox"><span class="slider"></span></label>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Email & Reports -->
+                <section id="email" class="panel">
+                    <div class="head">
+                        <strong>Email & Scheduled Reports</strong>
+                        <div class="row">
+                            <span class="tag" id="reportSummary">Not configured</span>
+                            <button class="btn" id="btnScheduleModal">Configure Schedule</button>
+                        </div>
+                    </div>
+                    <div class="body grid2">
+                        <div>
+                            <label>Default “From” Address</label>
+                            <input id="mailFrom" type="email" placeholder="noreply@company.com">
+                        </div>
+                        <div>
+                            <label>SMTP Host</label>
+                            <input id="smtpHost" placeholder="smtp.mailhost.com">
+                        </div>
+                        <div>
+                            <label>SMTP Username</label>
+                            <input id="smtpUser" placeholder="smtp user">
+                        </div>
+                        <div>
+                            <label>SMTP Password</label>
+                            <input id="smtpPass" placeholder="••••••••">
+                        </div>
+                    </div>
+                </section>
+
+                <!-- User Management -->
+                <section id="users" class="panel">
+                    <div class="head">
+                        <strong>Users</strong>
+                        <div class="row">
+                            <span class="tag" id="userCount">0 users</span>
+                            <button class="btn" id="btnUserModal">Manage Users</button>
+                        </div>
+                    </div>
+                    <div class="body">
+                        <table class="table" id="usersTable">
+                            <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                        <div class="muted" style="margin-top:6px">Use “Manage Users” to add / edit / deactivate.</div>
+                    </div>
+                </section>
+
+                <!-- Types of Users -->
+                <section id="roles" class="panel">
+                    <div class="head"><strong>Types of Users</strong><button class="btn" id="btnAddRole">Add Type</button></div>
+                    <div class="body">
+                        <div class="row" id="roleChips" style="flex-wrap:wrap;gap:8px"></div>
+                        <div class="muted" style="margin-top:8px">Examples: Super Admin, Admin, Manager, Agent, Kiosk, Viewer.</div>
+                    </div>
+                </section>
+
+                <!-- Kiosk Locations -->
+                <section id="kiosks" class="panel">
+                    <div class="head"><strong>Kiosk Locations</strong><button class="btn" id="btnKioskModal">Add Location</button></div>
+                    <div class="body">
+                        <table class="table" id="kioskTable">
+                            <thead><tr><th>Code</th><th>Name</th><th>Address</th><th>Status</th><th>Last Ping</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Features & Toggles -->
+                <section id="features" class="panel">
+                    <div class="head"><strong>Features & Toggles</strong><span class="tag">Flags</span></div>
+                    <div class="body grid3">
+                        <div class="row"><label>Enable NPS Module</label><label class="switch"><input id="fNps" type="checkbox" checked><span class="slider"></span></label></div>
+                        <div class="row"><label>Kiosk Mode</label><label class="switch"><input id="fKiosk" type="checkbox"><span class="slider"></span></label></div>
+                        <div class="row"><label>Realtime Notifications</label><label class="switch"><input id="fRealtime" type="checkbox" checked><span class="slider"></span></label></div>
+                        <div class="row"><label>Self-Signup</label><label class="switch"><input id="fSignup" type="checkbox"><span class="slider"></span></label></div>
+                        <div class="row"><label>Customer Portal</label><label class="switch"><input id="fPortal" type="checkbox"><span class="slider"></span></label></div>
+                        <div class="row"><label>Data Retention (days)</label><input id="retention" type="number" min="1" value="365" style="width:100px"></div>
+                    </div>
+                </section>
+
+                <!-- Security -->
+                <section id="security" class="panel">
+                    <div class="head"><strong>Security & Access</strong><span class="tag">Policies</span></div>
+                    <div class="body grid3">
+                        <div class="row"><label>Require MFA</label><label class="switch"><input id="secMfa" type="checkbox" checked><span class="slider"></span></label></div>
+                        <div class="row"><label>Enforce SSO</label><label class="switch"><input id="secSso" type="checkbox"><span class="slider"></span></label></div>
+                        <div class="row"><label>Password Length</label><input id="secLen" type="number" min="8" value="12" style="width:100px"></div>
+                        <div class="row"><label>Lockout Threshold</label><input id="secLock" type="number" min="3" value="5" style="width:100px"></div>
+                        <div class="row"><label>Session Timeout (min)</label><input id="secTimeout" type="number" min="5" value="30" style="width:120px"></div>
+                    </div>
+                </section>
+
+                <!-- Integrations -->
+                <section id="integrations" class="panel">
+                    <div class="head"><strong>Integrations</strong><span class="tag">Webhooks & APIs</span></div>
+                    <div class="body grid2">
+                        <div><label>Webhook URL</label><input id="whUrl" placeholder="https://example.com/hook"></div>
+                        <div><label>API Key</label><input id="apiKey" placeholder="sk_live_xxx"></div>
+                        <div class="grid2" style="grid-column:1/-1">
+                            <div class="row"><label>Send Events</label><label class="switch"><input id="whSend" type="checkbox"><span class="slider"></span></label></div>
+                            <div class="row"><label>Retry on Fail</label><label class="switch"><input id="whRetry" type="checkbox" checked><span class="slider"></span></label></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Audit -->
+                <section id="audit" class="panel">
+                    <div class="head"><strong>Audit Log</strong><button class="btn ghost" id="btnClearAudit">Clear</button></div>
+                    <div class="body">
+                        <table class="table" id="auditTable">
+                            <thead><tr><th>When</th><th>Actor</th><th>Action</th><th>Detail</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </section>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- User Modal -->
+    <div class="modal" id="userModal">
+        <div class="dialog">
+            <div class="head"><strong>User Management</strong><button class="btn" data-close>✕</button></div>
+            <div class="body">
+                <div class="row" style="justify-content:space-between;margin-bottom:8px">
+                    <div class="row"><button class="btn" id="btnAddUser">Add User</button></div>
+                    <div class="row"><label>Show inactive</label><label class="switch"><input id="showInactive" type="checkbox"><span class="slider"></span></label></div>
+                </div>
+                <table class="table" id="userModalTable">
+                    <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th></th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <div class="foot">
+                <button class="btn" data-close>Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit User Modal -->
+    <div class="modal" id="editUserModal">
+        <div class="dialog">
+            <div class="head"><strong id="editUserTitle">New User</strong><button class="btn" data-close>✕</button></div>
+            <div class="body grid2">
+                <div><label>Full Name</label><input id="uName"></div>
+                <div><label>Email</label><input id="uEmail" type="email"></div>
+                <div><label>Role</label><select id="uRole"></select></div>
+                <div class="row" style="align-items:flex-end">
+                    <label>Active</label>
+                    <label class="switch"><input id="uActive" type="checkbox" checked><span class="slider"></span></label>
+                </div>
+            </div>
+            <div class="foot">
+                <button class="btn" data-close>Cancel</button>
+                <button class="btn accent" id="btnSaveUser">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Schedule Modal -->
+    <div class="modal" id="scheduleModal">
+        <div class="dialog">
+            <div class="head"><strong>Scheduled Reports</strong><button class="btn" data-close>✕</button></div>
+            <div class="body grid2">
+                <div><label>Recipient Emails (comma-separated)</label><textarea id="schedEmails" placeholder="ops@example.com, cto@example.com"></textarea></div>
+                <div class="grid2">
+                    <div>
+                        <label>Frequency</label>
+                        <select id="schedFreq"><option>Daily</option><option>Weekly</option><option>Monthly</option></select>
+                    </div>
+                    <div><label>Time (24h)</label><input id="schedTime" placeholder="08:00"></div>
+                    <div class="row"><label>Attach CSV</label><label class="switch"><input id="schedCsv" type="checkbox" checked><span class="slider"></span></label></div>
+                    <div class="row"><label>Include Charts (PNG)</label><label class="switch"><input id="schedPng" type="checkbox"><span class="slider"></span></label></div>
+                </div>
+            </div>
+            <div class="foot">
+                <button class="btn" data-close>Cancel</button>
+                <button class="btn accent" id="btnSaveSchedule">Save Schedule</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Kiosk Modal -->
+    <div class="modal" id="kioskModal">
+        <div class="dialog">
+            <div class="head"><strong>Kiosk Location</strong><button class="btn" data-close>✕</button></div>
+            <div class="body grid2">
+                <div><label>Code</label><input id="kCode" placeholder="KIOSK-01"></div>
+                <div><label>Name</label><input id="kName" placeholder="Maseru HQ"></div>
+                <div style="grid-column:1/-1"><label>Address</label><input id="kAddr" placeholder="Kingsway Road, Maseru"></div>
+                <div class="row"><label>Active</label><label class="switch"><input id="kActive" type="checkbox" checked><span class="slider"></span></label></div>
+            </div>
+            <div class="foot">
+                <button class="btn" data-close>Cancel</button>
+                <button class="btn accent" id="btnSaveKiosk">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+  // --- Persist helpers ---
+  const storeKey='cf_settings_v1';
+  const S=()=>JSON.parse(localStorage.getItem(storeKey)||'{}');
+  const W=(obj)=>localStorage.setItem(storeKey,JSON.stringify(obj));
+  const now=()=>new Date().toISOString().replace('T',' ').slice(0,19);
+  const toast=(m)=>{const t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),2200);};
+  const elm=(id)=>document.getElementById(id);
+
+  // --- Initial seed (if empty) ---
+  if(!localStorage.getItem(storeKey)){
+    W({
+      branding:{name:'ClientFlow',tagline:'Experience that delights',email:'admin@company.com',phone:'+266 000 0000',darkHeader:true,showBeta:false,compact:false,css:'',accent:'#6cf0c2',panel:'#0f1530',logoDataUrl:''},
+      mail:{from:'noreply@company.com',host:'smtp.example.com',user:'smtp-user',pass:'secret',schedule:{emails:['ops@company.com'],freq:'Weekly',time:'08:00',csv:true,png:false}},
+      roles:['Super Admin','Admin','Manager','Agent','Kiosk','Viewer'],
+      users:[
+        {id:1,name:'Qoane Seitlheko',email:'sqoane@gmail.com',role:'Super Admin',active:true},
+        {id:2,name:'Sakhile Nxumalo',email:'sakhile@boxfusion.co.za',role:'Admin',active:true},
+        {id:3,name:'Bee Kiosk',email:'kiosk@bee.online',role:'Kiosk',active:false}
+      ],
+      kiosks:[
+        {code:'BEE-01',name:'BeeOnline First',addr:'Kingsway Road, Maseru',active:true,last:'2025-02-11 09:05:00'},
+        {code:'LIB-01',name:'Liberty HQ',addr:'Pioneer Rd, Maseru',active:true,last:'2025-02-11 08:17:00'}
+      ],
+      flags:{nps:true,kiosk:false,realtime:true,signup:false,portal:false,retention:365},
+      security:{mfa:true,sso:false,len:12,lock:5,timeout:30},
+      webhooks:{url:'',key:'',send:false,retry:true},
+      audit:[
+        {at:now(),actor:'System',action:'Seed',detail:'Default settings created'}
+      ]
+    });
+  }
+
+  // --- UI bind ---
+  const bind = {
+    branding(){
+      const s=S().branding;
+      elm('companyName').value=s.name||'';
+      elm('companyTagline').value=s.tagline||'';
+      elm('companyEmail').value=s.email||'';
+      elm('companyPhone').value=s.phone||'';
+      elm('customCss').value=s.css||'';
+      elm('darkHeader').checked=!!s.darkHeader;
+      elm('showBeta').checked=!!s.showBeta;
+      elm('compact').checked=!!s.compact;
+      elm('colAccent').value=s.accent||'#6cf0c2';
+      elm('colPanel').value=s.panel||'#0f1530';
+      previewLogo(s.logoDataUrl);
+      // live theme
+      document.documentElement.style.setProperty('--accent', s.accent||'#6cf0c2');
+      document.documentElement.style.setProperty('--panel2', s.panel||'#0f1530');
+    },
+    mail(){
+      const m=S().mail;
+      elm('mailFrom').value=m.from||'';
+      elm('smtpHost').value=m.host||'';
+      elm('smtpUser').value=m.user||'';
+      elm('smtpPass').value=m.pass||'';
+      renderScheduleSummary(m.schedule);
+    },
+    roles(){
+      const r=S().roles||[];
+      renderRoleChips(r);
+      // fill role dropdown for user editor
+      const sel=elm('uRole'); sel.innerHTML=r.map(x=>`<option>${x}</option>`).join('');
+    },
+    users(){
+      const u=S().users||[];
+      const tb=elm('usersTable').querySelector('tbody'); tb.innerHTML='';
+      u.filter(x=>x.active).forEach(x=>{
+        const tr=document.createElement('tr');
+        tr.innerHTML=`<td>${x.name}</td><td>${x.email}</td><td>${x.role}</td><td>${x.active?'Active':'Inactive'}</td>`;
+        tb.appendChild(tr);
+      });
+      elm('userCount').textContent=`${u.length} users`;
+    },
+    kiosks(){
+      const ks=S().kiosks||[];
+      const tb=elm('kioskTable').querySelector('tbody'); tb.innerHTML='';
+      ks.forEach(k=>{
+        const tr=document.createElement('tr');
+        tr.innerHTML=`<td>${k.code}</td><td>${k.name}</td><td>${k.addr}</td><td>${k.active?'Online':'Offline'}</td><td>${k.last||'—'}</td>`;
+        tb.appendChild(tr);
+      });
+    },
+    flags(){
+      const f=S().flags;
+      elm('fNps').checked=!!f.nps; elm('fKiosk').checked=!!f.kiosk; elm('fRealtime').checked=!!f.realtime;
+      elm('fSignup').checked=!!f.signup; elm('fPortal').checked=!!f.portal; elm('retention').value=f.retention||365;
+    },
+    security(){
+      const s=S().security;
+      elm('secMfa').checked=!!s.mfa; elm('secSso').checked=!!s.sso; elm('secLen').value=s.len||12;
+      elm('secLock').value=s.lock||5; elm('secTimeout').value=s.timeout||30;
+    },
+    webhooks(){
+      const w=S().webhooks;
+      elm('whUrl').value=w.url||''; elm('apiKey').value=w.key||'';
+      elm('whSend').checked=!!w.send; elm('whRetry').checked=!!w.retry;
+    },
+    audit(){
+      const a=S().audit||[]; const tb=elm('auditTable').querySelector('tbody'); tb.innerHTML='';
+      a.slice().reverse().forEach(x=>{
+        const tr=document.createElement('tr');
+        tr.innerHTML=`<td>${x.at}</td><td>${x.actor}</td><td>${x.action}</td><td>${x.detail}</td>`;
+        tb.appendChild(tr);
+      });
+    }
+  };
+
+  // --- Render helpers ---
+  function renderScheduleSummary(s){
+    if(!s||!(s.emails||[]).length){ elm('reportSummary').textContent='Not configured'; return; }
+    elm('reportSummary').textContent = `${s.freq} @ ${s.time} → ${s.emails.join(', ')}`;
+  }
+  function renderRoleChips(r){
+    const wrap=elm('roleChips'); wrap.innerHTML='';
+    r.forEach((name,i)=>{
+      const chip=document.createElement('span'); chip.className='chip'; chip.textContent=name;
+      chip.style.display='inline-flex'; chip.style.alignItems='center'; chip.style.gap='8px';
+      const del=document.createElement('button'); del.className='btn danger'; del.textContent='×'; del.style.padding='2px 6px';
+      del.onclick=()=>{ const st=S(); st.roles.splice(i,1); W(st); bind.roles(); toast('Role removed'); };
+      chip.appendChild(del); wrap.appendChild(chip);
+    });
+  }
+  function previewLogo(dataUrl){
+    const box=elm('previewLogo');
+    if(!dataUrl){ box.textContent='—'; box.style.background='transparent'; return; }
+    box.textContent=''; box.style.background=`url(${dataUrl}) center/contain no-repeat`;
+  }
+
+  // --- Navigation active state ---
+  document.querySelectorAll('#nav a').forEach(a=>{
+    a.onclick=(e)=>{
+      document.querySelectorAll('#nav a').forEach(x=>x.classList.remove('active'));
+      e.currentTarget.classList.add('active');
+    };
+  });
+
+  // --- Theme live controls ---
+  elm('colAccent').oninput=(e)=>{ document.documentElement.style.setProperty('--accent', e.target.value); const st=S(); st.branding.accent=e.target.value; W(st); };
+  elm('colPanel').oninput=(e)=>{ document.documentElement.style.setProperty('--panel2', e.target.value); const st=S(); st.branding.panel=e.target.value; W(st); };
+
+  // --- File upload (logo) ---
+  elm('logoInput').onchange=(ev)=>{
+    const f=ev.target.files?.[0]; if(!f) return;
+    const reader=new FileReader(); reader.onload=()=>{
+      previewLogo(reader.result);
+      const st=S(); st.branding.logoDataUrl=reader.result; W(st);
+      addAudit('Logo Updated','Uploaded new logo');
+    }; reader.readAsDataURL(f);
+  };
+
+  // --- Buttons: Save/Export/Import ---
+  elm('btnSave').onclick=()=>{
+    const st=S();
+    st.branding.name=elm('companyName').value.trim();
+    st.branding.tagline=elm('companyTagline').value.trim();
+    st.branding.email=elm('companyEmail').value.trim();
+    st.branding.phone=elm('companyPhone').value.trim();
+    st.branding.css=elm('customCss').value;
+    st.branding.darkHeader=elm('darkHeader').checked;
+    st.branding.showBeta=elm('showBeta').checked;
+    st.branding.compact=elm('compact').checked;
+
+    st.mail.from=elm('mailFrom').value.trim();
+    st.mail.host=elm('smtpHost').value.trim();
+    st.mail.user=elm('smtpUser').value.trim();
+    st.mail.pass=elm('smtpPass').value.trim();
+
+    st.flags.nps=elm('fNps').checked; st.flags.kiosk=elm('fKiosk').checked; st.flags.realtime=elm('fRealtime').checked;
+    st.flags.signup=elm('fSignup').checked; st.flags.portal=elm('fPortal').checked; st.flags.retention=parseInt(elm('retention').value||'365');
+
+    st.security.mfa=elm('secMfa').checked; st.security.sso=elm('secSso').checked;
+    st.security.len=parseInt(elm('secLen').value||'12'); st.security.lock=parseInt(elm('secLock').value||'5'); st.security.timeout=parseInt(elm('secTimeout').value||'30');
+
+    st.webhooks.url=elm('whUrl').value.trim(); st.webhooks.key=elm('apiKey').value.trim();
+    st.webhooks.send=elm('whSend').checked; st.webhooks.retry=elm('whRetry').checked;
+
+    W(st);
+    addAudit('Settings Saved','All sections saved');
+    bind.audit();
+    toast('Saved ✓');
+  };
+
+  elm('btnExport').onclick=()=>{
+    const data=localStorage.getItem(storeKey)||'{}';
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(new Blob([data],{type:'application/json'}));
+    a.download='clientflow_settings.json'; a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+  };
+  elm('btnImport').onclick=()=>{
+    const i=document.createElement('input'); i.type='file'; i.accept='application/json';
+    i.onchange=()=>{ const f=i.files?.[0]; if(!f) return; const r=new FileReader(); r.onload=()=>{
+      try{ const obj=JSON.parse(r.result); W(obj); refreshAll(); addAudit('Import','Settings imported from JSON'); bind.audit(); toast('Imported ✓'); }
+      catch{ alert('Invalid JSON'); }
+    }; r.readAsText(f); }; i.click();
+  };
+
+  // --- Modals ---
+  function openModal(id){ const m=elm(id); m.style.display='flex'; m.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>m.style.display='none'); }
+  function closeModal(id){ elm(id).style.display='none'; }
+
+  // User modal
+  elm('btnUserModal').onclick=()=>{ renderUserModal(); openModal('userModal'); };
+  elm('showInactive').onchange=()=>renderUserModal();
+
+  function renderUserModal(){
+    const st=S(); const users=st.users; const showInact=elm('showInactive').checked;
+    const tb=elm('userModalTable').querySelector('tbody'); tb.innerHTML='';
+    users.filter(u=>showInact || u.active).forEach(u=>{
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td>${u.name}</td><td>${u.email}</td><td>${u.role}</td><td>${u.active?'Active':'Inactive'}</td>
+        <td class="row" style="justify-content:flex-end">
+          <button class="btn" data-edit="${u.id}">Edit</button>
+          <button class="btn danger" data-del="${u.id}">Delete</button>
+        </td>`;
+      tb.appendChild(tr);
+    });
+    tb.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>editUser(parseInt(b.dataset.edit)));
+    tb.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>delUser(parseInt(b.dataset.del)));
+  }
+  elm('btnAddUser').onclick=()=>editUser(null);
+
+  function editUser(id){
+    const st=S(); const roles=st.roles;
+    const user = id? st.users.find(x=>x.id===id) : {id:Date.now(),name:'',email:'',role:roles[0]||'Viewer',active:true};
+    elm('uName').value=user.name; elm('uEmail').value=user.email; elm('uActive').checked=!!user.active;
+    const sel=elm('uRole'); sel.innerHTML=roles.map(r=>`<option ${r===user.role?'selected':''}>${r}</option>`).join('');
+    elm('editUserTitle').textContent = id? 'Edit User' : 'New User';
+    openModal('editUserModal');
+    elm('btnSaveUser').onclick=()=>{
+      user.name=elm('uName').value.trim();
+      user.email=elm('uEmail').value.trim();
+      user.role=elm('uRole').value;
+      user.active=elm('uActive').checked;
+      if(!user.name||!user.email){ alert('Name & Email required'); return; }
+      const i=st.users.findIndex(x=>x.id===user.id);
+      if(i===-1){ st.users.push(user); addAudit('User Added',user.email); }
+      else { st.users[i]=user; addAudit('User Updated',user.email); }
+      W(st); bind.users(); renderUserModal(); closeModal('editUserModal'); toast('User saved ✓');
+    };
+  }
+  function delUser(id){
+    const st=S(); const u=st.users.find(x=>x.id===id); if(!u) return;
+    if(!confirm('Delete user '+u.email+'?')) return;
+    st.users = st.users.filter(x=>x.id!==id); W(st); bind.users(); renderUserModal(); addAudit('User Deleted',u.email);
+  }
+
+  // Roles
+  elm('btnAddRole').onclick=()=>{
+    const name=prompt('New user type (role) name?'); if(!name) return;
+    const st=S(); if(st.roles.includes(name)){ alert('Role exists'); return; }
+    st.roles.push(name); W(st); bind.roles(); toast('Role added ✓');
+  };
+
+  // Schedule modal
+  elm('btnScheduleModal').onclick=()=>{ const s=S().mail.schedule;
+    elm('schedEmails').value=(s.emails||[]).join(', ');
+    elm('schedFreq').value=s.freq||'Weekly';
+    elm('schedTime').value=s.time||'08:00';
+    elm('schedCsv').checked=!!s.csv; elm('schedPng').checked=!!s.png;
+    openModal('scheduleModal');
+  };
+  elm('btnSaveSchedule').onclick=()=>{
+    const st=S(); const emails=elm('schedEmails').value.split(',').map(x=>x.trim()).filter(Boolean);
+    st.mail.schedule={ emails, freq:elm('schedFreq').value, time:elm('schedTime').value, csv:elm('schedCsv').checked, png:elm('schedPng').checked };
+    W(st); renderScheduleSummary(st.mail.schedule); addAudit('Report Schedule','Updated schedule'); closeModal('scheduleModal'); toast('Schedule saved ✓');
+  };
+
+  // Kiosk modal
+  elm('btnKioskModal').onclick=()=>{ elm('kCode').value=''; elm('kName').value=''; elm('kAddr').value=''; elm('kActive').checked=true; openModal('kioskModal'); };
+  elm('btnSaveKiosk').onclick=()=>{
+    const st=S(); const ks=st.kiosks;
+    const code=elm('kCode').value.trim(); const name=elm('kName').value.trim(); const addr=elm('kAddr').value.trim(); const active=elm('kActive').checked;
+    if(!code||!name){ alert('Code & Name required'); return; }
+    const ex=ks.findIndex(k=>k.code===code);
+    const row={code,name,addr,active,last:now()};
+    if(ex===-1){ ks.push(row); addAudit('Kiosk Added',code); } else { ks[ex]=row; addAudit('Kiosk Updated',code); }
+    W(st); bind.kiosks(); closeModal('kioskModal'); toast('Kiosk saved ✓');
+  };
+
+  // Audit clear
+  elm('btnClearAudit').onclick=()=>{ if(!confirm('Clear audit log?')) return; const st=S(); st.audit=[]; W(st); bind.audit(); toast('Audit cleared'); };
+
+  // Add audit entry
+  function addAudit(action,detail){ const st=S(); st.audit = st.audit || []; st.audit.push({at:now(),actor:'SuperAdmin',action,detail}); W(st); }
+
+  // Initial render
+  function refreshAll(){ bind.branding(); bind.mail(); bind.roles(); bind.users(); bind.kiosks(); bind.flags(); bind.security(); bind.webhooks(); bind.audit(); }
+  refreshAll();
+    </script>
+</body>
+</html>

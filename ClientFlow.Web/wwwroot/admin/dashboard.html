@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>ClientFlow — Admin Dashboard</title>
+    <style>
+        :root {
+            --bg: #0b1020;
+            --panel: #121936;
+            --panel2: #0f1530;
+            --border: rgba(255,255,255,.08);
+            --muted: #9fb0ff;
+            --text: #eef1ff;
+            --accent: #6cf0c2;
+            --accent2: #89b4ff;
+            --danger: #ff6b6b;
+            --warn: #ffd166;
+            --ok: #22c55e;
+        }
+        * { box-sizing: border-box; }
+        html, body { height: 100%; margin: 0; }
+        body {
+            background: radial-gradient(1200px 800px at 80% -10%,#1b2550 0%,transparent 60%),var(--bg);
+            color: var(--text);
+            font-family: system-ui,-apple-system,Segoe UI,Roboto;
+            display: grid;
+            grid-template-rows: 64px 1fr;
+        }
+        header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 0 20px;
+            border-bottom: 1px solid var(--border);
+            background: linear-gradient(180deg,#141c3f,#0e1533);
+        }
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+        }
+        .logo {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            background: conic-gradient(from 210deg,var(--accent),var(--accent2));
+            box-shadow: 0 0 0 2px rgba(255,255,255,.07) inset;
+        }
+        .toolbar {
+            margin-left: auto;
+        }
+        .toolbar button {
+            padding: 8px 12px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: linear-gradient(180deg,#1a2248,#141c3f);
+            color: var(--text);
+            cursor: pointer;
+        }
+        .shell {
+            display: grid;
+            grid-template-columns: 220px 1fr;
+            gap: 12px;
+            height: 100%;
+            overflow: hidden;
+        }
+        @media (max-width: 900px) {
+            .shell {
+                grid-template-columns: 1fr;
+            }
+        }
+        nav {
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        nav a {
+            text-decoration: none;
+            color: var(--text);
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: linear-gradient(180deg,#1a2248,#141c3f);
+        }
+        nav a.active {
+            box-shadow: 0 0 0 2px #19cba044;
+        }
+        main {
+            padding: 12px;
+            overflow-y: auto;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 12px;
+        }
+        .card {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,.15);
+        }
+        .card h2 {
+            margin: 0 0 8px 0;
+            font-size: 18px;
+        }
+        .value {
+            font-size: 32px;
+            font-weight: 700;
+        }
+        canvas {
+            width: 100% !important;
+            height: 300px !important;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <header>
+        <div class="brand">
+            <div class="logo"></div>
+            <div>ClientFlow</div>
+        </div>
+        <div class="toolbar">
+            <span id="userEmail" style="margin-right:12px;color:var(--muted);"></span>
+            <button id="signOut">Sign Out</button>
+        </div>
+    </header>
+    <div class="shell">
+        <nav>
+            <a href="/admin/dashboard.html" class="active">Dashboard</a>
+            <a href="/admin/branches.html">Branches</a>
+            <a href="/admin/users.html">Users</a>
+            <a href="/admin/settings.html">Settings</a>
+            <a href="/admin/flow-dash.html">Surveys</a>
+            <a href="/kiosk-dashboard.html" target="_blank">Kiosk Dashboard</a>
+        </nav>
+        <main>
+            <h1>Overview</h1>
+            <div class="grid">
+                <div class="card">
+                    <h2>Branches</h2>
+                    <div class="value" id="branchCount">–</div>
+                </div>
+                <div class="card">
+                    <h2>Feedback (24h)</h2>
+                    <div class="value" id="feedbackCount">–</div>
+                </div>
+                <div class="card">
+                    <h2>Average Overall</h2>
+                    <div class="value" id="avgOverall">–</div>
+                </div>
+            </div>
+            <div class="card" style="margin-top:20px;">
+                <h2>Overall Ratings Distribution</h2>
+                <canvas id="chart"></canvas>
+            </div>
+        </main>
+    </div>
+    <script>
+        // Ensure authenticated
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+            window.location.href = '/login.html';
+        }
+        // Display logged in user's email in header (if present)
+        const spanUserEmail = document.getElementById('userEmail');
+        if (spanUserEmail) {
+            spanUserEmail.textContent = localStorage.getItem('userEmail') || '';
+        }
+        document.getElementById('signOut').addEventListener('click', () => {
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('userRole');
+            localStorage.removeItem('branchId');
+            window.location.href = '/login.html';
+        });
+        async function fetchJSON(url) {
+            const res = await fetch(url, { headers: { 'Authorization': 'Bearer ' + token } });
+            if (!res.ok) throw new Error('API error');
+            return res.json();
+        }
+        async function loadData() {
+            try {
+                // Branch count
+                const branches = await fetchJSON('/api/branches');
+                document.getElementById('branchCount').textContent = branches.length;
+                // Feedback summary (last 24h)
+                const since = new Date(Date.now() - 24*60*60*1000).toISOString();
+                const summary = await fetchJSON('/api/feedback/summary?from=' + since);
+                document.getElementById('feedbackCount').textContent = summary.total;
+                document.getElementById('avgOverall').textContent = summary.avgOverall.toFixed(2);
+                // Chart data
+                const labels = summary.overallCounts.map(x => x.rating);
+                const data = summary.overallCounts.map(x => x.count);
+                const ctx = document.getElementById('chart');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: { labels: labels, datasets: [{ label: 'Count', data: data, backgroundColor: '#6cf0c2' }] },
+                    options: { scales: { y: { beginAtZero: true } }, plugins: { legend: { display: false } } }
+                });
+            } catch (err) {
+                console.error(err);
+            }
+        }
+        loadData();
+    </script>
+</body>
+</html>

@@ -1,0 +1,1082 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>ClientFlow — Workflow Designer</title>
+    <style>
+        :root {
+            --bg: #0b1020;
+            --panel: #121936;
+            --panel2: #0f1530;
+            --muted: #9fb0ff;
+            --text: #eef1ff;
+            --accent: #6cf0c2;
+            --accent2: #89b4ff;
+            --danger: #ff6b6b;
+            --warn: #ffd166;
+            --ok: #22c55e;
+            --border: rgba(255,255,255,.08);
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        html, body {
+            height: 100%
+        }
+
+        body {
+            margin: 0;
+            background: radial-gradient(1200px 800px at 80% -10%,#1b2550 0%,transparent 60%),var(--bg);
+            color: var(--text);
+            font: 14px/1.45 system-ui,-apple-system,Segoe UI,Roboto
+        }
+
+        .app {
+            display: grid;
+            grid-template-rows: 64px 1fr;
+            min-height: 100vh
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 0 20px;
+            border-bottom: 1px solid var(--border);
+            background: linear-gradient(180deg,#141c3f,#0e1533)
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700
+        }
+
+        .logo {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            background: conic-gradient(from 210deg,var(--accent),var(--accent2));
+            box-shadow: 0 0 0 2px rgba(255,255,255,.07) inset
+        }
+
+        .tag {
+            padding: 2px 8px;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            color: #b9c6ff;
+            font-size: 12px
+        }
+
+        .toolbar {
+            margin-left: auto;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: linear-gradient(180deg,#1a2248,#141c3f);
+            color: #e9eeff;
+            cursor: pointer;
+            user-select: none
+        }
+
+            .btn:disabled {
+                opacity: .6;
+                cursor: not-allowed
+            }
+
+            .btn.accent {
+                background: linear-gradient(180deg,#19cba0,#0dbb93);
+                color: #031b15;
+                border: none
+            }
+
+            .btn.danger {
+                background: linear-gradient(180deg,#ef4444,#dc2626);
+                color: #fff;
+                border: none
+            }
+
+            .btn.ghost {
+                background: transparent;
+                border: 1px solid var(--border)
+            }
+
+        .select {
+            appearance: none;
+            background: linear-gradient(180deg,#1a2248,#141c3f);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: #e9eeff;
+            padding: 8px 10px
+        }
+
+        .shell {
+            display: grid;
+            grid-template-columns: 260px 1fr 320px;
+            gap: 12px;
+            padding: 12px
+        }
+
+        @media (max-width:1200px) {
+            .shell {
+                grid-template-columns: 1fr
+            }
+        }
+
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,.15);
+            overflow: hidden
+        }
+
+        .head {
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between
+        }
+
+        .body {
+            padding: 12px 14px
+        }
+
+        .muted {
+            color: var(--muted)
+        }
+
+        /* Palette */
+        .palette {
+            display: grid;
+            gap: 8px
+        }
+
+        .tool {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: linear-gradient(180deg,#1a2248,#141c3f);
+            cursor: grab
+        }
+
+            .tool small {
+                opacity: .85;
+                color: #cfe0ff
+            }
+
+        /* Canvas */
+        .canvas-wrap {
+            position: relative;
+            min-height: 540px;
+            background: var(--panel2);
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            overflow: hidden
+        }
+
+        .canvas {
+            position: absolute;
+            inset: 0;
+            transform-origin: 0 0
+        }
+
+        .grid {
+            position: absolute;
+            inset: 0;
+            background-image: linear-gradient(to right, rgba(255,255,255,.05) 1px, transparent 1px),linear-gradient(to bottom, rgba(255,255,255,.05) 1px, transparent 1px);
+            background-size: 20px 20px;
+            pointer-events: none
+        }
+
+        .node {
+            position: absolute;
+            min-width: 160px;
+            max-width: 260px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: #0e1431;
+            box-shadow: 0 8px 24px rgba(0,0,0,.25);
+            cursor: grab
+        }
+
+            .node .nh {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 8px 10px;
+                border-bottom: 1px solid var(--border);
+                font-weight: 600
+            }
+
+            .node .nb {
+                padding: 10px
+            }
+
+            .node.selected {
+                box-shadow: 0 0 0 2px #19cba044
+            }
+
+        .ep {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--accent);
+            border: 2px solid #093b30;
+            position: absolute;
+            right: -6px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: crosshair
+        }
+
+        .ip {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #89b4ff;
+            border: 2px solid #20365f;
+            position: absolute;
+            left: -6px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: crosshair
+        }
+
+        .type-Start .nh {
+            background: linear-gradient(180deg,#103a2a,#0e2e22)
+        }
+
+        .type-End .nh {
+            background: linear-gradient(180deg,#3a102a,#2e0e22)
+        }
+
+        .type-Decision .nh {
+            background: linear-gradient(180deg,#2a2f63,#1c234e)
+        }
+
+        .type-Form .nh {
+            background: linear-gradient(180deg,#1f3a56,#162a3f)
+        }
+
+        .type-Email .nh {
+            background: linear-gradient(180deg,#264a3f,#1a342d)
+        }
+
+        .type-Webhook .nh {
+            background: linear-gradient(180deg,#563a1f,#3f2a16)
+        }
+
+        .type-Wait .nh {
+            background: linear-gradient(180deg,#4a3f26,#342d1a)
+        }
+
+        .badge {
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            padding: 2px 8px;
+            font-size: 12px;
+            color: #cfe0ff;
+            background: rgba(255,255,255,.04)
+        }
+
+        .node .act {
+            display: flex;
+            gap: 6px
+        }
+
+        .node .iconbtn {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: linear-gradient(180deg,#1a2248,#141c3f);
+            color: #e9eeff;
+            cursor: pointer;
+            padding: 4px 6px
+        }
+
+        /* Links (svg) */
+        svg.links {
+            position: absolute;
+            inset: 0;
+            pointer-events: none
+        }
+
+        .link {
+            stroke: #7fd7bd;
+            stroke-width: 2;
+            fill: none
+        }
+
+            .link.sel {
+                stroke: #ffd166
+            }
+
+        /* Props */
+        label {
+            font-size: 12px;
+            color: #b9c6ff
+        }
+
+        input[type="text"], input[type="email"], input[type="number"], select, textarea {
+            width: 100%;
+            padding: 8px 10px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: var(--panel2);
+            color: var(--text)
+        }
+
+        textarea {
+            min-height: 80px
+        }
+
+        .grid2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px
+        }
+
+        .grid3 {
+            display: grid;
+            grid-template-columns: repeat(3,1fr);
+            gap: 10px
+        }
+
+        .row {
+            display: flex;
+            gap: 8px;
+            align-items: center
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 42px;
+            height: 24px
+        }
+
+            .switch input {
+                display: none
+            }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background: #263058;
+            border: 1px solid var(--border);
+            transition: .2s;
+            border-radius: 999px
+        }
+
+            .slider:before {
+                content: "";
+                position: absolute;
+                height: 18px;
+                width: 18px;
+                left: 3px;
+                top: 2px;
+                background: #cfe0ff;
+                border-radius: 50%;
+                transition: .2s
+            }
+
+        .switch input:checked + .slider {
+            background: #0dbb93
+        }
+
+            .switch input:checked + .slider:before {
+                transform: translateX(18px);
+                background: #031b15
+            }
+
+        /* Modal */
+        .modal {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,0,0,.55);
+            z-index: 50
+        }
+
+            .modal .dialog {
+                background: var(--panel);
+                border: 1px solid var(--border);
+                border-radius: 16px;
+                max-width: 780px;
+                width: 92%
+            }
+
+            .modal .head {
+                border-bottom: 1px solid var(--border)
+            }
+
+            .modal .foot {
+                display: flex;
+                gap: 8px;
+                justify-content: flex-end;
+                padding: 12px 14px;
+                border-top: 1px solid var(--border)
+            }
+
+        .toast {
+            position: fixed;
+            right: 18px;
+            bottom: 18px;
+            background: #0f1530;
+            border: 1px solid var(--border);
+            padding: 10px 14px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,.3)
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <header>
+            <div class="brand"><div class="logo"></div> ClientFlow — <span class="tag">Workflow Designer</span></div>
+            <div class="toolbar">
+                <select id="surveyPicker" class="select"></select>
+                <button class="btn" id="btnImport">Import JSON</button>
+                <button class="btn" id="btnExport">Export JSON</button>
+                <button class="btn" id="btnClear">Clear</button>
+                <button class="btn accent" id="btnSave">Save</button>
+                <button class="btn" id="btnSim">Simulate</button>
+            </div>
+        </header>
+
+        <div class="shell">
+            <!-- Palette -->
+            <section class="panel">
+                <div class="head"><strong>Components</strong><span class="tag">Drag to canvas</span></div>
+                <div class="body">
+                    <div class="palette" id="palette"></div>
+                </div>
+            </section>
+
+            <!-- Canvas -->
+            <section class="panel">
+                <div class="head">
+                    <strong>Canvas</strong>
+                    <div class="row">
+                        <span class="badge" id="zoomLbl">100%</span>
+                        <button class="btn" id="btnZoomOut">−</button>
+                        <button class="btn" id="btnZoomIn">+</button>
+                        <button class="btn" id="btnAutoLayout">Auto-layout</button>
+                    </div>
+                </div>
+                <div class="body">
+                    <div class="canvas-wrap" id="wrap">
+                        <div class="grid"></div>
+                        <svg class="links" id="svg"></svg>
+                        <div class="canvas" id="canvas"></div>
+                    </div>
+                    <div class="muted" style="margin-top:8px">Tip: drag to pan, wheel to zoom, hold <code>Shift</code> to multi-select, <code>Del</code> to remove.</div>
+                </div>
+            </section>
+
+            <!-- Properties -->
+            <section class="panel">
+                <div class="head"><strong>Properties</strong><span class="tag">Selected</span></div>
+                <div class="body" id="props"><div class="muted">Select a node or link.</div></div>
+                <div class="head"><strong>Survey Context</strong><span class="tag">from API</span></div>
+                <div class="body" id="surveyCtx"><div class="muted">Pick a survey at the top.</div></div>
+            </section>
+        </div>
+    </div>
+
+    <!-- Decision Config Modal -->
+    <div class="modal" id="decisionModal">
+        <div class="dialog">
+            <div class="head"><strong>Decision — Configure Rule</strong><button class="btn" data-close>✕</button></div>
+            <div class="body grid2">
+                <div><label>Question</label><select id="dQuestion"></select></div>
+                <div>
+                    <label>Operator</label>
+                    <select id="dOp">
+                        <option value="eq">equals</option>
+                        <option value="neq">not equals</option>
+                        <option value="gt">></option>
+                        <option value="lt"><</option>
+                        <option value="contains">contains</option>
+                    </select>
+                </div>
+                <div style="grid-column:1/-1"><label>Value</label><input id="dValue" placeholder="e.g. 'Yes' or 8"></div>
+                <div class="muted" style="grid-column:1/-1">Rule applies to the connector labeled <em>Yes</em>; all other paths use <em>No</em>.</div>
+            </div>
+            <div class="foot"><button class="btn" data-close>Cancel</button><button class="btn accent" id="dSave">Save</button></div>
+        </div>
+    </div>
+
+    <!-- Email Modal -->
+    <div class="modal" id="emailModal">
+        <div class="dialog">
+            <div class="head"><strong>Email — Recipients & Content</strong><button class="btn" data-close>✕</button></div>
+            <div class="body grid2">
+                <div style="grid-column:1/-1"><label>Recipients (comma-separated)</label><textarea id="eTo" placeholder="ops@example.com, cto@example.com"></textarea></div>
+                <div><label>Subject</label><input id="eSubject" placeholder="ClientFlow Report"></div>
+                <div><label>Attach CSV?</label><label class="switch"><input id="eCsv" type="checkbox" checked><span class="slider"></span></label></div>
+                <div style="grid-column:1/-1"><label>Body</label><textarea id="eBody" placeholder="Hello, attach is your report…"></textarea></div>
+            </div>
+            <div class="foot"><button class="btn" data-close>Cancel</button><button class="btn accent" id="eSave">Save</button></div>
+        </div>
+    </div>
+
+    <!-- Webhook Modal -->
+    <div class="modal" id="hookModal">
+        <div class="dialog">
+            <div class="head"><strong>Webhook — HTTP Call</strong><button class="btn" data-close>✕</button></div>
+            <div class="body grid2">
+                <div>
+                    <label>Method</label>
+                    <select id="hMethod"><option>POST</option><option>PUT</option><option>PATCH</option></select>
+                </div>
+                <div><label>URL</label><input id="hUrl" placeholder="https://example.com/hook"></div>
+                <div style="grid-column:1/-1"><label>Headers (JSON)</label><textarea id="hHeaders" placeholder='{"Authorization":"Bearer ..."}'></textarea></div>
+                <div style="grid-column:1/-1"><label>Body Template (JSON)</label><textarea id="hBody" placeholder='{"survey":"{{code}}","nps":"{{nps.score}}"}'></textarea></div>
+            </div>
+            <div class="foot"><button class="btn" data-close>Cancel</button><button class="btn accent" id="hSave">Save</button></div>
+        </div>
+    </div>
+
+    <!-- Wait Modal -->
+    <div class="modal" id="waitModal">
+        <div class="dialog">
+            <div class="head"><strong>Wait — Delay</strong><button class="btn" data-close>✕</button></div>
+            <div class="body grid3">
+                <div><label>Days</label><input id="wDays" type="number" min="0" value="0"></div>
+                <div><label>Hours</label><input id="wHours" type="number" min="0" value="1"></div>
+                <div><label>Minutes</label><input id="wMins" type="number" min="0" value="0"></div>
+            </div>
+            <div class="foot"><button class="btn" data-close>Cancel</button><button class="btn accent" id="wSave">Save</button></div>
+        </div>
+    </div>
+
+    <script>
+/* ========= API ========= */
+const api = {
+  listSurveys: () => fetch('/api/admin/surveys').then(r=>r.json()),
+  definition: (code) => fetch(`/api/surveys/${encodeURIComponent(code)}/definition`).then(r=>r.ok?r.json():null)
+};
+
+/* ========= State ========= */
+const uid = ()=>'n_'+Math.random().toString(36).slice(2,9);
+const storeKey = 'cf_workflow_v1';
+let WF = { surveyCode:null, nodes:[], links:[] }; // nodes: {id,type,x,y,title, config:{}}, links:{id,from,to,label,rule?}
+let selected = new Set();       // selected node ids
+let selLinkId = null;           // selected link id
+let linkingFrom = null;         // temp source id
+let zoom = 1;
+let pan = {x:0,y:0};
+let surveyDef = null;           // selected survey definition (sections, questions, options,...)
+
+/* ========= Palette ========= */
+const components = {
+  Start:   {icon:'▶',  hint:'Entry point (1 per flow)'},
+  Form:    {icon:'📝', hint:'Render survey form / page'},
+  Decision:{icon:'⤴',  hint:'Branch by survey answer'},
+  Email:   {icon:'✉',  hint:'Send email (reports)'},
+  Webhook: {icon:'↗',  hint:'HTTP request'},
+  Wait:    {icon:'⏱',  hint:'Delay'},
+  End:     {icon:'■',  hint:'Finish'}
+};
+
+function renderPalette(){
+  const p=document.getElementById('palette');
+  p.innerHTML = Object.entries(components).map(([t,meta]) =>
+    `<div class="tool" draggable="true" data-type="${t}">
+      <strong>${meta.icon} ${t}</strong><small>${meta.hint}</small>
+     </div>`).join('');
+  p.querySelectorAll('.tool').forEach(el=>{
+    el.addEventListener('dragstart',ev=>{ ev.dataTransfer.setData('text/plain', el.dataset.type); });
+  });
+}
+
+/* ========= Canvas / Nodes ========= */
+const canvas = document.getElementById('canvas');
+const svg = document.getElementById('svg');
+const wrap = document.getElementById('wrap');
+
+function canvasPoint(clientX, clientY){
+  const r = wrap.getBoundingClientRect();
+  const x = (clientX - r.left - pan.x) / zoom;
+  const y = (clientY - r.top - pan.y) / zoom;
+  // snap to 10 px
+  return {x: Math.round(x/10)*10, y: Math.round(y/10)*10};
+}
+
+wrap.addEventListener('dragover',ev=>{ev.preventDefault();});
+wrap.addEventListener('drop',ev=>{
+  ev.preventDefault();
+  const type = ev.dataTransfer.getData('text/plain');
+  const pt = canvasPoint(ev.clientX, ev.clientY);
+  addNode(type, pt.x, pt.y);
+});
+
+let panning=false, panStart={x:0,y:0}, mouseStart={x:0,y:0};
+wrap.addEventListener('mousedown',ev=>{
+  if(ev.target === wrap || ev.target.classList.contains('grid')){ panning=true; mouseStart={x:ev.clientX,y:ev.clientY}; panStart={...pan}; }
+});
+window.addEventListener('mousemove',ev=>{
+  if(panning){ pan.x = panStart.x + (ev.clientX - mouseStart.x); pan.y = panStart.y + (ev.clientY - mouseStart.y); applyTransform(); }
+});
+window.addEventListener('mouseup',()=>panning=false);
+wrap.addEventListener('wheel',ev=>{
+  ev.preventDefault();
+  const delta = Math.sign(ev.deltaY) * -0.05;
+  setZoom(Math.min(2, Math.max(0.5, zoom + delta)));
+});
+
+function setZoom(z){ zoom=z; document.getElementById('zoomLbl').textContent=Math.round(zoom*100)+'%'; applyTransform(); }
+function applyTransform(){ canvas.style.transform=`translate(${pan.x}px,${pan.y}px) scale(${zoom})`; svg.style.transform=canvas.style.transform; redrawLinks(); }
+
+/* ========= Nodes ========= */
+function addNode(type,x,y){
+  const id = uid();
+  const titleMap = {Start:'Start',End:'End',Decision:'Decision',Form:'Render Form',Email:'Send Email',Webhook:'Webhook',Wait:'Wait'};
+  const node = { id, type, x, y, title: titleMap[type]||type, config:{} };
+  // sensible defaults
+  if(type==='Start'){ // only one start
+    if(WF.nodes.some(n=>n.type==='Start')) { toast('Only one Start allowed'); return; }
+  }
+  if(type==='Decision'){ node.config = { questionKey:null, op:'eq', value:'' }; }
+  if(type==='Email'){ node.config = { to:[], subject:'ClientFlow Report', body:'', csv:true }; }
+  if(type==='Webhook'){ node.config = { method:'POST', url:'', headers:'{}', body:'{}' }; }
+  if(type==='Wait'){ node.config = { days:0, hours:1, mins:0 }; }
+  WF.nodes.push(node);
+  renderNode(node);
+  save();
+}
+
+function renderNode(n){
+  let el = document.getElementById(n.id);
+  if(!el){
+    el = document.createElement('div');
+    el.id = n.id; el.className = `node type-${n.type}`;
+    el.innerHTML = `
+      <div class="nh">
+        <span>${n.title}</span>
+        <div class="act">
+          <button class="iconbtn" data-act="edit">✎</button>
+          <button class="iconbtn" data-act="del">✕</button>
+        </div>
+      </div>
+      <div class="nb">
+        <div class="row" style="justify-content:space-between">
+          <span class="badge">#${n.type}</span>
+          <span class="badge" id="${n.id}_badge"></span>
+        </div>
+      </div>
+      <div class="ip" title="Input"></div>
+      <div class="ep" title="Output"></div>`;
+    canvas.appendChild(el);
+
+    // drag move
+    let dragging=false, offset={x:0,y:0};
+    el.addEventListener('mousedown',ev=>{
+      if(ev.target.closest('.iconbtn')) return;
+      dragging=true; el.style.cursor='grabbing';
+      const pt = canvasPoint(ev.clientX, ev.clientY);
+      offset = { x: pt.x - n.x, y: pt.y - n.y };
+      if(!ev.shiftKey){ selected.clear(); selLinkId=null; } // single select unless shift
+      selected.add(n.id); highlightSelection();
+    });
+    window.addEventListener('mousemove',ev=>{
+      if(!dragging) return;
+      const pt = canvasPoint(ev.clientX, ev.clientY);
+      n.x = pt.x - offset.x; n.y = pt.y - offset.y;
+      positionNode(n); redrawLinks(); save(false);
+    });
+    window.addEventListener('mouseup',()=>{ dragging=false; el.style.cursor='grab'; });
+
+    // endpoints: start linking
+    el.querySelector('.ep').addEventListener('mousedown',ev=>{ ev.stopPropagation(); linkingFrom = n.id; wrap.style.cursor='crosshair'; });
+    el.querySelector('.ip').addEventListener('mousedown',ev=>{ ev.stopPropagation(); if(linkingFrom && linkingFrom!==n.id){ createLink(linkingFrom, n.id); } linkingFrom=null; wrap.style.cursor='default'; });
+
+    // actions
+    el.querySelector('[data-act="del"]').onclick=()=>{ removeNode(n.id); };
+    el.querySelector('[data-act="edit"]').onclick=()=>{ openConfig(n); };
+
+    // select on click
+    el.addEventListener('click',ev=>{
+      if(ev.target.closest('.iconbtn')) return;
+      if(!ev.shiftKey){ selected.clear(); selLinkId=null; }
+      selected.add(n.id); highlightSelection(); showProps();
+    });
+  }
+  positionNode(n);
+  updateBadges(n);
+}
+
+function positionNode(n){
+  const el = document.getElementById(n.id);
+  el.style.left = n.x + 'px'; el.style.top = n.y + 'px';
+}
+
+function updateBadges(n){
+  const b = document.getElementById(n.id+'_badge');
+  if(!b) return;
+  if(n.type==='Decision'){
+    const q = surveyDef?.questions?.find(q=>q.key===n.config.questionKey);
+    b.textContent = q ? `${q.key} ${n.config.op} ${n.config.value}` : 'not configured';
+  } else if(n.type==='Email'){
+    b.textContent = (n.config.to||[]).join(', ').slice(0,18) || 'configure…';
+  } else if(n.type==='Webhook'){
+    b.textContent = n.config.url || 'configure…';
+  } else if(n.type==='Wait'){
+    const c=n.config; b.textContent = `${c.days}d ${c.hours}h ${c.mins}m`;
+  } else b.textContent='';
+}
+
+function removeNode(id){
+  WF.nodes = WF.nodes.filter(n=>n.id!==id);
+  WF.links = WF.links.filter(l=>l.from!==id && l.to!==id);
+  document.getElementById(id)?.remove();
+  redrawLinks(); selected.delete(id); save();
+}
+
+/* ========= Links (SVG paths) ========= */
+function createLink(from,to,label){
+  const id = uid();
+  // prevent duplicates / self loops
+  if(from===to || WF.links.some(l=>l.from===from && l.to===to)) return;
+  const link = {id,from,to,label:label||''};
+  WF.links.push(link);
+  redrawLinks(); showProps(); save();
+}
+
+function pathBetween(a,b){
+  const s = { x: a.x + 160, y: a.y + 40 }; // right middle approx
+  const t = { x: b.x,       y: b.y + 40 }; // left middle approx
+  const dx = Math.max(60, (t.x - s.x)/2);
+  return `M ${s.x} ${s.y} C ${s.x+dx} ${s.y}, ${t.x-dx} ${t.y}, ${t.x} ${t.y}`;
+}
+
+function redrawLinks(){
+  svg.innerHTML='';
+  WF.links.forEach(l=>{
+    const a = WF.nodes.find(n=>n.id===l.from);
+    const b = WF.nodes.find(n=>n.id===l.to);
+    if(!a||!b) return;
+    const p = document.createElementNS('http://www.w3.org/2000/svg','path');
+    p.setAttribute('d', pathBetween(a,b));
+    p.setAttribute('class', 'link'+(selLinkId===l.id?' sel':'')); p.dataset.id = l.id;
+    svg.appendChild(p);
+
+    // label
+    if(l.label){
+      const midX = (a.x+b.x)/2 + 80, midY = (a.y+b.y)/2 + 20;
+      const text = document.createElementNS('http://www.w3.org/2000/svg','text');
+      text.textContent = l.label;
+      text.setAttribute('x', midX); text.setAttribute('y', midY);
+      text.setAttribute('fill', '#cfe0ff'); text.setAttribute('font-size','12'); text.setAttribute('text-anchor','middle');
+      svg.appendChild(text);
+    }
+
+    p.addEventListener('click',(ev)=>{
+      selLinkId = l.id; selected.clear(); highlightSelection(); showProps();
+      ev.stopPropagation();
+    });
+  });
+}
+wrap.addEventListener('click',()=>{ selLinkId=null; if(!event.shiftKey) selected.clear(); highlightSelection(); showProps(); });
+
+function highlightSelection(){
+  document.querySelectorAll('.node').forEach(el=>el.classList.remove('selected'));
+  selected.forEach(id=>document.getElementById(id)?.classList.add('selected'));
+  svg.querySelectorAll('.link').forEach(p=>p.classList.remove('sel'));
+  if(selLinkId){ svg.querySelector(`[data-id="${selLinkId}"]`)?.classList.add('sel'); }
+}
+
+/* ========= Properties / Config ========= */
+function showProps(){
+  const panel = document.getElementById('props');
+  if(selLinkId){
+    const L = WF.links.find(x=>x.id===selLinkId);
+    panel.innerHTML = `
+      <div class="grid2">
+        <div><label>Label</label><input id="plabel" value="${L.label||''}"></div>
+        <div class="row" style="justify-content:flex-end"><button class="btn danger" id="pdel">Delete Link</button></div>
+      </div>`;
+    document.getElementById('plabel').oninput=(e)=>{ L.label = e.target.value; redrawLinks(); save(false); };
+    document.getElementById('pdel').onclick=()=>{ WF.links = WF.links.filter(x=>x.id!==L.id); selLinkId=null; redrawLinks(); panel.innerHTML='<div class="muted">Select a node or link.</div>'; save(); };
+    return;
+  }
+  if(selected.size===1){
+    const id=[...selected][0]; const n=WF.nodes.find(x=>x.id===id);
+    panel.innerHTML = `
+      <div class="grid2">
+        <div><label>Title</label><input id="ptitle" value="${n.title}"></div>
+        <div><label>Type</label><input value="${n.type}" disabled></div>
+      </div>
+      <div class="grid3" style="margin-top:10px">
+        <div><label>X</label><input id="px" type="number" value="${n.x}"></div>
+        <div><label>Y</label><input id="py" type="number" value="${n.y}"></div>
+        <div><label>ID</label><input value="${n.id}" disabled></div>
+      </div>
+      ${renderConfigFields(n)}
+      <div class="row" style="margin-top:10px;justify-content:flex-end">
+        ${n.type==='Decision'?'<button class="btn" id="btnRule">Rule…</button>':''}
+        ${n.type==='Email'?'<button class="btn" id="btnEmail">Recipients…</button>':''}
+        ${n.type==='Webhook'?'<button class="btn" id="btnHook">Webhook…</button>':''}
+        ${n.type==='Wait'?'<button class="btn" id="btnWait">Delay…</button>':''}
+        <button class="btn danger" id="pdelnode">Delete</button>
+      </div>`;
+    document.getElementById('ptitle').oninput=(e)=>{ n.title=e.target.value; document.querySelector('#'+n.id+' .nh span').textContent=n.title; save(false); };
+    document.getElementById('px').oninput=(e)=>{ n.x=parseInt(e.target.value||'0'); positionNode(n); redrawLinks(); save(false); };
+    document.getElementById('py').oninput=(e)=>{ n.y=parseInt(e.target.value||'0'); positionNode(n); redrawLinks(); save(false); };
+    document.getElementById('pdelnode').onclick=()=>removeNode(n.id);
+
+    if(n.type==='Decision') document.getElementById('btnRule').onclick=()=>openDecision(n);
+    if(n.type==='Email') document.getElementById('btnEmail').onclick=()=>openEmail(n);
+    if(n.type==='Webhook') document.getElementById('btnHook').onclick=()=>openHook(n);
+    if(n.type==='Wait') document.getElementById('btnWait').onclick=()=>openWait(n);
+    return;
+  }
+  if(selected.size>1){
+    panel.innerHTML = `<div class="row"><strong>${selected.size}</strong> nodes selected</div>
+      <div class="row" style="margin-top:8px"><button class="btn danger" id="pmassdel">Delete</button></div>`;
+    document.getElementById('pmassdel').onclick=()=>{ selected.forEach(id=>removeNode(id)); selected.clear(); showProps(); };
+    return;
+  }
+  panel.innerHTML = '<div class="muted">Select a node or link.</div>';
+}
+
+function renderConfigFields(n){
+  if(n.type==='Decision'){
+    const q = surveyDef?.questions||[];
+    const sel = q.map(x=>`<option value="${x.key}" ${x.key===n.config.questionKey?'selected':''}>${x.key} — ${x.prompt}</option>`).join('');
+    return `<div style="margin-top:8px"><label>Question Key</label>
+      <select id="pQKey">${sel}</select></div>
+      <div class="grid3" style="margin-top:8px">
+        <div><label>Op</label>
+          <select id="pOp"><option ${n.config.op==='eq'?'selected':''} value="eq">equals</option>
+          <option ${n.config.op==='neq'?'selected':''} value="neq">not equals</option>
+          <option ${n.config.op==='gt'?'selected':''} value="gt">></option>
+          <option ${n.config.op==='lt'?'selected':''} value="lt"><</option>
+          <option ${n.config.op==='contains'?'selected':''} value="contains">contains</option></select></div>
+        <div style="grid-column:2/-1"><label>Value</label><input id="pVal" value="${n.config.value||''}"></div>
+      </div>`;
+  }
+  if(n.type==='Email'){
+    return `<div style="margin-top:8px"><label>Subject</label><input id="pSub" value="${n.config.subject||''}"></div>`;
+  }
+  if(n.type==='Webhook'){
+    return `<div style="margin-top:8px"><label>URL</label><input id="pURL" value="${n.config.url||''}"></div>`;
+  }
+  if(n.type==='Wait'){
+    const c=n.config; return `<div class="grid3" style="margin-top:8px">
+      <div><label>Days</label><input id="pD" type="number" value="${c.days||0}"></div>
+      <div><label>Hours</label><input id="pH" type="number" value="${c.hours||0}"></div>
+      <div><label>Minutes</label><input id="pM" type="number" value="${c.mins||0}"></div></div>`;
+  }
+  return '';
+}
+
+/* ========= Configuration Modals ========= */
+function openModal(id){ const m=document.getElementById(id); m.style.display='flex'; m.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>m.style.display='none'); }
+function closeModal(id){ document.getElementById(id).style.display='none'; }
+
+function openDecision(n){
+  const qSel=document.getElementById('dQuestion');
+  qSel.innerHTML = (surveyDef?.questions||[]).map(q=>`<option value="${q.key}" ${q.key===n.config.questionKey?'selected':''}>${q.key} — ${q.prompt}</option>`).join('');
+  document.getElementById('dOp').value = n.config.op||'eq';
+  document.getElementById('dValue').value = n.config.value||'';
+  openModal('decisionModal');
+  document.getElementById('dSave').onclick=()=>{
+    n.config.questionKey=qSel.value; n.config.op=document.getElementById('dOp').value; n.config.value=document.getElementById('dValue').value;
+    updateBadges(n); save(); closeModal('decisionModal'); showProps();
+  };
+}
+function openEmail(n){
+  document.getElementById('eTo').value = (n.config.to||[]).join(', ');
+  document.getElementById('eSubject').value = n.config.subject||'';
+  document.getElementById('eCsv').checked = !!n.config.csv;
+  document.getElementById('eBody').value = n.config.body||'';
+  openModal('emailModal');
+  document.getElementById('eSave').onclick=()=>{
+    n.config.to = document.getElementById('eTo').value.split(',').map(s=>s.trim()).filter(Boolean);
+    n.config.subject=document.getElementById('eSubject').value; n.config.csv=document.getElementById('eCsv').checked;
+    n.config.body=document.getElementById('eBody').value; updateBadges(n); save(); closeModal('emailModal'); showProps();
+  };
+}
+function openHook(n){
+  document.getElementById('hMethod').value = n.config.method||'POST';
+  document.getElementById('hUrl').value = n.config.url||'';
+  document.getElementById('hHeaders').value = n.config.headers||'{}';
+  document.getElementById('hBody').value = n.config.body||'{}';
+  openModal('hookModal');
+  document.getElementById('hSave').onclick=()=>{
+    n.config.method=document.getElementById('hMethod').value;
+    n.config.url=document.getElementById('hUrl').value;
+    n.config.headers=document.getElementById('hHeaders').value;
+    n.config.body=document.getElementById('hBody').value;
+    updateBadges(n); save(); closeModal('hookModal'); showProps();
+  };
+}
+function openWait(n){
+  document.getElementById('wDays').value = n.config.days||0;
+  document.getElementById('wHours').value = n.config.hours||0;
+  document.getElementById('wMins').value = n.config.mins||0;
+  openModal('waitModal');
+  document.getElementById('wSave').onclick=()=>{
+    n.config.days=parseInt(document.getElementById('wDays').value||'0');
+    n.config.hours=parseInt(document.getElementById('wHours').value||'0');
+    n.config.mins=parseInt(document.getElementById('wMins').value||'0');
+    updateBadges(n); save(); closeModal('waitModal'); showProps();
+  };
+}
+
+/* ========= Survey Context ========= */
+async function loadSurveys(){
+  const surveys = await api.listSurveys();
+  const sel=document.getElementById('surveyPicker');
+  sel.innerHTML = surveys.map(s=>`<option value="${s.code}">${s.title} — ${s.code}</option>`).join('');
+  if(WF.surveyCode){ sel.value=WF.surveyCode; }
+  else if(surveys.length){ sel.value = surveys[0].code; WF.surveyCode = sel.value; }
+  sel.onchange = ()=>{ WF.surveyCode=sel.value; save(); loadSurveyDef(); };
+  await loadSurveyDef();
+}
+async function loadSurveyDef(){
+  surveyDef = await api.definition(WF.surveyCode);
+  const ctx = document.getElementById('surveyCtx');
+  if(!surveyDef){ ctx.innerHTML='<div class="muted">No definition.</div>'; return; }
+  const qs = surveyDef.questions?.map(q=>`<li><code>${q.key}</code> — ${q.prompt} <span class="muted">[${q.type}]</span></li>`).join('') || '';
+  ctx.innerHTML = `<div class="muted">Sections: ${surveyDef.sections?.length||0} • Questions: ${surveyDef.questions?.length||0}</div>
+    <ul>${qs}</ul>`;
+  // refresh decision dropdowns
+  WF.nodes.filter(n=>n.type==='Decision').forEach(updateBadges);
+  showProps();
+}
+
+/* ========= Toolbar actions ========= */
+document.getElementById('btnZoomIn').onclick=()=>setZoom(Math.min(2, zoom+0.1));
+document.getElementById('btnZoomOut').onclick=()=>setZoom(Math.max(0.5, zoom-0.1));
+document.getElementById('btnAutoLayout').onclick=()=>autoLayout();
+document.getElementById('btnClear').onclick=()=>{ if(confirm('Clear canvas?')){ WF.nodes=[]; WF.links=[]; canvas.innerHTML=''; svg.innerHTML=''; save(); showProps(); } };
+document.getElementById('btnExport').onclick=()=>{ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify(WF,null,2)],{type:'application/json'})); a.download='workflow.json'; a.click(); };
+document.getElementById('btnImport').onclick=()=>{ const i=document.createElement('input'); i.type='file'; i.accept='application/json';
+  i.onchange=()=>{ const f=i.files?.[0]; if(!f) return; const r=new FileReader(); r.onload=()=>{ try{ WF=JSON.parse(r.result); renderAll(); save(); }catch{ alert('Invalid JSON'); } }; r.readAsText(f); }; i.click(); };
+document.getElementById('btnSave').onclick=()=>{ save(); toast('Saved ✓'); };
+document.getElementById('btnSim').onclick=()=>simulate();
+
+/* ========= Simulation ========= */
+function simulate(){
+  const log = [];
+  function push(m){ log.push(m); }
+  // find start
+  const start = WF.nodes.find(n=>n.type==='Start');
+  if(!start){ alert('Add a Start node.'); return; }
+  let cur = start; let guard=0;
+  // sample answers (for decision preview)
+  const sample = {};
+  (surveyDef?.questions||[]).forEach(q=>{
+    if(q.type==='number') sample[q.key]=5;
+    else sample[q.key]='Yes';
+  });
+  while(cur && guard++<200){
+    push(`At ${cur.type} (${cur.title})`);
+    if(cur.type==='Decision'){
+      const {questionKey,op,value} = cur.config||{};
+      const a = sample[questionKey];
+      let yes=false;
+      const cast = (v)=> isNaN(v)? String(v): Number(v);
+      const A=cast(a), B=cast(value);
+      if(op==='eq') yes = A==B;
+      if(op==='neq') yes = A!=B;
+      if(op==='gt') yes = Number(A)>Number(B);
+      if(op==='lt') yes = Number(A)<Number(B);
+      if(op==='contains') yes = String(A).includes(String(B));
+      push(`Decision: ${questionKey} ${op} ${value} -> ${yes?'Yes':'No'}`);
+      const edges = WF.links.filter(l=>l.from===cur.id);
+      const yesEdge = edges.find(e=>/yes/i.test(e.label||'')) || edges[0];
+      const noEdge  = edges.find(e=>/no/i.test(e.label||'')) || edges[1];
+      cur = yes? WF.nodes.find(n=>n.id===yesEdge?.to) : WF.nodes.find(n=>n.id===noEdge?.to);
+    }else{
+      const next = WF.links.find(l=>l.from===cur.id);
+      cur = next? WF.nodes.find(n=>n.id===next.to) : null;
+    }
+    if(cur?.type==='End'){ push('Reached End.'); break; }
+  }
+  alert('Simulation:\n\n'+log.join('\n'));
+}
+
+/* ========= Auto-layout (simple layered) ========= */
+function autoLayout(){
+  // place by BFS from Start
+  const start = WF.nodes.find(n=>n.type==='Start');
+  if(!start){ toast('Add a Start node first'); return; }
+  const levels = new Map(); levels.set(start.id,0);
+  const q=[start.id];
+  while(q.length){
+    const id=q.shift();
+    const nexts = WF.links.filter(l=>l.from===id).map(l=>l.to);
+    nexts.forEach(nid=>{
+      const lvl=(levels.get(id)||0)+1;
+      if(!levels.has(nid) || lvl<levels.get(nid)){ levels.set(nid,lvl); q.push(nid); }
+    });
+  }
+  const byLevel = {};
+  WF.nodes.forEach(n=>{
+    const L = levels.get(n.id) ?? 0;
+    (byLevel[L]||(byLevel[L]=[])).push(n);
+  });
+  Object.entries(byLevel).forEach(([L,arr],i)=>{
+    arr.forEach((n,idx)=>{ n.x = 80 + i*260; n.y = 80 + idx*140; positionNode(n); });
+  });
+  redrawLinks(); save(false);
+}
+
+/* ========= Save / Load ========= */
+function save(persist=true){
+  if(persist){ localStorage.setItem(storeKey, JSON.stringify(WF)); }
+}
+function load(){
+  try{ const s=localStorage.getItem(storeKey); if(s) WF=JSON.parse(s); }catch{}
+}
+function renderAll(){
+  canvas.innerHTML=''; svg.innerHTML='';
+  WF.nodes.forEach(renderNode);
+  redrawLinks(); showProps();
+}
+
+/* ========= Helpers ========= */
+function toast(m){ const t=document.createElement('div'); t.className='toast'; t.textContent=m; document.body.appendChild(t); setTimeout(()=>t.remove(),2200); }
+
+/* ========= Keyboard ========= */
+window.addEventListener('keydown',ev=>{
+  if(ev.key==='Delete'){
+    if(selLinkId){ WF.links=WF.links.filter(l=>l.id!==selLinkId); selLinkId=null; redrawLinks(); showProps(); save(); }
+    else if(selected.size){ [...selected].forEach(id=>removeNode(id)); selected.clear(); showProps(); }
+  }
+});
+
+/* ========= Boot ========= */
+renderPalette();
+load();
+renderAll();
+setZoom(1);
+applyTransform();
+loadSurveys();
+    </script>
+</body>
+</html>

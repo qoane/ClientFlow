@@ -1,0 +1,54 @@
+﻿:root {
+    --border: rgba(255,255,255,.08)
+}
+
+body {
+    background: #0b1020;
+    color: #eaf0ff;
+    font: 14px/1.45 system-ui
+}
+
+.card {
+    background: #121936;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 16px;
+    margin: 14px 0
+}
+
+.btn {
+    padding: 8px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: #1a2248;
+    color: #eaf0ff;
+    cursor: pointer
+}
+
+    .btn.accent {
+        background: #19cba0;
+        color: #06201a;
+        border: none
+    }
+
+.pill {
+    padding: 2px 8px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: #0f1530
+}
+
+.row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px
+}
+
+.grid {
+    display: grid;
+    gap: 8px
+}
+
+.muted {
+    opacity: .85
+}

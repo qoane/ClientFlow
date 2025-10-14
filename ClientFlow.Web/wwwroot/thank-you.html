@@ -1,0 +1,285 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Thank you</title>
+    <style>
+        :root {
+            --accent: #19cba0;
+            --panel: #0f1530;
+            --text: #eaf0ff;
+            --muted: #9fb0ff;
+            --dur: 6s; /* default countdown duration */
+        }
+
+        /* Page base */
+        html, body {
+            height: 100%
+        }
+
+        body {
+            margin: 0;
+            background: radial-gradient(1200px 800px at 85% -10%, #1b2550 0%, transparent 60%), var(--panel);
+            color: var(--text);
+            font: 16px/1.45 system-ui,-apple-system,Segoe UI,Roboto;
+            display: grid;
+            place-items: center;
+            overflow: hidden;
+        }
+
+        /* Card */
+        .wrap {
+            width: min(900px, 92vw);
+            background: rgba(8,12,28,.55);
+            border: 1px solid rgba(255,255,255,.08);
+            border-radius: 18px;
+            box-shadow: 0 20px 60px rgba(0,0,0,.45);
+            padding: 28px 24px 22px;
+            position: relative;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+
+        /* Liberty logo row */
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+            .brand img {
+                width: 42px;
+                height: 42px;
+                object-fit: contain;
+                filter: drop-shadow(0 2px 6px rgba(0,0,0,.35));
+            }
+
+            .brand h2 {
+                margin: 0;
+                font-weight: 800;
+                letter-spacing: .4px;
+            }
+
+        /* Big check + copy */
+        .hero {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin: 10px 0 8px;
+        }
+
+        .tick {
+            width: 56px;
+            height: 56px;
+            border-radius: 14px;
+            background: linear-gradient(180deg, var(--accent), color-mix(in oklab,var(--accent) 70%, #0b172e));
+            box-shadow: 0 12px 28px color-mix(in oklab, var(--accent) 35%, transparent);
+            display: grid;
+            place-items: center;
+            color: #04251a;
+            font-weight: 900;
+            transform: scale(.9);
+            animation: pop .6s ease .2s both;
+        }
+
+        @keyframes pop {
+            from {
+                transform: scale(.6);
+                opacity: .2
+            }
+
+            to {
+                transform: scale(1);
+                opacity: 1
+            }
+        }
+
+        .title {
+            font-size: clamp(20px, 2.2vw, 28px);
+            font-weight: 800;
+            margin: 0;
+        }
+
+        .sub {
+            margin: 4px 0 0;
+            color: #cfe0ff
+        }
+
+        /* Countdown bar (receding) */
+        .bar {
+            height: 10px;
+            border-radius: 8px;
+            overflow: hidden;
+            background: rgba(255,255,255,.08);
+            margin: 14px 0 6px;
+            position: relative;
+        }
+
+            .bar > i {
+                position: absolute;
+                inset: 0;
+                width: 100%;
+                background: linear-gradient(90deg, color-mix(in oklab, var(--accent) 92%, transparent), var(--accent));
+                box-shadow: inset 0 0 10px rgba(0,0,0,.15);
+                transform-origin: left center;
+                animation: countdown var(--dur) linear forwards;
+            }
+
+        @keyframes countdown {
+            to {
+                transform: scaleX(0)
+            }
+        }
+
+        .small {
+            color: var(--muted);
+            font-size: 13px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* Button */
+        .btn {
+            margin-top: 14px;
+            border: none;
+            border-radius: 12px;
+            padding: 10px 14px;
+            font-weight: 700;
+            letter-spacing: .2px;
+            background: linear-gradient(180deg, var(--accent), color-mix(in oklab, var(--accent) 70%, #0b172e));
+            color: #04251a;
+            cursor: pointer;
+            box-shadow: 0 10px 24px color-mix(in oklab, var(--accent) 35%, transparent);
+            transition: transform .12s ease, filter .12s ease;
+        }
+
+            .btn:hover {
+                transform: translateY(-1px);
+                filter: brightness(1.05)
+            }
+
+            .btn:active {
+                transform: none;
+                filter: brightness(.98)
+            }
+
+        /* Subtle sparkle */
+        .sparks {
+            position: absolute;
+            pointer-events: none;
+            inset: 0;
+            mask: radial-gradient(200px 120px at 20% 0%, #000 40%, transparent 70%), radial-gradient(180px 120px at 80% 0%, #000 40%, transparent 70%);
+            opacity: .25;
+        }
+
+        .spark {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: var(--accent);
+            filter: blur(.3px);
+            animation: float var(--t) linear infinite;
+        }
+
+        @keyframes float {
+            from {
+                transform: translate(var(--x), calc(100% + 20px));
+                opacity: 0
+            }
+
+            10% {
+                opacity: 1
+            }
+
+            to {
+                transform: translate(calc(var(--x) + 10px), -12px);
+                opacity: 0
+            }
+        }
+
+        /* Respect reduced-motion */
+        @media (prefers-reduced-motion: reduce) {
+            .tick, .spark, .bar > i {
+                animation: none
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <div class="brand">
+            <!-- Replace src with your real logo path -->
+            <img src="/assets/liberty.svg" alt="Liberty" onerror="this.style.display='none'">
+            <h2>Liberty</h2>
+        </div>
+
+        <div class="hero">
+            <div class="tick">✓</div>
+            <div>
+                <h1 class="title">Thanks for your feedback!</h1>
+                <p class="sub">Your responses were submitted successfully.</p>
+            </div>
+        </div>
+
+        <div class="bar" aria-hidden="true"><i></i></div>
+        <div class="small">
+            <span id="msg">Returning in <b id="sec">6</b>s…</span>
+            <a id="stay" href="#" style="color:var(--muted); text-decoration:underline">stay here</a>
+        </div>
+
+        <button id="back" class="btn">Return now</button>
+
+        <!-- sparkles -->
+        <div class="sparks" id="sparks"></div>
+    </div>
+
+    <script>
+    // Duration comes from ?seconds= or defaults to CSS var --dur
+    const qs = new URLSearchParams(location.search);
+    const seconds = Math.max(1, +(qs.get('seconds') || 6));
+    document.documentElement.style.setProperty('--dur', seconds + 's');
+    document.getElementById('sec').textContent = seconds;
+
+    // Countdown text + auto return
+    let remain = seconds;
+    let cancelled = false;
+    const t = setInterval(() => {
+      if (cancelled) return;
+      remain--;
+      document.getElementById('sec').textContent = Math.max(0, remain);
+      if (remain <= 0) { clearInterval(t); goBack(); }
+    }, 1000);
+
+    document.getElementById('back').onclick = () => goBack();
+    document.getElementById('stay').onclick = (e)=>{ e.preventDefault(); cancelled=true; };
+
+    function goBack(){
+      // Return URL is set by runner in sessionStorage (fallbacks included)
+      const ret = sessionStorage.getItem('cfReturn');
+      if (ret) { location.replace(ret); return; }
+
+      if (document.referrer) { location.replace(document.referrer); return; }
+
+      // last-chance fallback: go to home
+      location.href = '/';
+    }
+
+    // Lightweight sparkle field
+    const host = document.getElementById('sparks');
+    for(let i=0;i<36;i++){
+      const s = document.createElement('i');
+      s.className='spark';
+      const x = Math.random()*window.innerWidth*0.9;
+      const y = Math.random()*window.innerHeight*0.6;
+      s.style.left = Math.max(0, x) + 'px';
+      s.style.top = Math.max(0, y) + 'px';
+      s.style.setProperty('--x', (Math.random()*60-30) + 'px');
+      s.style.setProperty('--t', (6+Math.random()*8) + 's');
+      host.appendChild(s);
+    }
+    </script>
+</body>
+</html>

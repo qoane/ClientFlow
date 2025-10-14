@@ -1,0 +1,581 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ClientFlow — Surveys Dashboard</title>
+
+    <!-- DataTables + Buttons + jQuery -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/datatables.net-bs5@1.13.10/css/dataTables.bootstrap5.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/datatables.net-buttons-bs5@2.4.3/css/buttons.bootstrap5.min.css" />
+
+    <style>
+        :root {
+            --bg: #0b1020;
+            --panel: #121936;
+            --panel2: #0f1530;
+            --muted: #9fb0ff;
+            --text: #eef1ff;
+            --accent: #6cf0c2;
+            --accent2: #89b4ff;
+            --danger: #ff6b6b;
+            --warn: #ffd166;
+            --ok: #22c55e;
+            --border: rgba(255,255,255,.08);
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        html, body {
+            height: 100%
+        }
+
+        body {
+            margin: 0;
+            color: var(--text);
+            background: radial-gradient(1200px 800px at 80% -10%, #1b2550 0%, transparent 60%), var(--bg);
+            font: 14px/1.45 system-ui,-apple-system,Segoe UI,Roboto;
+        }
+
+        /* Shell */
+        .app {
+            display: grid;
+            grid-template-rows: 64px 1fr;
+            min-height: 100vh
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 0 20px;
+            border-bottom: 1px solid var(--border);
+            background: linear-gradient(180deg,#141c3f,#0e1533);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700
+        }
+
+        .logo {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            background: conic-gradient(from 210deg,var(--accent),var(--accent2));
+            box-shadow: 0 0 0 2px rgba(255,255,255,.07) inset
+        }
+
+        .tag {
+            padding: 2px 8px;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            color: #b9c6ff;
+            font-size: 12px
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: linear-gradient(180deg,#1a2248,#141c3f);
+            color: #e9eeff;
+            cursor: pointer
+        }
+
+            .btn.icon {
+                padding: 6px 8px
+            }
+
+            .btn.accent {
+                background: linear-gradient(180deg,#19cba0,#0dbb93);
+                color: #031b15;
+                border: none
+            }
+
+            .btn.dark {
+                background: linear-gradient(180deg,#0f1530,#0b1026)
+            }
+
+            .btn.danger {
+                background: linear-gradient(180deg,#ef4444,#dc2626);
+                color: #fff;
+                border: none
+            }
+
+        .toolbar {
+            margin-left: auto;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap
+        }
+
+        .shell {
+            display: grid;
+            grid-template-columns: 1fr 360px;
+            gap: 12px;
+            padding: 12px
+        }
+
+        @media (max-width:1100px) {
+            .shell {
+                grid-template-columns: 1fr
+            }
+        }
+
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,.15);
+            overflow: hidden
+        }
+
+        .head {
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between
+        }
+
+        .body {
+            padding: 12px 14px
+        }
+
+        .subgrid {
+            display: grid;
+            gap: 12px
+        }
+
+        .grid-2 {
+            grid-template-columns: 1fr 1fr
+        }
+
+        .grid-3 {
+            grid-template-columns: repeat(3,1fr)
+        }
+
+        .muted {
+            color: var(--muted)
+        }
+
+        .chip {
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            padding: 3px 8px;
+            font-size: 12px;
+            color: #cfe0ff;
+            background: rgba(255,255,255,.03)
+        }
+
+        /* KPI cards */
+        .kpis {
+            display: grid;
+            grid-template-columns: repeat(4,1fr);
+            gap: 12px
+        }
+
+        @media (max-width:900px) {
+            .kpis {
+                grid-template-columns: repeat(2,1fr)
+            }
+        }
+
+        .kpi {
+            background: var(--panel2);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px
+        }
+
+            .kpi h6 {
+                margin: 0 0 4px 0
+            }
+
+            .kpi .val {
+                font-size: 2rem;
+                font-weight: 800;
+                line-height: 1
+            }
+
+        /* Tables (dark) */
+        .table-wrap {
+            overflow: auto
+        }
+
+        table.dataTable {
+            color: #e8ecff;
+            background: transparent;
+            border-color: var(--border)
+        }
+
+            table.dataTable thead th {
+                background: #0c1330;
+                border-bottom: 1px solid var(--border);
+                color: #cfe0ff
+            }
+
+            table.dataTable tbody td {
+                border-color: var(--border)
+            }
+
+        .dt-buttons .btn {
+            border-radius: 8px
+        }
+
+        .dataTables_filter input {
+            background: var(--panel2);
+            border: 1px solid var(--border);
+            color: var(--text);
+            border-radius: 8px;
+            padding: 6px 8px
+        }
+
+        .paginate_button {
+            color: #cfe0ff !important
+        }
+
+        /* Charts container visuals */
+        .chartbox {
+            background: var(--panel2);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px
+        }
+
+        .legend {
+            display: flex;
+            gap: 10px;
+            align-items: center
+        }
+
+            .legend .dot {
+                width: 10px;
+                height: 10px;
+                border-radius: 50%
+            }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            right: 18px;
+            bottom: 18px;
+            background: #0f1530;
+            border: 1px solid var(--border);
+            padding: 10px 14px;
+            border-radius: 10px;
+            color: #fff;
+            box-shadow: 0 10px 30px rgba(0,0,0,.3)
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <header>
+            <div class="brand"><div class="logo"></div> ClientFlow — Surveys <span class="tag">Analytics • Exports</span></div>
+            <div class="toolbar">
+                <button class="btn dark" id="btnExportNpsCsv" disabled>Export NPS (CSV)</button>
+                <button class="btn" id="btnDownloadDef" disabled>Download Definition (JSON)</button>
+                <button class="btn" id="btnDownloadThemeCss" disabled>Download Theme CSS</button>
+            </div>
+        </header>
+
+        <div class="shell">
+            <!-- LEFT: Analytics -->
+            <section class="panel">
+                <div class="head">
+                    <strong>Overview</strong>
+                    <div class="legend">
+                        <span class="chip" id="surveyActiveChip">—</span>
+                    </div>
+                </div>
+                <div class="body subgrid">
+                    <!-- Row: Survey Picker -->
+                    <div class="subgrid grid-2">
+                        <div>
+                            <label class="muted" style="display:block;margin-bottom:6px">Select Survey</label>
+                            <select id="surveyPicker" class="btn dark" style="width:100%"></select>
+                            <div class="muted" style="margin-top:6px;font-size:12px">Tip: use “All Surveys” to filter/export across surveys.</div>
+                        </div>
+                        <div class="kpis">
+                            <div class="kpi">
+                                <h6>NPS</h6><div class="val" id="kpiScore">0</div>
+                                <div class="muted" style="font-size:12px">Score</div>
+                            </div>
+                            <div class="kpi">
+                                <h6>Promoters</h6><div class="val" id="kpiPromoters">0</div>
+                                <div class="muted" style="font-size:12px">9–10</div>
+                            </div>
+                            <div class="kpi">
+                                <h6>Passives</h6><div class="val" id="kpiPassives">0</div>
+                                <div class="muted" style="font-size:12px">7–8</div>
+                            </div>
+                            <div class="kpi">
+                                <h6>Detractors</h6><div class="val" id="kpiDetractors">0</div>
+                                <div class="muted" style="font-size:12px">0–6</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Row: Charts -->
+                    <div class="subgrid grid-2">
+                        <div class="chartbox">
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                                <strong>NPS Breakdown</strong>
+                                <span class="muted" id="totalBadge">Total: 0</span>
+                            </div>
+                            <canvas id="barChart" height="120"></canvas>
+                        </div>
+                        <div class="chartbox">
+                            <strong style="display:block;margin-bottom:6px">NPS Composition</strong>
+                            <canvas id="pieChart" height="120"></canvas>
+                            <div class="muted" style="margin-top:8px;font-size:12px">Promoters vs Passives vs Detractors</div>
+                        </div>
+                    </div>
+
+                    <!-- Row: Questions & Options -->
+                    <div class="subgrid grid-2">
+                        <div>
+                            <div class="head" style="border:none;padding:0 0 8px 0"><strong>Questions</strong></div>
+                            <div class="table-wrap">
+                                <table id="tblQuestions" class="table table-sm table-striped" style="width:100%">
+                                    <thead>
+                                        <tr>
+                                            <th>Order</th>
+                                            <th>Key</th>
+                                            <th>Prompt</th>
+                                            <th>Type</th>
+                                            <th>Required</th>
+                                            <th>Section</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="head" style="border:none;padding:0 0 8px 0"><strong>Options (by Question)</strong></div>
+                            <div class="table-wrap">
+                                <table id="tblOptions" class="table table-sm table-striped" style="width:100%">
+                                    <thead>
+                                        <tr>
+                                            <th>Question Key</th>
+                                            <th>Label</th>
+                                            <th>Value</th>
+                                            <th>Order</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                            <div class="muted" style="margin-top:6px;font-size:12px">Shown for radio/select fields.</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- RIGHT: All Surveys -->
+            <section class="panel">
+                <div class="head"><strong>All Surveys</strong><span class="tag">Export • Search • Sort</span></div>
+                <div class="body">
+                    <div class="table-wrap">
+                        <table id="tblSurveys" class="table table-striped table-bordered" style="width:100%">
+                            <thead>
+                                <tr><th>Code</th><th>Title</th><th>Active</th><th>Description</th></tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- JS libs at end -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/datatables.net@1.13.10/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/datatables.net-bs5@1.13.10/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/datatables.net-buttons@2.4.3/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/datatables.net-buttons-bs5@2.4.3/js/buttons.bootstrap5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pdfmake@0.2.7/build/pdfmake.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pdfmake@0.2.7/build/vfs_fonts.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/datatables.net-buttons@2.4.3/js/buttons.html5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/datatables.net-buttons@2.4.3/js/buttons.print.min.js"></script>
+
+    <script>
+        // Require authentication for this dashboard.  If no auth token is present
+        // then redirect to login.  We also include the token on API calls.
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+            window.location.href = '/login.html';
+        }
+        // ---- Endpoints (same origin) ----
+        const api = {
+            listSurveys: () => fetch('/api/admin/surveys', { headers: { 'Authorization': 'Bearer ' + token } }).then(r => r.json()),
+            nps: (code) => fetch(`/api/surveys/${encodeURIComponent(code)}/nps`, { headers: { 'Authorization': 'Bearer ' + token } }).then(r => r.ok ? r.json() : { detractors: 0, passives: 0, promoters: 0, total: 0, score: 0 }),
+            definition: (code) => fetch(`/api/surveys/${encodeURIComponent(code)}/definition`, { headers: { 'Authorization': 'Bearer ' + token } }).then(r => r.ok ? r.json() : null)
+        };
+
+        // ---- State ----
+        let surveys = [];
+        let current = { code: null, nps: null, def: null };
+        let charts = { bar: null, pie: null };
+        let dtQuestions = null, dtOptions = null;
+
+        // ---- Helpers ----
+        const toast = (m) => { const t = document.createElement('div'); t.className = 'toast'; t.textContent = m; document.body.appendChild(t); setTimeout(() => t.remove(), 2200); };
+        const setBtns = (on) => { ['btnExportNpsCsv', 'btnDownloadDef', 'btnDownloadThemeCss'].forEach(id => document.getElementById(id).disabled = !on); };
+        const downloadBlob = (name, content, type = 'application/octet-stream') => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([content], { type })); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 3000); };
+        const csvEscape = (v) => { if (v == null) return ''; const s = String(v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+        const npsToCsv = (n) => [['Detractors', 'Passives', 'Promoters', 'Total', 'Score'], [n.detractors, n.passives, n.promoters, n.total, n.score]].map(r => r.map(csvEscape).join(',')).join('\n');
+
+        // ---- Init ----
+        async function init() {
+            surveys = await api.listSurveys();
+
+            // Picker
+            const sel = document.getElementById('surveyPicker');
+            sel.innerHTML = surveys.map(s => `<option value="${s.code}">${s.title} — ${s.code}</option>`).join('');
+            if (surveys.length) { sel.value = surveys[0].code; }
+            sel.addEventListener('change', () => loadSurvey(sel.value));
+
+            // All surveys table
+            $('#tblSurveys').DataTable({
+                data: surveys,
+                columns: [
+                    { data: 'code' },
+                    { data: 'title' },
+                    { data: 'isActive', render: v => v ? 'Yes' : 'No' },
+                    { data: 'description', defaultContent: '' }
+                ],
+                dom: 'Bfrtip',
+                buttons: ['copy', 'csv', 'excel', 'pdf', 'print'],
+                order: [[1, 'asc']],
+                pageLength: 8
+            });
+
+            if (surveys.length) { await loadSurvey(sel.value); }
+        }
+
+        async function loadSurvey(code) {
+            setBtns(false);
+            current.code = code;
+            const meta = surveys.find(s => s.code === code);
+            const chip = document.getElementById('surveyActiveChip');
+            chip.textContent = meta?.isActive ? 'Active' : 'Inactive';
+            chip.style.background = meta?.isActive ? 'linear-gradient(180deg,#103a2a,#0e2e22)' : 'rgba(255,255,255,.03)';
+            chip.style.color = meta?.isActive ? '#9ff8d7' : '#cfe0ff';
+
+            // NPS
+            const n = await api.nps(code);
+            current.nps = n;
+            document.getElementById('kpiScore').textContent = n.score ?? 0;
+            document.getElementById('kpiPromoters').textContent = n.promoters ?? 0;
+            document.getElementById('kpiPassives').textContent = n.passives ?? 0;
+            document.getElementById('kpiDetractors').textContent = n.detractors ?? 0;
+            document.getElementById('totalBadge').textContent = 'Total: ' + (n.total ?? 0);
+            renderCharts(n);
+
+            // Definition (questions/options + theme/style)
+            const def = await api.definition(code);
+            current.def = def;
+            fillQuestions(def);
+            fillOptions(def);
+
+            setBtns(true);
+            toast('Loaded “' + (meta?.title || code) + '”');
+        }
+
+        function renderCharts(n) {
+            const barCtx = document.getElementById('barChart').getContext('2d');
+            const pieCtx = document.getElementById('pieChart').getContext('2d');
+            charts.bar && charts.bar.destroy();
+            charts.pie && charts.pie.destroy();
+
+            charts.bar = new Chart(barCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Promoters', 'Passives', 'Detractors'],
+                    datasets: [{ label: 'Count', data: [n.promoters || 0, n.passives || 0, n.detractors || 0], borderWidth: 1 }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false }, tooltip: { enabled: true } },
+                    scales: { x: { grid: { color: 'rgba(255,255,255,.05)' } }, y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: 'rgba(255,255,255,.05)' } } }
+                }
+            });
+
+            charts.pie = new Chart(pieCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Promoters', 'Passives', 'Detractors'],
+                    datasets: [{ data: [n.promoters || 0, n.passives || 0, n.detractors || 0] }]
+                },
+                options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { color: '#cfe0ff' } } } }
+            });
+        }
+
+        function fillQuestions(def) {
+            const rows = (def?.questions || []).map(q => ({
+                order: q.order, key: q.key, prompt: q.prompt, type: q.type, required: q.required ? 'Yes' : 'No',
+                section: (def?.sections || []).find(s => s.id === q.sectionId)?.title || ''
+            }));
+            if (dtQuestions) { dtQuestions.clear().rows.add(rows).draw(); return; }
+            dtQuestions = $('#tblQuestions').DataTable({
+                data: rows,
+                columns: [
+                    { data: 'order' }, { data: 'key' }, { data: 'prompt' }, { data: 'type' }, { data: 'required' }, { data: 'section' }
+                ],
+                dom: 'Bfrtip',
+                buttons: ['copy', 'csv', 'excel', 'pdf', 'print'],
+                order: [[0, 'asc']],
+                pageLength: 8
+            });
+        }
+
+        function fillOptions(def) {
+            const byId = new Map((def?.questions || []).map(q => [q.id, q.key]));
+            const rows = (def?.options || []).map(o => ({ qkey: byId.get(o.questionId) || '—', label: o.label, value: o.value, order: o.order }));
+            if (dtOptions) { dtOptions.clear().rows.add(rows).draw(); return; }
+            dtOptions = $('#tblOptions').DataTable({
+                data: rows,
+                columns: [{ data: 'qkey' }, { data: 'label' }, { data: 'value' }, { data: 'order' }],
+                dom: 'Bfrtip',
+                buttons: ['copy', 'csv', 'excel', 'pdf', 'print'],
+                order: [[0, 'asc']],
+                pageLength: 8
+            });
+        }
+
+        // Downloads
+        document.getElementById('btnExportNpsCsv').addEventListener('click', () => {
+            if (!current.nps || !current.code) return;
+            downloadBlob(`${current.code}_nps.csv`, npsToCsv(current.nps), 'text/csv;charset=utf-8');
+        });
+        document.getElementById('btnDownloadDef').addEventListener('click', () => {
+            if (!current.def || !current.code) return;
+            downloadBlob(`${current.code}_definition.json`, JSON.stringify(current.def, null, 2), 'application/json');
+        });
+        document.getElementById('btnDownloadThemeCss').addEventListener('click', () => {
+            if (!current.def || !current.code) return;
+            const accent = current.def?.theme?.accent || '#19cba0';
+            const panel = current.def?.theme?.panel || '#0f1530';
+            const custom = current.def?.style?.css || '';
+            const css = `:root{--accent:${accent};--panel:${panel};}\n/* Scoped custom from Designer: */\n${custom}`;
+            downloadBlob(`${current.code}_theme.css`, css, 'text/css');
+        });
+
+        init();
+    </script>
+</body>
+</html>

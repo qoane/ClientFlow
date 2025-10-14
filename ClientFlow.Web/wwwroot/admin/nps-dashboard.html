@@ -1,0 +1,623 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>ClientFlow — NPS Slides Dashboard</title>
+
+    <!-- libs -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/datatables.net-bs5@1.13.10/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/datatables.net-buttons-bs5@2.4.3/css/buttons.bootstrap5.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/datatables.net@1.13.10/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/datatables.net-bs5@1.13.10/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/datatables.net-buttons@2.4.3/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/datatables.net-buttons-bs5@2.4.3/js/buttons.bootstrap5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pdfmake@0.2.7/build/pdfmake.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pdfmake@0.2.7/build/vfs_fonts.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/datatables.net-buttons@2.4.3/js/buttons.html5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/datatables.net-buttons@2.4.3/js/buttons.print.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.min.js"></script>
+
+    <style>
+        :root {
+            --bg: #0b1020;
+            --panel: #121936;
+            --panel2: #0f1530;
+            --muted: #9fb0ff;
+            --text: #eef1ff;
+            --accent: #6cf0c2;
+            --accent2: #89b4ff;
+            --border: rgba(255,255,255,.08);
+            --slide-bg: #ffffff;
+            --slide-text: #20304a;
+            --slide-muted: #6a7b9b;
+            --green: #3bb98f;
+            --amber: #ffc857;
+            --red: #f96a6a;
+            --teal: #5cc2ff;
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        html, body {
+            height: 100%
+        }
+
+        body {
+            margin: 0;
+            background: radial-gradient(1200px 800px at 80% -10%,#1b2550 0%,transparent 60%),var(--bg);
+            color: var(--text);
+            font: 14px/1.45 system-ui,-apple-system,Segoe UI,Roboto
+        }
+
+        .app {
+            display: grid;
+            grid-template-rows: 64px 1fr;
+            min-height: 100vh
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 0 20px;
+            border-bottom: 1px solid var(--border);
+            background: linear-gradient(180deg,#141c3f,#0e1533)
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700
+        }
+
+        .logo {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            background: conic-gradient(from 210deg,var(--accent),var(--accent2));
+            box-shadow: 0 0 0 2px rgba(255,255,255,.07) inset
+        }
+
+        .tag {
+            padding: 2px 8px;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            color: #b9c6ff;
+            font-size: 12px
+        }
+
+        .select {
+            appearance: none;
+            background: linear-gradient(180deg,#1a2248,#141c3f);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: #e9eeff;
+            padding: 8px 10px
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: linear-gradient(180deg,#1a2248,#141c3f);
+            color: #e9eeff;
+            cursor: pointer
+        }
+
+            .btn.accent {
+                background: linear-gradient(180deg,#19cba0,#0dbb93);
+                color: #031b15;
+                border: none
+            }
+
+        .toolbar {
+            margin-left: auto;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap
+        }
+
+        .shell {
+            display: grid;
+            grid-template-columns: 1fr 420px;
+            gap: 12px;
+            padding: 12px
+        }
+
+        @media (max-width:1100px) {
+            .shell {
+                grid-template-columns: 1fr
+            }
+        }
+
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,.15);
+            overflow: hidden
+        }
+
+        .head {
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between
+        }
+
+        .body {
+            padding: 12px 14px
+        }
+
+        .muted {
+            color: var(--muted)
+        }
+
+        .kpis {
+            display: grid;
+            grid-template-columns: repeat(4,1fr);
+            gap: 10px
+        }
+
+        @media (max-width:1000px) {
+            .kpis {
+                grid-template-columns: repeat(2,1fr)
+            }
+        }
+
+        .kpi {
+            background: var(--panel2);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px
+        }
+
+            .kpi h6 {
+                margin: 0 0 2px
+            }
+
+            .kpi .val {
+                font-size: 2rem;
+                font-weight: 800
+            }
+
+        .progress {
+            height: 8px;
+            border-radius: 999px;
+            background: #e9eef7;
+            overflow: hidden
+        }
+
+        .bar {
+            height: 100%;
+            background: var(--green)
+        }
+
+        .slide {
+            background: var(--slide-bg);
+            color: var(--slide-text);
+            border-radius: 18px;
+            border: 1px solid #e6ecf4;
+            padding: 16px;
+            box-shadow: 0 12px 30px rgba(0,0,0,.25)
+        }
+
+            .slide h5 {
+                margin: 0 0 4px
+            }
+
+            .slide .sub {
+                color: var(--slide-muted);
+                font-size: 12px
+            }
+
+        .slide-grid {
+            display: grid;
+            grid-template-columns: 360px 1fr;
+            gap: 16px
+        }
+
+        @media (max-width:980px) {
+            .slide-grid {
+                grid-template-columns: 1fr
+            }
+        }
+
+        .slide .card {
+            background: #f7fbff;
+            border: 1px solid #e6eef8;
+            border-radius: 14px;
+            padding: 12px
+        }
+
+        .table-wrap {
+            overflow: auto
+        }
+
+        table.dataTable {
+            color: #e8ecff;
+            background: transparent;
+            border-color: var(--border)
+        }
+
+            table.dataTable thead th {
+                background: #0c1330;
+                border-bottom: 1px solid var(--border);
+                color: #cfe0ff
+            }
+
+            table.dataTable tbody td {
+                border-color: var(--border)
+            }
+
+        .dataTables_filter input {
+            background: var(--panel2);
+            border: 1px solid var(--border);
+            color: var(--text);
+            border-radius: 8px;
+            padding: 6px 8px
+        }
+
+        .chip {
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            padding: 3px 8px;
+            font-size: 12px;
+            color: #cfe0ff;
+            background: rgba(255,255,255,.04)
+        }
+
+        .legend {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            font-size: 12px
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%
+        }
+
+        .toast {
+            position: fixed;
+            right: 18px;
+            bottom: 18px;
+            background: #0f1530;
+            border: 1px solid var(--border);
+            padding: 10px 14px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,.3)
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <header>
+            <div class="brand"><div class="logo"></div> ClientFlow — NPS Dashboard <span class="tag">Slides-style</span></div>
+            <div class="toolbar">
+                <select id="surveyPicker" class="select"></select>
+                <button class="btn" id="btnCsv" disabled>Export NPS (CSV)</button>
+                <button class="btn" id="btnPptx" disabled>Export PPTX</button>
+            </div>
+        </header>
+
+        <div class="shell">
+            <!-- LEFT -->
+            <section class="panel">
+                <div class="head">
+                    <strong>Overview</strong>
+                    <span class="chip" id="activeChip">—</span>
+                </div>
+                <div class="body">
+                    <div class="kpis" style="margin-bottom:10px">
+                        <div class="kpi"><h6>NPS</h6><div class="val" id="kNps">0</div><div class="muted" style="font-size:12px">Score</div><div class="progress" style="margin-top:8px"><div id="goalBar" class="bar" style="width:0%"></div></div><div class="muted" style="font-size:11px;margin-top:4px">Goal: 50</div></div>
+                        <div class="kpi"><h6>Promoters</h6><div class="val" id="kPro">0</div><div class="muted" style="font-size:12px">9–10</div></div>
+                        <div class="kpi"><h6>Passives</h6><div class="val" id="kPas">0</div><div class="muted" style="font-size:12px">7–8</div></div>
+                        <div class="kpi"><h6>Detractors</h6><div class="val" id="kDet">0</div><div class="muted" style="font-size:12px">0–6</div></div>
+                    </div>
+
+                    <div class="slide" id="slideCard">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+                            <div>
+                                <h5 id="slideTitle">Net Promoter Score</h5>
+                                <div class="sub" id="slideSub">Promoters • Passives • Detractors — <span id="totalLbl">Total: 0</span></div>
+                            </div>
+                            <div class="legend">
+                                <span class="dot" style="background:var(--green)"></span> Promoters
+                                <span class="dot" style="background:var(--amber)"></span> Passives
+                                <span class="dot" style="background:var(--red)"></span> Detractors
+                            </div>
+                        </div>
+                        <div class="slide-grid">
+                            <div class="card">
+                                <canvas id="gauge" height="220"></canvas>
+                                <div class="sub" style="margin-top:6px">Gauge scaled −100 → 100</div>
+                            </div>
+                            <div style="display:grid;gap:12px">
+                                <div class="card">
+                                    <strong style="display:block;margin-bottom:6px">Distribution (100%)</strong>
+                                    <canvas id="stack" height="80"></canvas>
+                                </div>
+                                <div class="card">
+                                    <strong style="display:block;margin-bottom:6px">Composition</strong>
+                                    <div style="display:grid;grid-template-columns:200px 1fr;gap:10px;align-items:center">
+                                        <canvas id="donut" height="140"></canvas>
+                                        <div>
+                                            <div class="sub" id="pctLbl" style="font-size:13px">—</div>
+                                            <div style="margin-top:6px;font-size:13px;color:var(--slide-text)">
+                                                <div><b>Pros</b>: high satisfaction and repeat intent</div>
+                                                <div><b>Cons</b>: monitor detractor comments</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div><!-- slide -->
+                </div>
+            </section>
+
+            <!-- RIGHT -->
+            <section class="panel">
+                <div class="head"><strong>Surveys & Schema</strong><span class="tag">Export • Search • Sort</span></div>
+                <div class="body">
+                    <div class="table-wrap" style="margin-bottom:12px">
+                        <table id="tblSurveys" class="table table-striped table-bordered" style="width:100%">
+                            <thead><tr><th>Code</th><th>Title</th><th>Active</th><th>Description</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                    <div class="table-wrap" style="margin-bottom:12px">
+                        <table id="tblQuestions" class="table table-striped table-bordered" style="width:100%">
+                            <thead><tr><th>Key</th><th>Prompt</th><th>Type</th><th>Section</th><th>Required</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                    <div class="table-wrap">
+                        <table id="tblOptions" class="table table-striped table-bordered" style="width:100%">
+                            <thead><tr><th>Question</th><th>Value</th><th>Label</th><th>Order</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script>
+        /* ---------- API ---------- */
+        const api = {
+            listSurveys: () => fetch('/api/admin/surveys').then(r => r.json()),
+            nps: (code) => fetch(`/api/surveys/${encodeURIComponent(code)}/nps`).then(r => r.ok ? r.json() : null),
+            definition: (code) => fetch(`/api/surveys/${encodeURIComponent(code)}/definition`).then(r => r.ok ? r.json() : null)
+        };
+
+        /* ---------- State & helpers ---------- */
+        let surveys = [], current = { code: null, nps: null, def: null };
+        let charts = { gauge: null, stack: null, donut: null };
+
+        const toast = (m) => { const t = document.createElement('div'); t.className = 'toast'; t.textContent = m; document.body.appendChild(t); setTimeout(() => t.remove(), 2200); };
+        const setBtns = (on) => { ['btnCsv', 'btnPptx'].forEach(id => document.getElementById(id).disabled = !on); };
+        const pct = (n, d) => d ? Math.round((n / d) * 100) : 0;
+        const csv = (n) => [['Detractors', 'Passives', 'Promoters', 'Total', 'Score'], [n.detractors, n.passives, n.promoters, n.total, n.score]].map(r => r.join(',')).join('\n');
+        const getCss = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+        /* Normalize PascalCase or camelCase from API */
+        function normalizeNps(x) {
+            if (!x) return { promoters: 0, passives: 0, detractors: 0, total: 0, score: 0 };
+            const g = k => x[k] ?? x[k[0].toUpperCase() + k.slice(1)];
+            return {
+                promoters: +g('promoters') || 0,
+                passives: +g('passives') || 0,
+                detractors: +g('detractors') || 0,
+                total: +g('total') || 0,
+                score: +g('score') || 0
+            };
+        }
+
+        /* ---------- Gauge plugin (safer) ---------- */
+        const GaugePlugin = {
+            id: 'gauge-needle',
+            afterDatasetDraw(chart, args) {
+                if (args.index !== 0) return;
+                const meta = chart.getDatasetMeta(0);
+                const arc = meta?.data?.[0];
+                if (!arc) return;
+                const nps = chart.config.data.datasets[0].nps || 0;
+                const cx = arc.x, cy = arc.y, r = arc.outerRadius;
+                const value = (nps + 100); // 0..200
+                const angle = (-Math.PI) + (Math.PI * (value / 200));
+                const { ctx } = chart;
+                ctx.save(); ctx.translate(cx, cy); ctx.rotate(angle);
+                ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(r * 0.9, 0); ctx.lineWidth = 3; ctx.strokeStyle = '#20304a'; ctx.stroke();
+                ctx.beginPath(); ctx.arc(0, 0, 5, 0, Math.PI * 2); ctx.fillStyle = '#20304a'; ctx.fill(); ctx.restore();
+                ctx.save(); ctx.fillStyle = '#20304a'; ctx.font = '700 28px system-ui'; ctx.textAlign = 'center'; ctx.fillText(nps, cx, cy + 10); ctx.restore();
+            }
+        };
+        Chart.register(GaugePlugin);
+
+        /* ---------- Boot ---------- */
+        (async function init() {
+            try {
+                surveys = await api.listSurveys();
+            } catch (e) {
+                toast('Failed to load /api/admin/surveys'); console.error(e); return;
+            }
+
+            // survey picker
+            const sel = document.getElementById('surveyPicker');
+            sel.innerHTML = surveys.map(s => `<option value="${s.code}">${s.title} — ${s.code}</option>`).join('');
+            if (surveys.length) sel.value = surveys[0].code;
+            sel.onchange = () => loadSurvey(sel.value);
+
+            // All surveys table
+            $('#tblSurveys').DataTable({
+                data: surveys,
+                columns: [
+                    { data: 'code' }, { data: 'title' },
+                    { data: 'isActive', render: v => v ? 'Yes' : 'No' },
+                    { data: 'description', defaultContent: '' }
+                ],
+                dom: 'Bfrtip', buttons: ['copy', 'csv', 'excel', 'pdf', 'print'],
+                order: [[1, 'asc']], pageLength: 6
+            });
+
+            if (surveys.length) await loadSurvey(sel.value);
+
+            // exports
+            document.getElementById('btnCsv').onclick = () => {
+                const n = current.nps; if (!n) return;
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(new Blob([csv(n)], { type: 'text/csv;charset=utf-8' }));
+                a.download = `${current.code}_nps.csv`; a.click();
+                setTimeout(() => URL.revokeObjectURL(a.href), 1500);
+            };
+
+            document.getElementById('btnPptx').onclick = () => exportPptx();
+        })();
+
+        /* ---------- Load selection ---------- */
+        async function loadSurvey(code) {
+            setBtns(false);
+            current.code = code;
+            const meta = surveys.find(s => s.code === code);
+            const chip = document.getElementById('activeChip');
+            chip.textContent = meta?.isActive ? 'Active' : 'Inactive';
+            chip.style.background = meta?.isActive ? 'linear-gradient(180deg,#103a2a,#0e2e22)' : 'rgba(255,255,255,.04)';
+
+            try {
+                const raw = await api.nps(code);
+                current.nps = normalizeNps(raw);
+            } catch (e) { toast('Failed to load NPS'); console.error(e); current.nps = normalizeNps(null); }
+
+            try {
+                current.def = await api.definition(code);
+            } catch (e) { toast('Failed to load definition'); console.error(e); current.def = null; }
+
+            renderMeta(meta, current.nps);
+            renderCharts(current.nps);
+            renderSchemaTables(current.def);
+            setBtns(true); toast(`Loaded “${meta?.title || code}”`);
+        }
+
+        function renderMeta(meta, nps) {
+            document.getElementById('kNps').textContent = nps.score;
+            document.getElementById('kPro').textContent = nps.promoters;
+            document.getElementById('kPas').textContent = nps.passives;
+            document.getElementById('kDet').textContent = nps.detractors;
+            document.getElementById('totalLbl').textContent = 'Total: ' + (nps.total || 0);
+            document.getElementById('slideTitle').textContent = (meta?.title || 'Net Promoter Score');
+
+            const total = nps.total || 0;
+            const proP = pct(nps.promoters, total);
+            const pasP = pct(nps.passives, total);
+            const detP = pct(nps.detractors, total);
+            document.getElementById('pctLbl').textContent = `Promoters ${proP}% • Passives ${pasP}% • Detractors ${detP}%`;
+
+            // goal bar (goal 50)
+            const goalPct = Math.max(0, Math.min(100, Math.round((nps.score / 50) * 100)));
+            document.getElementById('goalBar').style.width = goalPct + '%';
+        }
+
+        /* ---------- Charts ---------- */
+        function renderCharts(nps) {
+            // destroy old
+            Object.values(charts).forEach(c => { try { c?.destroy(); } catch { } });
+
+            const total = nps.total || 0;
+            const proP = pct(nps.promoters, total), pasP = pct(nps.passives, total), detP = pct(nps.detractors, total);
+
+            // Gauge
+            const score = nps.score;
+            const value = score + 100; // 0..200
+            const color = score >= 50 ? getCss('--green') : score >= 0 ? getCss('--amber') : getCss('--red');
+            charts.gauge = new Chart(document.getElementById('gauge'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Score', ''],
+                    datasets: [{ data: [value, 200 - value], nps: score, backgroundColor: [color, '#e9eef7'], borderWidth: 0, circumference: 180, rotation: 180 }]
+                },
+                options: { responsive: true, cutout: '70%', plugins: { legend: { display: false }, tooltip: { enabled: false } } }
+            });
+
+            // 100% stacked
+            charts.stack = new Chart(document.getElementById('stack'), {
+                type: 'bar',
+                data: {
+                    labels: ['Distribution'], datasets: [
+                        { label: 'Promoters', data: [proP], backgroundColor: getCss('--green') },
+                        { label: 'Passives', data: [pasP], backgroundColor: getCss('--amber') },
+                        { label: 'Detractors', data: [detP], backgroundColor: getCss('--red') }
+                    ]
+                },
+                options: { indexAxis: 'y', scales: { x: { stacked: true, max: 100, grid: { color: '#eef3fb' } }, y: { stacked: true, grid: { display: false } } }, plugins: { legend: { position: 'bottom' } } }
+            });
+
+            // Donut
+            charts.donut = new Chart(document.getElementById('donut'), {
+                type: 'doughnut',
+                data: { labels: ['Promoters', 'Passives', 'Detractors'], datasets: [{ data: [nps.promoters, nps.passives, nps.detractors], backgroundColor: [getCss('--green'), getCss('--amber'), getCss('--red')], borderWidth: 0 }] },
+                options: { responsive: true, cutout: '64%', plugins: { legend: { position: 'bottom' } } }
+            });
+        }
+
+        /* ---------- Schema tables (busy/right) ---------- */
+        function renderSchemaTables(def) {
+            const qTable = $('#tblQuestions').DataTable();
+            const oTable = $('#tblOptions').DataTable();
+            qTable.clear(); oTable.clear();
+
+            if (!def) {
+                qTable.draw(); oTable.draw(); return;
+            }
+
+            const secMap = new Map((def.sections || []).map(s => [s.id, s.title]));
+            (def.questions || []).forEach(q => {
+                qTable.row.add([q.key, q.prompt, q.type, (secMap.get(q.sectionId) || '—'), q.required ? 'Yes' : 'No']);
+            });
+            (def.options || []).forEach(o => {
+                const q = (def.questions || []).find(x => x.id === o.questionId);
+                oTable.row.add([q?.key || '—', o.value, o.label, o.order]);
+            });
+            qTable.draw(); oTable.draw();
+        }
+
+        /* init the right-hand tables once */
+        $(function () {
+            $('#tblQuestions').DataTable({ data: [], columns: [{ title: 'Key' }, { title: 'Prompt' }, { title: 'Type' }, { title: 'Section' }, { title: 'Required' }], dom: 'Bfrtip', buttons: ['copy', 'csv', 'excel', 'pdf'], pageLength: 5 });
+            $('#tblOptions').DataTable({ data: [], columns: [{ title: 'Question' }, { title: 'Value' }, { title: 'Label' }, { title: 'Order' }], dom: 'Bfrtip', buttons: ['copy', 'csv', 'excel', 'pdf'], pageLength: 5 });
+        });
+
+        /* ---------- PPTX Export ---------- */
+        function exportPptx() {
+            if (!current.nps) return;
+            const pptx = new PptxGenJS();
+            pptx.author = "ClientFlow";
+            const slide = pptx.addSlide();
+            slide.addText(`NPS — ${current.code}`, { x: 0.5, y: 0.3, w: 9, h: 0.6, fontSize: 24, bold: true, color: '20304A' });
+            const k = current.nps;
+            slide.addText(`NPS: ${k.score}`, { x: 0.5, y: 1.1, fontSize: 20, color: '20304A' });
+            slide.addText(`Promoters: ${k.promoters}`, { x: 3.0, y: 1.1, fontSize: 20, color: '2E7D32' });
+            slide.addText(`Passives: ${k.passives}`, { x: 5.7, y: 1.1, fontSize: 20, color: 'FFB300' });
+            slide.addText(`Detractors: ${k.detractors}`, { x: 8.0, y: 1.1, fontSize: 20, color: 'D32F2F' });
+            slide.addImage({ data: document.getElementById('donut').toDataURL('image/png', 1.0), x: 0.5, y: 1.8, w: 4.2, h: 3.2 });
+            slide.addImage({ data: document.getElementById('stack').toDataURL('image/png', 1.0), x: 5.2, y: 2.0, w: 4.2, h: 2.0 });
+            slide.addText(`Total responses: ${k.total}`, { x: 0.5, y: 5.2, fontSize: 12, color: '6A7B9B' });
+            pptx.writeFile({ fileName: `${current.code}_NPS.pptx` });
+        }
+    </script>
+</body>
+</html>

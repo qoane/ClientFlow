@@ -1,0 +1,446 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ClientFlow — NPS/CSAT Dashboard (Local)</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
+    <style>
+        :root {
+            --bg: #0b1020;
+            --panel: #121936;
+            --panel2: #0f1530;
+            --muted: #9fb0ff;
+            --text: #eef1ff;
+            --accent: #6cf0c2;
+            --accent2: #89b4ff;
+            --border: rgba(255,255,255,.08);
+            --green: #3bb98f;
+            --amber: #ffc857;
+            --red: #f96a6a;
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        html, body {
+            height: 100%
+        }
+
+        body {
+            margin: 0;
+            background: radial-gradient(1200px 800px at 80% -10%,#1b2550 0%,transparent 60%),var(--bg);
+            color: var(--text);
+            font: 15px/1.45 system-ui,-apple-system,Segoe UI,Roboto
+        }
+
+        .app {
+            display: grid;
+            grid-template-rows: 64px 1fr;
+            min-height: 100vh
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 0 20px;
+            border-bottom: 1px solid var(--border);
+            background: linear-gradient(180deg,#141c3f,#0e1533)
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700
+        }
+
+        .logo {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            background: conic-gradient(from 210deg,var(--accent),var(--accent2));
+            box-shadow: 0 0 0 2px rgba(255,255,255,.07) inset
+        }
+
+        .tag {
+            padding: 2px 8px;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            color: #b9c6ff;
+            font-size: 12px
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 9px 12px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: linear-gradient(180deg,#1a2248,#141c3f);
+            color: #e9eeff;
+            cursor: pointer
+        }
+
+            .btn.accent {
+                background: linear-gradient(180deg,#19cba0,#0dbb93);
+                color: #031b15;
+                border: none
+            }
+
+        .toolbar {
+            margin-left: auto;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap
+        }
+
+        .select, input[type="date"] {
+            appearance: none;
+            background: linear-gradient(180deg,#1a2248,#141c3f);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: #e9eeff;
+            padding: 8px 10px
+        }
+
+        .shell {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 12px;
+            padding: 12px
+        }
+
+        @media (max-width:1100px) {
+            .shell {
+                grid-template-columns: 1fr
+            }
+        }
+
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,.15);
+            overflow: hidden
+        }
+
+        .head {
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between
+        }
+
+        .body {
+            padding: 14px
+        }
+
+        .kpis {
+            display: grid;
+            grid-template-columns: repeat(4,1fr);
+            gap: 10px
+        }
+
+        @media (max-width:1000px) {
+            .kpis {
+                grid-template-columns: repeat(2,1fr)
+            }
+        }
+
+        .kpi {
+            background: var(--panel2);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px
+        }
+
+            .kpi h6 {
+                margin: 0 0 2px
+            }
+
+            .kpi .val {
+                font-size: 2rem;
+                font-weight: 800
+            }
+
+        .slide {
+            background: #fff;
+            color: #20304a;
+            border-radius: 16px;
+            border: 1px solid #e6ecf4;
+            padding: 14px;
+            box-shadow: 0 12px 30px rgba(0,0,0,.25)
+        }
+
+        .slide-grid {
+            display: grid;
+            grid-template-columns: 360px 1fr;
+            gap: 14px
+        }
+
+        @media (max-width:980px) {
+            .slide-grid {
+                grid-template-columns: 1fr
+            }
+        }
+
+        .card {
+            background: #f7fbff;
+            border: 1px solid #e6eef8;
+            border-radius: 14px;
+            padding: 12px
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 8px
+        }
+
+            .table th {
+                color: #cfe0ff;
+                text-align: left;
+                font-weight: 600
+            }
+
+            .table td {
+                background: #0e1431;
+                border: 1px solid var(--border);
+                padding: 10px;
+                border-radius: 10px;
+                vertical-align: top
+            }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 999px;
+            background: rgba(255,255,255,.08);
+            border: 1px solid var(--border);
+            font-size: 12px
+        }
+
+        .toast {
+            position: fixed;
+            right: 18px;
+            bottom: 18px;
+            background: #0f1530;
+            border: 1px solid var(--border);
+            padding: 10px 14px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,.3)
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <header>
+            <div class="brand"><div class="logo"></div> ClientFlow — Dashboard <span class="tag">Local</span></div>
+            <div class="toolbar">
+                <select id="range" class="select">
+                    <option value="7">Last 7 days</option>
+                    <option value="30" selected>Last 30 days</option>
+                    <option value="90">Last 90 days</option>
+                    <option value="all">All time</option>
+                </select>
+                <button class="btn" id="btnExport">Export CSV</button>
+                <button class="btn" id="btnClear">Clear data</button>
+            </div>
+        </header>
+
+        <div class="shell">
+            <section class="panel">
+                <div class="head"><strong>Overview</strong><span class="badge" id="countChip">0 responses</span></div>
+                <div class="body">
+                    <div class="kpis" style="margin-bottom:10px">
+                        <div class="kpi"><h6>NPS</h6><div class="val" id="kNps">0</div><div style="font-size:12px;color:#9fb0ff">Score</div></div>
+                        <div class="kpi"><h6>Promoters</h6><div class="val" id="kPro">0</div><div class="badge">9–10</div></div>
+                        <div class="kpi"><h6>Passives</h6><div class="val" id="kPas">0</div><div class="badge">7–8</div></div>
+                        <div class="kpi"><h6>Detractors</h6><div class="val" id="kDet">0</div><div class="badge">0–6</div></div>
+                    </div>
+
+                    <div class="slide">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                            <div>
+                                <div style="font-weight:700">Net Promoter Score</div>
+                                <div style="color:#6a7b9b;font-size:12px">Promoters • Passives • Detractors — <span id="totalLbl">Total: 0</span></div>
+                            </div>
+                            <div style="font-size:12px;color:#6a7b9b" id="dateLbl">—</div>
+                        </div>
+                        <div class="slide-grid">
+                            <div class="card">
+                                <canvas id="gauge" height="210"></canvas>
+                                <div style="color:#6a7b9b;font-size:12px;margin-top:6px">Gauge scaled −100 → 100</div>
+                            </div>
+                            <div style="display:grid;gap:12px">
+                                <div class="card"><strong style="display:block;margin-bottom:6px">Distribution (100%)</strong><canvas id="stack" height="80"></canvas></div>
+                                <div class="card"><strong style="display:block;margin-bottom:6px">Composition</strong><canvas id="donut" height="120"></canvas></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="panel">
+                <div class="head"><strong>Staff leaderboard</strong><span class="badge">NPS by staff</span></div>
+                <div class="body">
+                    <table class="table" id="tblStaff"><thead><tr><th>Staff</th><th>Promoters</th><th>Passives</th><th>Detractors</th><th>NPS</th></tr></thead><tbody></tbody></table>
+                </div>
+                <div class="head"><strong>Recent feedback</strong><span class="badge" id="recentChip">—</span></div>
+                <div class="body">
+                    <table class="table" id="tblRecent"><thead><tr><th>When</th><th>Staff</th><th>NPS</th><th>Overall</th><th>Speed</th><th>Respect</th><th>Kudos</th><th>Improve</th></tr></thead><tbody></tbody></table>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script>
+const LS_STAFF='cf_staff', LS_RESP='cf_responses';
+const toast=(m)=>{ const t=document.createElement('div'); t.className='toast'; t.textContent=m; document.body.appendChild(t); setTimeout(()=>t.remove(),1600); };
+const getStaff=()=>{ try{return JSON.parse(localStorage.getItem(LS_STAFF)||'[]');}catch{return[]} };
+const getResp=()=>{ try{return JSON.parse(localStorage.getItem(LS_RESP)||'[]');}catch{return[]} };
+const fmt = ts => new Date(ts).toLocaleString();
+
+let charts={g:null,s:null,d:null};
+const GaugePlugin = { id:'gaugeText', afterDatasetDraw(chart, args){ if(args.index!==0)return; const ds=chart.config.data.datasets[0]; const nps=ds.nps||0; const meta=chart.getDatasetMeta(0); const arc=meta?.data?.[0]; if(!arc) return; const {ctx}=chart; ctx.save(); ctx.fillStyle='#20304a'; ctx.font='700 26px system-ui'; ctx.textAlign='center'; ctx.fillText(nps, arc.x, arc.y+10); ctx.restore(); } };
+Chart.register(GaugePlugin);
+
+function withinRange(ts, days){
+  if(days==='all') return true;
+  const now=Date.now(), from= now - (Number(days)*24*3600*1000);
+  return ts>=from;
+}
+
+function compute(data){
+  const out={total:0, pro:0,pas:0,det:0, score:0};
+  data.forEach(r=>{
+    if(r.nps>=9) out.pro++; else if(r.nps>=7) out.pas++; else out.det++;
+  });
+  out.total = data.length;
+  out.score = out.total ? Math.round(((out.pro/out.total) - (out.det/out.total))*100) : 0;
+  return out;
+}
+
+function render(){
+  const range = document.getElementById('range').value;
+  const staff = getStaff(); const respAll = getResp();
+  const resp = respAll.filter(r=> withinRange(r.ts, range));
+  const meta = compute(resp);
+
+  document.getElementById('kNps').textContent=meta.score;
+  document.getElementById('kPro').textContent=meta.pro;
+  document.getElementById('kPas').textContent=meta.pas;
+  document.getElementById('kDet').textContent=meta.det;
+  document.getElementById('countChip').textContent = `${meta.total} responses`;
+  document.getElementById('totalLbl').textContent = `Total: ${meta.total}`;
+  const now = new Date();
+  const from = range==='all' ? new Date(Math.min(...resp.map(r=>r.ts)||[now])) : new Date(Date.now()-Number(range)*24*3600*1000);
+  document.getElementById('dateLbl').textContent = `${from.toLocaleDateString()} → ${now.toLocaleDateString()}`;
+
+  const proP = meta.total? Math.round((meta.pro/meta.total)*100):0;
+  const pasP = meta.total? Math.round((meta.pas/meta.total)*100):0;
+  const detP = meta.total? Math.round((meta.det/meta.total)*100):0;
+
+  // charts
+  charts.g?.destroy(); charts.s?.destroy(); charts.d?.destroy();
+  const value = meta.score + 100;
+  const color = meta.score>=50?getCss('--green'): meta.score>=0? getCss('--amber'): getCss('--red');
+  charts.g = new Chart(document.getElementById('gauge'), {
+    type:'doughnut',
+    data:{labels:['Score',''], datasets:[{data:[value, 200-value], nps: meta.score,
+      backgroundColor:[color,'#e9eef7'], borderWidth:0, circumference:180, rotation:180}]},
+    options:{responsive:true,cutout:'70%',plugins:{legend:{display:false},tooltip:{enabled:false}}}
+  });
+  charts.s = new Chart(document.getElementById('stack'), {
+    type:'bar',
+    data:{labels:['Distribution'], datasets:[
+      {label:'Promoters', data:[proP], backgroundColor:getCss('--green')},
+      {label:'Passives',  data:[pasP], backgroundColor:getCss('--amber')},
+      {label:'Detractors',data:[detP], backgroundColor:getCss('--red')}
+    ]},
+    options:{indexAxis:'y', scales:{x:{stacked:true,max:100,grid:{color:'#eef3fb'}}, y:{stacked:true,grid:{display:false}}},
+      plugins:{legend:{position:'bottom'}}}
+  });
+  charts.d = new Chart(document.getElementById('donut'), {
+    type:'doughnut',
+    data:{labels:['Promoters','Passives','Detractors'], datasets:[{data:[meta.pro,meta.pas,meta.det],
+      backgroundColor:[getCss('--green'), getCss('--amber'), getCss('--red')], borderWidth:0}]},
+    options:{responsive:true,cutout:'64%',plugins:{legend:{position:'bottom'}}}
+  });
+
+  // Staff leaderboard
+  const byStaff = new Map(); // id -> {name,pro,pas,det}
+  resp.forEach(r=>{
+    const ids = (r.staffIds||[]);
+    if(ids.length===0){ // count under "Unknown"
+      const u='unknown';
+      if(!byStaff.has(u)) byStaff.set(u,{name:'(Unknown / not captured)', pro:0,pas:0,det:0});
+      if(r.nps>=9) byStaff.get(u).pro++; else if(r.nps>=7) byStaff.get(u).pas++; else byStaff.get(u).det++;
+    } else {
+      ids.forEach(id=>{
+        const s = staff.find(x=>x.id===id);
+        const name = s? s.name : id;
+        if(!byStaff.has(id)) byStaff.set(id,{name,pro:0,pas:0,det:0});
+        if(r.nps>=9) byStaff.get(id).pro++; else if(r.nps>=7) byStaff.get(id).pas++; else byStaff.get(id).det++;
+      });
+    }
+  });
+  const tbody = document.querySelector('#tblStaff tbody'); tbody.innerHTML='';
+  [...byStaff.entries()].map(([id,st])=>{
+    const total = st.pro+st.pas+st.det;
+    const score = total? Math.round(((st.pro/total)-(st.det/total))*100):0;
+    return {id, ...st, total, score};
+  }).sort((a,b)=> b.score-a.score).forEach(r=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML = `<td>${r.name}</td><td>${r.pro}</td><td>${r.pas}</td><td>${r.det}</td><td><span class="badge">${r.score}</span></td>`;
+    tbody.appendChild(tr);
+  });
+
+  // Recent feedback
+  const recent = resp.slice().sort((a,b)=> b.ts-a.ts).slice(0,15);
+  const tb2 = document.querySelector('#tblRecent tbody'); tb2.innerHTML='';
+  recent.forEach(r=>{
+    const names = (r.staffIds||[]).map(id=> (staff.find(s=>s.id===id)?.name)||id).join(', ') || '(Unknown)';
+    const tr=document.createElement('tr');
+    tr.innerHTML = `<td>${fmt(r.ts)}</td><td>${names}</td><td>${r.nps}</td><td>${r.overall}</td><td>${r.speed}</td><td>${r.respect}</td>
+      <td>${esc(r.kudos||'')}</td><td>${esc(r.improve||'')}</td>`;
+    tb2.appendChild(tr);
+  });
+  document.getElementById('recentChip').textContent = `${recent.length} shown`;
+}
+
+function getCss(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+function esc(s){ return (s||'').replace(/[&<>"]/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c])) }
+
+document.getElementById('range').onchange = render;
+document.getElementById('btnClear').onclick = ()=>{
+  if(!confirm('Clear local responses?')) return;
+  localStorage.removeItem(LS_RESP);
+  render(); toast('Cleared');
+};
+document.getElementById('btnExport').onclick = ()=>{
+  const data = getResp();
+  const rows=[['Timestamp','StaffIds','NPS','Overall','Speed','Respect','Resolved','Kudos','Improve','Consent','Name','Phone','Email','Location']];
+  data.forEach(r=> rows.push([ new Date(r.ts).toISOString(), (r.staffIds||[]).join('|'), r.nps, r.overall, r.speed, r.respect, r.resolved, (r.kudos||'').replace(/\n/g,' '), (r.improve||'').replace(/\n/g,' '), r.consent, r.contactName||'', r.contactPhone||'', r.contactEmail||'', r.location||'' ]));
+  const csv = rows.map(r=> r.map(x=> `"${String(x).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  a.download='clientflow_responses.csv'; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1500);
+};
+
+// Live updates from flow.html (other tab)
+window.addEventListener('storage', (e)=>{
+  if(e.key==='cf_last_submit' || e.key===LS_RESP){ render(); toast('New feedback received'); }
+});
+
+// First render after Chart.js loads
+window.addEventListener('load', render);
+    </script>
+</body>
+</html>
