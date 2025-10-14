@@ -124,15 +124,34 @@ public class BranchesController : ControllerBase
     }
 
     /// <summary>
-    /// Deletes a branch.  Only SuperAdmins may delete branches.  Deleting a branch will fail
-    /// if there are dependent records such as kiosk feedback.  Use caution.
+    /// Deletes a branch.  Only SuperAdmins may delete branches.  When kiosk feedback exists
+    /// for the branch the caller must confirm cascading removal via the cascade query
+    /// parameter.  Staff and users referencing the branch will have their BranchId set to
+    /// null per the EF configuration.
     /// </summary>
     [HttpDelete("{id:guid}")]
     [Authorize(Roles = "SuperAdmin")]
-    public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
+    public async Task<IActionResult> Delete(Guid id, [FromQuery] bool cascade = false, CancellationToken ct)
     {
         var branch = await _db.Branches.FindAsync(new object?[] { id }, cancellationToken: ct);
         if (branch == null) return NotFound();
+
+        var dependentCount = await _db.KioskFeedback.AsNoTracking().CountAsync(k => k.BranchId == id, ct);
+        if (dependentCount > 0 && !cascade)
+        {
+            return Conflict(new
+            {
+                message = "Deleting this branch will also remove related kiosk feedback. Resubmit with cascade=true to confirm.",
+                dependentCount
+            });
+        }
+
+        if (dependentCount > 0)
+        {
+            var feedback = await _db.KioskFeedback.Where(k => k.BranchId == id).ToListAsync(ct);
+            _db.KioskFeedback.RemoveRange(feedback);
+        }
+
         _db.Branches.Remove(branch);
         await _db.SaveChangesAsync(ct);
         return NoContent();
