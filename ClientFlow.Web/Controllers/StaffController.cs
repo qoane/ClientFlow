@@ -62,53 +62,80 @@ public class StaffController : ControllerBase
         return Ok(list);
     }
 
+    public sealed class StaffCreateRequest
+    {
+        public string? Name { get; set; }
+        public string? PhotoUrl { get; set; }
+        public bool? IsActive { get; set; }
+        public Guid? BranchId { get; set; }
+    }
+
     /// <summary>
     /// Adds a new staff member.  Name is required.  PhotoUrl and
-    /// IsActive are optional (default to true).
+    /// IsActive are optional (default to true).  BranchAdmins may only
+    /// create staff in their assigned branch.
     /// </summary>
     [HttpPost]
     [Authorize]
-    public async Task<ActionResult<Staff>> Create([FromBody] Staff dto, CancellationToken ct)
+    public async Task<ActionResult<Staff>> Create([FromBody] StaffCreateRequest dto, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(dto.Name)) return BadRequest("Name is required");
-        // Determine branch assignment: BranchAdmins can only create staff in their own branch.
+        if (dto is null || string.IsNullOrWhiteSpace(dto.Name)) return BadRequest("Name is required");
+
         var callerRole = User.FindFirstValue(ClaimTypes.Role);
         var branchClaim = User.FindFirstValue("BranchId");
+
         Guid? branchId = null;
-        if (callerRole == UserRole.BranchAdmin.ToString() && Guid.TryParse(branchClaim, out var bId))
+        if (callerRole == UserRole.BranchAdmin.ToString() && Guid.TryParse(branchClaim, out var branchFromClaim))
         {
-            branchId = bId;
+            branchId = branchFromClaim;
         }
-        else
+        else if (dto.BranchId.HasValue && dto.BranchId.Value != Guid.Empty)
         {
-            // For Admins and SuperAdmins we honour the BranchId supplied in the body (if any)
-            if (dto.BranchId != Guid.Empty) branchId = dto.BranchId;
+            var requestedBranchId = dto.BranchId.Value;
+            var exists = await _db.Branches.AsNoTracking().AnyAsync(b => b.Id == requestedBranchId, ct);
+            if (!exists)
+            {
+                return BadRequest("BranchId is invalid.");
+            }
+            branchId = requestedBranchId;
         }
+
         var staff = new Staff
         {
             Id = Guid.NewGuid(),
             Name = dto.Name.Trim(),
             PhotoUrl = string.IsNullOrWhiteSpace(dto.PhotoUrl) ? null : dto.PhotoUrl.Trim(),
-            IsActive = dto.IsActive,
+            IsActive = dto.IsActive ?? true,
             BranchId = branchId
         };
+
         _db.Staff.Add(staff);
         await _db.SaveChangesAsync(ct);
+
         return CreatedAtAction(nameof(GetAll), new { id = staff.Id }, staff);
     }
 
+    public sealed class StaffUpdateRequest
+    {
+        public string? Name { get; set; }
+        public string? PhotoUrl { get; set; }
+        public bool? IsActive { get; set; }
+        public Guid? BranchId { get; set; }
+    }
+
     /// <summary>
-    /// Updates an existing staff member.  Only the Name, PhotoUrl and
-    /// IsActive properties may be updated.  Fields not supplied will
-    /// remain unchanged.
+    /// Updates an existing staff member.  Only supplied fields are
+    /// changed; unspecified properties remain untouched.
     /// </summary>
     [HttpPut("{id}")]
     [Authorize]
-    public async Task<IActionResult> Update(Guid id, [FromBody] Staff dto, CancellationToken ct)
+    public async Task<IActionResult> Update(Guid id, [FromBody] StaffUpdateRequest dto, CancellationToken ct)
     {
+        if (dto is null) return BadRequest("Body required.");
+
         var staff = await _db.Staff.FindAsync(new object?[] { id }, ct);
         if (staff == null) return NotFound();
-        // Restrict BranchAdmins to their own branch
+
         var callerRole = User.FindFirstValue(ClaimTypes.Role);
         var branchClaim = User.FindFirstValue("BranchId");
         if (callerRole == UserRole.BranchAdmin.ToString() && Guid.TryParse(branchClaim, out var bId))
@@ -118,30 +145,56 @@ public class StaffController : ControllerBase
                 return Forbid();
             }
         }
-        if (!string.IsNullOrWhiteSpace(dto.Name)) staff.Name = dto.Name.Trim();
-        if (!string.IsNullOrWhiteSpace(dto.PhotoUrl)) staff.PhotoUrl = dto.PhotoUrl.Trim();
-        // If IsActive supplied in body we update it; otherwise leave unchanged
-        staff.IsActive = dto.IsActive;
-        // For Admins and SuperAdmins allow updating branch assignment
-        if (callerRole != UserRole.BranchAdmin.ToString())
+
+        if (dto.Name is not null)
         {
-            if (dto.BranchId != Guid.Empty) staff.BranchId = dto.BranchId;
+            if (string.IsNullOrWhiteSpace(dto.Name)) return BadRequest("Name cannot be empty.");
+            staff.Name = dto.Name.Trim();
         }
+
+        if (dto.PhotoUrl is not null)
+        {
+            staff.PhotoUrl = string.IsNullOrWhiteSpace(dto.PhotoUrl) ? null : dto.PhotoUrl.Trim();
+        }
+
+        if (dto.IsActive.HasValue)
+        {
+            staff.IsActive = dto.IsActive.Value;
+        }
+
+        if (callerRole != UserRole.BranchAdmin.ToString() && dto.BranchId is not null)
+        {
+            if (dto.BranchId == Guid.Empty)
+            {
+                staff.BranchId = null;
+            }
+            else
+            {
+                var exists = await _db.Branches.AsNoTracking().AnyAsync(b => b.Id == dto.BranchId, ct);
+                if (!exists)
+                {
+                    return BadRequest("BranchId is invalid.");
+                }
+                staff.BranchId = dto.BranchId;
+            }
+        }
+
         await _db.SaveChangesAsync(ct);
         return NoContent();
     }
 
     /// <summary>
-    /// Deletes a staff member.  Feedback rows referencing this staff
-    /// member will be cascaded per the model configuration.
+    /// Deletes a staff member.  If kiosk feedback rows reference this
+    /// staff member the caller must confirm cascading deletion via the
+    /// cascade query parameter.
     /// </summary>
     [HttpDelete("{id}")]
     [Authorize]
-    public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
+    public async Task<IActionResult> Delete(Guid id, [FromQuery] bool cascade = false, CancellationToken ct)
     {
         var staff = await _db.Staff.FindAsync(new object?[] { id }, ct);
         if (staff == null) return NotFound();
-        // Restrict BranchAdmins to their own branch
+
         var callerRole = User.FindFirstValue(ClaimTypes.Role);
         var branchClaim = User.FindFirstValue("BranchId");
         if (callerRole == UserRole.BranchAdmin.ToString() && Guid.TryParse(branchClaim, out var bId))
@@ -151,6 +204,17 @@ public class StaffController : ControllerBase
                 return Forbid();
             }
         }
+
+        var dependentCount = await _db.KioskFeedback.AsNoTracking().CountAsync(k => k.StaffId == id, ct);
+        if (dependentCount > 0 && !cascade)
+        {
+            return Conflict(new
+            {
+                message = "Deleting this staff member will also remove related kiosk feedback. Resubmit with cascade=true to confirm.",
+                dependentCount
+            });
+        }
+
         _db.Staff.Remove(staff);
         await _db.SaveChangesAsync(ct);
         return NoContent();
