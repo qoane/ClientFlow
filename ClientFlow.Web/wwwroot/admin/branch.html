@@ -374,7 +374,15 @@
             try {
                 const staff = await api(`/api/staff?branchId=${encodeURIComponent(branchId)}`);
                 const normalizedBranchId = (branchId || '').toLowerCase();
-                currentStaff = (staff || []).filter(s => (s.branchId || '').toLowerCase() === normalizedBranchId);
+                const list = staff || [];
+                let filtered = list.filter(s => {
+                    const candidateId = ((s.branchId ?? (s.branch && s.branch.id)) || '').toLowerCase();
+                    return candidateId === normalizedBranchId;
+                });
+                if (!filtered.length && list.length) {
+                    filtered = list;
+                }
+                currentStaff = filtered;
                 renderStaffList();
             } catch (err) {
                 staffListDiv.innerHTML = `<p class="error">Unable to load staff: ${err.message}</p>`;
