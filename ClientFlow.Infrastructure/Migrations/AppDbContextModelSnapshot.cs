@@ -22,13 +22,50 @@ namespace ClientFlow.Infrastructure.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("ClientFlow.Domain.Branches.Branch", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("ReportRecipients")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ReportTime")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("Branches");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0000-000000000001"),
+                            Name = "Head Office",
+                            ReportRecipients = "",
+                            ReportTime = "08:00"
+                        });
+                });
+
             modelBuilder.Entity("ClientFlow.Domain.Feedback.KioskFeedback", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("Branch")
+                    b.Property<Guid>("BranchId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("BranchName")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTimeOffset>("CreatedUtc")
@@ -57,6 +94,8 @@ namespace ClientFlow.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("BranchId");
+
                     b.HasIndex("StaffId");
 
                     b.ToTable("KioskFeedback");
@@ -66,6 +105,9 @@ namespace ClientFlow.Infrastructure.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("BranchId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<bool>("IsActive")
@@ -80,32 +122,84 @@ namespace ClientFlow.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("BranchId");
+
                     b.ToTable("Staff");
 
                     b.HasData(
                         new
                         {
                             Id = new Guid("11111111-1111-1111-1111-111111111111"),
+                            BranchId = new Guid("00000000-0000-0000-0000-000000000001"),
                             IsActive = true,
                             Name = "Neo Ramohlabi"
                         },
                         new
                         {
                             Id = new Guid("22222222-2222-2222-2222-222222222222"),
+                            BranchId = new Guid("00000000-0000-0000-0000-000000000001"),
                             IsActive = true,
                             Name = "Baradi Boikanyo"
                         },
                         new
                         {
                             Id = new Guid("33333333-3333-3333-3333-333333333333"),
+                            BranchId = new Guid("00000000-0000-0000-0000-000000000001"),
                             IsActive = true,
                             Name = "Ts'epo Chefa"
                         },
                         new
                         {
                             Id = new Guid("44444444-4444-4444-4444-444444444444"),
+                            BranchId = new Guid("00000000-0000-0000-0000-000000000001"),
                             IsActive = true,
                             Name = "Mpho Phahlang"
+                        });
+                });
+
+            modelBuilder.Entity("ClientFlow.Domain.Users.User", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("BranchId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("CreatedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Role")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BranchId");
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("Email")
+                        .IsUnique();
+
+                    b.ToTable("Users");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("11111111-0000-0000-0000-000000000000"),
+                            BranchId = (Guid?)null,
+                            Email = "admin@example.com",
+                            PasswordHash = "PrP+ZrMeO00Q+nC1ytSccRIpSvauTkdqHEBRVdRaoSE=",
+                            Role = 2
                         });
                 });
 
@@ -438,11 +532,19 @@ namespace ClientFlow.Infrastructure.Migrations
 
             modelBuilder.Entity("ClientFlow.Domain.Feedback.KioskFeedback", b =>
                 {
+                    b.HasOne("ClientFlow.Domain.Branches.Branch", "Branch")
+                        .WithMany()
+                        .HasForeignKey("BranchId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("ClientFlow.Domain.Feedback.Staff", "Staff")
                         .WithMany("Feedback")
                         .HasForeignKey("StaffId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Branch");
 
                     b.Navigation("Staff");
                 });
@@ -486,7 +588,33 @@ namespace ClientFlow.Infrastructure.Migrations
 
             modelBuilder.Entity("ClientFlow.Domain.Feedback.Staff", b =>
                 {
+                    b.HasOne("ClientFlow.Domain.Branches.Branch", "Branch")
+                        .WithMany()
+                        .HasForeignKey("BranchId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Branch");
+
                     b.Navigation("Feedback");
+                });
+
+            modelBuilder.Entity("ClientFlow.Domain.Users.User", b =>
+                {
+                    b.HasOne("ClientFlow.Domain.Branches.Branch", "Branch")
+                        .WithMany()
+                        .HasForeignKey("BranchId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("ClientFlow.Domain.Users.User", "CreatedByUser")
+                        .WithMany("CreatedUsers")
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Branch");
+
+                    b.Navigation("CreatedByUser");
+
+                    b.Navigation("CreatedUsers");
                 });
 
             modelBuilder.Entity("ClientFlow.Domain.Surveys.Question", b =>
