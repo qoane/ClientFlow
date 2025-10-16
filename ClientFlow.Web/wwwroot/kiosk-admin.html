@@ -232,6 +232,7 @@
         </div>
     </div>
 
+    <script src="app-base.js"></script>
     <script>
         (function() {
             // Read auth token and user info from localStorage.  BranchAdmins are
@@ -241,7 +242,7 @@
             const userBranchId = localStorage.getItem('branchId');
             if (!authToken) {
                 // Require login for access to kiosk-admin
-                window.location.href = '/login.html';
+                appRedirect('login.html');
                 return;
             }
             // Cached staff list. Each element has { id, name, photoUrl, isActive }

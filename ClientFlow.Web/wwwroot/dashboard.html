@@ -412,18 +412,19 @@
     <script src="https://cdn.jsdelivr.net/npm/datatables.net-buttons@2.4.3/js/buttons.html5.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/datatables.net-buttons@2.4.3/js/buttons.print.min.js"></script>
 
+    <script src="app-base.js"></script>
     <script>
         // Require authentication for this dashboard.  If no auth token is present
         // then redirect to login.  We also include the token on API calls.
         const token = localStorage.getItem('authToken');
         if (!token) {
-            window.location.href = '/login.html';
+            window.location.href = appBuildUrl('login.html');
         }
         // ---- Endpoints (same origin) ----
         const api = {
-            listSurveys: () => fetch('/api/admin/surveys', { headers: { 'Authorization': 'Bearer ' + token } }).then(r => r.json()),
-            nps: (code) => fetch(`/api/surveys/${encodeURIComponent(code)}/nps`, { headers: { 'Authorization': 'Bearer ' + token } }).then(r => r.ok ? r.json() : { detractors: 0, passives: 0, promoters: 0, total: 0, score: 0 }),
-            definition: (code) => fetch(`/api/surveys/${encodeURIComponent(code)}/definition`, { headers: { 'Authorization': 'Bearer ' + token } }).then(r => r.ok ? r.json() : null)
+            listSurveys: () => appApiFetch('api/admin/surveys', { headers: { 'Authorization': 'Bearer ' + token } }).then(r => r.json()),
+            nps: (code) => appApiFetch(`api/surveys/${encodeURIComponent(code)}/nps`, { headers: { 'Authorization': 'Bearer ' + token } }).then(r => r.ok ? r.json() : { detractors: 0, passives: 0, promoters: 0, total: 0, score: 0 }),
+            definition: (code) => appApiFetch(`api/surveys/${encodeURIComponent(code)}/definition`, { headers: { 'Authorization': 'Bearer ' + token } }).then(r => r.ok ? r.json() : null)
         };
 
         // ---- State ----

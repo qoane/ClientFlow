@@ -229,7 +229,8 @@
         </div>
     </div>
 
-    <script>
+        <script src="app-base.js"></script>
+<script>
         (function () {
             const questions = [
                 { key: 'time', container: 'optsTime', labels: ['Not at all', 'No', 'Neutral', 'Yes, Mostly', 'Absolutely'] },
@@ -340,7 +341,7 @@
             byId('backFromOverall').addEventListener('click', () => showPage(4));
             const observer = new MutationObserver(() => { if (pages[currentIndex] === 'page-final') { state.duration = state.startedAt ? Math.round((Date.now() - state.startedAt) / 1000) : 0; persistResponse(); const bar = byId('finalProgress'); if (bar) { bar.style.width = '0%'; setTimeout(() => { bar.style.width = '100%'; }, 50); } setTimeout(() => { resetState(); showPage(0); }, 4000); } });
             observer.observe(byId('page-final'), { attributes: true, attributeFilter: ['class'] });
-            if ('serviceWorker' in navigator) { navigator.serviceWorker.register('/sw.js').catch(() => { }); }
+            if ('serviceWorker' in navigator) { navigator.serviceWorker.register(appBuildUrl('sw.js')).catch(() => { }); }
         })();
 
         const canvas = document.getElementById('bgAnimation');

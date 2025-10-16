@@ -55,12 +55,12 @@
     </header>
     <div class="shell">
         <nav>
-            <a href="/admin/dashboard.html">Dashboard</a>
-            <a href="/admin/branches.html">Branches</a>
-            <a href="/admin/users.html" class="active">Users</a>
-            <a href="/admin/settings.html">Settings</a>
-            <a href="/admin/flow-dash.html">Surveys</a>
-            <a href="/kiosk-dashboard.html" target="_blank">Kiosk Dashboard</a>
+            <a href="dashboard.html">Dashboard</a>
+            <a href="branches.html">Branches</a>
+            <a href="users.html" class="active">Users</a>
+            <a href="settings.html">Settings</a>
+            <a href="flow-dash.html">Surveys</a>
+            <a href="../kiosk-dashboard.html" target="_blank">Kiosk Dashboard</a>
         </nav>
         <main>
             <h1>Users</h1>
@@ -69,15 +69,16 @@
             <button id="addBtn" style="margin-bottom:12px;">Add User</button>
         </main>
     </div>
+    <script src="../app-base.js"></script>
     <script>
         const token = localStorage.getItem('authToken');
-        if (!token) { window.location.href = '/login.html'; }
+        if (!token) { window.location.href = appBuildUrl('login.html'); }
         // Display logged in user's email
         const userEmailSpan = document.getElementById('userEmail');
         if (userEmailSpan) userEmailSpan.textContent = localStorage.getItem('userEmail') || '';
         const role = localStorage.getItem('userRole');
         const branchId = localStorage.getItem('branchId');
-        document.getElementById('signOut').addEventListener('click', () => { localStorage.clear(); window.location.href = '/login.html'; });
+        document.getElementById('signOut').addEventListener('click', () => { localStorage.clear(); window.location.href = appBuildUrl('login.html'); });
         const listDiv = document.getElementById('userList');
         const createDiv = document.getElementById('createForm');
         const addBtn = document.getElementById('addBtn');
@@ -88,7 +89,7 @@
         addBtn.addEventListener('click', () => { showCreateForm(); });
         async function api(url, opts = {}) {
             opts.headers = Object.assign({}, opts.headers || {}, { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' });
-            const res = await fetch(url, opts);
+            const res = await appApiFetch(url, opts);
             if (!res.ok) throw new Error(await res.text());
             return res.status === 204 ? null : res.json();
         }
@@ -124,7 +125,7 @@
                 const roleSel = document.getElementById('newRole').value;
                 const bId = document.getElementById('newBranch').value || null;
                 try {
-                    await api('/api/users', { method:'POST', body: JSON.stringify({ email, password, role: roleSel, branchId: bId || null }) });
+                    await api('api/users', { method:'POST', body: JSON.stringify({ email, password, role: roleSel, branchId: bId || null }) });
                     createDiv.style.display = 'none';
                     loadUsers();
                 } catch (err) {
@@ -148,7 +149,7 @@
                     const id = e.target.closest('tr').dataset.id;
                     if (confirm('Delete this user?')) {
                         try {
-                            await api('/api/users/' + id, { method:'DELETE' });
+                            await api('api/users/' + id, { method:'DELETE' });
                             loadUsers();
                         } catch (err) {
                             alert('Error deleting: ' + err.message);
@@ -160,7 +161,7 @@
         async function loadBranchesInto(selectId) {
             try {
                 const select = document.getElementById(selectId);
-                const branches = await api('/api/branches');
+                const branches = await api('api/branches');
                 select.innerHTML = '<option value="">-- none --</option>';
                 branches.forEach(b => {
                     select.innerHTML += `<option value="${b.id}">${b.name}</option>`;
@@ -171,7 +172,7 @@
         }
         async function loadUsers() {
             try {
-                let users = await api('/api/users');
+                let users = await api('api/users');
                 // BranchAdmin sees only themselves
                 if (role === 'BranchAdmin') {
                     const uid = localStorage.getItem('userId');

@@ -1,15 +1,33 @@
 // wwwroot/sw.js
-const STATIC_CACHE = 'kiosk-static-v4';
+const STATIC_CACHE = 'kiosk-static-v5';
+
+const scopeUrl = new URL(self.registration.scope);
+const BASE_ORIGIN = scopeUrl.origin;
+const BASE_PATH = scopeUrl.pathname.endsWith('/') ? scopeUrl.pathname : scopeUrl.pathname + '/';
+
+const toAbsolute = (path) => {
+    if (!path) return BASE_ORIGIN + BASE_PATH;
+    if (path.startsWith('http')) return path;
+    if (path.startsWith('/')) path = path.slice(1);
+    return BASE_ORIGIN + BASE_PATH + path;
+};
+
+const stripBase = (pathname) => {
+    if (pathname.startsWith(BASE_PATH)) {
+        return pathname.slice(BASE_PATH.length);
+    }
+    return pathname.replace(/^\//, '');
+};
 
 const STATIC_ASSETS = [
-    '/', '/kiosk.html', '/kiosk-admin.html', '/kiosk-dashboard.html',
-    '/manifest.json',
-    '/assets/liberty.svg',
-    '/assets/icons/angry.svg',
-    '/assets/icons/sad.svg',
-    '/assets/icons/meh.svg',
-    '/assets/icons/smile.svg',
-    '/assets/icons/laugh.svg'
+    '', 'kiosk.html', 'kiosk-admin.html', 'kiosk-dashboard.html',
+    'manifest.json',
+    'assets/liberty.svg',
+    'assets/icons/angry.svg',
+    'assets/icons/sad.svg',
+    'assets/icons/meh.svg',
+    'assets/icons/smile.svg',
+    'assets/icons/laugh.svg'
 ];
 
 self.addEventListener('install', (event) => {
@@ -19,7 +37,7 @@ self.addEventListener('install', (event) => {
         await Promise.allSettled(
             STATIC_ASSETS.map(async (url) => {
                 try {
-                    await cache.add(new Request(url, { cache: 'reload' }));
+                    await cache.add(new Request(toAbsolute(url), { cache: 'reload' }));
                 } catch { /* ignore 404/opaque */ }
             })
         );
@@ -46,8 +64,9 @@ self.addEventListener('fetch', (event) => {
     const accept = req.headers.get('accept') || '';
 
     // 1) API + JSON: always network, never cached
-    const looksLikeApi = url.pathname.startsWith('/api/');
-    const looksLikeJson = accept.includes('application/json') || url.pathname.endsWith('.json');
+    const relativePath = stripBase(url.pathname);
+    const looksLikeApi = relativePath.startsWith('api/');
+    const looksLikeJson = accept.includes('application/json') || relativePath.endsWith('.json');
 
     if (looksLikeApi || looksLikeJson) {
         event.respondWith(fetch(req, { cache: 'no-store' }));
@@ -69,7 +88,7 @@ self.addEventListener('fetch', (event) => {
                 return fresh;
             } catch {
                 const cache = await caches.open(STATIC_CACHE);
-                return (await cache.match(req)) || (await cache.match('/kiosk.html')) || Response.error();
+                return (await cache.match(req)) || (await cache.match(toAbsolute('kiosk.html'))) || Response.error();
             }
         })());
         return;

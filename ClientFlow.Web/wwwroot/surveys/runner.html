@@ -113,6 +113,7 @@
         <div id="msg" class="row"></div>
     </div>
 
+    <script src="../app-base.js"></script>
     <script>
         const qs = new URLSearchParams(location.search);
         const code = qs.get('code');
@@ -308,7 +309,7 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ answers })
             });
-            if (r.ok) { location.href = '/thank-you.html'; }
+            if (r.ok) { appRedirect('thank-you.html'); }
             else { el('msg').textContent = 'Failed to submit.'; }
         };
 

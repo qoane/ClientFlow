@@ -132,12 +132,12 @@
     </header>
     <div class="shell">
         <nav>
-            <a href="/admin/dashboard.html" class="active">Dashboard</a>
-            <a href="/admin/branches.html">Branches</a>
-            <a href="/admin/users.html">Users</a>
-            <a href="/admin/settings.html">Settings</a>
-            <a href="/admin/flow-dash.html">Surveys</a>
-            <a href="/kiosk-dashboard.html" target="_blank">Kiosk Dashboard</a>
+            <a href="dashboard.html" class="active">Dashboard</a>
+            <a href="branches.html">Branches</a>
+            <a href="users.html">Users</a>
+            <a href="settings.html">Settings</a>
+            <a href="flow-dash.html">Surveys</a>
+            <a href="../kiosk-dashboard.html" target="_blank">Kiosk Dashboard</a>
         </nav>
         <main>
             <h1>Overview</h1>
@@ -161,11 +161,12 @@
             </div>
         </main>
     </div>
+    <script src="../app-base.js"></script>
     <script>
         // Ensure authenticated
         const token = localStorage.getItem('authToken');
         if (!token) {
-            window.location.href = '/login.html';
+            window.location.href = appBuildUrl('login.html');
         }
         // Display logged in user's email in header (if present)
         const spanUserEmail = document.getElementById('userEmail');
@@ -176,21 +177,21 @@
             localStorage.removeItem('authToken');
             localStorage.removeItem('userRole');
             localStorage.removeItem('branchId');
-            window.location.href = '/login.html';
+            window.location.href = appBuildUrl('login.html');
         });
         async function fetchJSON(url) {
-            const res = await fetch(url, { headers: { 'Authorization': 'Bearer ' + token } });
+            const res = await appApiFetch(url, { headers: { 'Authorization': 'Bearer ' + token } });
             if (!res.ok) throw new Error('API error');
             return res.json();
         }
         async function loadData() {
             try {
                 // Branch count
-                const branches = await fetchJSON('/api/branches');
+                const branches = await fetchJSON('api/branches');
                 document.getElementById('branchCount').textContent = branches.length;
                 // Feedback summary (last 24h)
                 const since = new Date(Date.now() - 24*60*60*1000).toISOString();
-                const summary = await fetchJSON('/api/feedback/summary?from=' + since);
+                const summary = await fetchJSON('api/feedback/summary?from=' + since);
                 document.getElementById('feedbackCount').textContent = summary.total;
                 document.getElementById('avgOverall').textContent = summary.avgOverall.toFixed(2);
                 // Chart data
