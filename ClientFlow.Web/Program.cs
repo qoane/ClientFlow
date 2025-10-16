@@ -1,10 +1,11 @@
 using ClientFlow.Application.Abstractions;
 using ClientFlow.Application.Services;
 using ClientFlow.Infrastructure;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using ClientFlow.Application.Services;
+using System.IO;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -76,6 +77,18 @@ builder.Services.AddControllers()
     });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+// Persist data protection keys to a known directory so the application can start even
+// when running under different user profiles (such as IIS application pool identities).
+// Protect the keys to the local machine to avoid DPAPI decrypt failures when the user
+// profile changes.
+var dataProtectionKeysPath = Path.Combine(builder.Environment.ContentRootPath, "DataProtectionKeys");
+Directory.CreateDirectory(dataProtectionKeysPath);
+builder.Services
+    .AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath))
+    .ProtectKeysWithDpapi(protectToLocalMachine: true)
+    .SetApplicationName("ClientFlow");
 
 var app = builder.Build();
 
