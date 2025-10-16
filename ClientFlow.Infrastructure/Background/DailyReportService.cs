@@ -4,6 +4,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -36,43 +38,69 @@ public class DailyReportService : IHostedService, IDisposable
         return Task.CompletedTask;
     }
 
+    private static readonly TimeSpan RetryDelay = TimeSpan.FromMinutes(5);
+
     private void ScheduleNext()
     {
-        // Determine the next run time based on settings
-        using var scope = _provider.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        // Determine the earliest next run time across all branches.  Each branch can specify
-        // its own ReportTime in HH:mm format.  If none are configured a default of 08:00 is
-        // used.  We calculate the next occurrence of each branch's scheduled time and then
-        // select the minimum.  The service is scheduled to run at that time and will send
-        // reports for all branches.
+        TimeSpan delay;
         var now = DateTime.Now;
-        var runTimes = new List<DateTime>();
-        // Collect run times per branch; if a branch has no ReportTime the default 08:00 is used
-        var branchTimes = db.Branches.AsNoTracking().Select(b => b.ReportTime).ToList();
-        if (branchTimes.Count == 0)
+
+        try
         {
-            branchTimes.Add("08:00");
-        }
-        foreach (var timeStr in branchTimes)
-        {
-            var tStr = string.IsNullOrWhiteSpace(timeStr) ? "08:00" : timeStr!;
-            var parts = tStr.Split(':', StringSplitOptions.RemoveEmptyEntries);
-            int hour = 8, minute = 0;
-            if (parts.Length >= 2)
+            using var scope = _provider.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+            // Determine the earliest next run time across all branches. Each branch can specify
+            // its own ReportTime in HH:mm format. If none are configured a default of 08:00 is
+            // used. We calculate the next occurrence of each branch's scheduled time and then
+            // select the minimum. The service is scheduled to run at that time and will send
+            // reports for all branches.
+            var runTimes = new List<DateTime>();
+            var branchTimes = db.Branches.AsNoTracking().Select(b => b.ReportTime).ToList();
+
+            if (branchTimes.Count == 0)
             {
-                int.TryParse(parts[0], out hour);
-                int.TryParse(parts[1], out minute);
+                branchTimes.Add("08:00");
             }
-            var candidate = new DateTime(now.Year, now.Month, now.Day, hour, minute, 0);
-            if (candidate <= now) candidate = candidate.AddDays(1);
-            runTimes.Add(candidate);
+
+            foreach (var timeStr in branchTimes)
+            {
+                var tStr = string.IsNullOrWhiteSpace(timeStr) ? "08:00" : timeStr!;
+                var parts = tStr.Split(':', StringSplitOptions.RemoveEmptyEntries);
+                int hour = 8, minute = 0;
+                if (parts.Length >= 2)
+                {
+                    int.TryParse(parts[0], out hour);
+                    int.TryParse(parts[1], out minute);
+                }
+
+                var candidate = new DateTime(now.Year, now.Month, now.Day, hour, minute, 0);
+                if (candidate <= now)
+                {
+                    candidate = candidate.AddDays(1);
+                }
+
+                runTimes.Add(candidate);
+            }
+
+            var nextRun = runTimes.Min();
+            delay = nextRun - now;
+            if (delay < TimeSpan.Zero)
+            {
+                delay = TimeSpan.Zero;
+            }
+
+            _logger.LogInformation("Daily report scheduled at {NextRun}", nextRun);
         }
-        var nextRun = runTimes.Min();
-        var delay = nextRun - now;
-        _logger.LogInformation($"Daily report scheduled at {nextRun}");
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to schedule next daily report. Retrying in {RetryDelay}.", RetryDelay);
+            delay = RetryDelay;
+        }
+
         _timer?.Dispose();
-        _timer = new Timer(async _ => {
+        _timer = new Timer(async _ =>
+        {
             try
             {
                 await SendReportAsync();
