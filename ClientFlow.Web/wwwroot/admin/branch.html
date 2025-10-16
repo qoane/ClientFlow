@@ -374,14 +374,14 @@
             try {
                 const staff = await api(`/api/staff?branchId=${encodeURIComponent(branchId)}`);
                 const normalizedBranchId = (branchId || '').toLowerCase();
-                const list = staff || [];
-                let filtered = list.filter(s => {
-                    const candidateId = ((s.branchId ?? (s.branch && s.branch.id)) || '').toLowerCase();
-                    return candidateId === normalizedBranchId;
+                const list = Array.isArray(staff) ? staff : [];
+                const filtered = list.filter(s => {
+                    const candidateRaw = s.branchId ?? (s.branch && s.branch.id) ?? null;
+                    if (!candidateRaw) {
+                        return true; // Global staff (no branch assigned) should appear for every branch roster.
+                    }
+                    return String(candidateRaw).toLowerCase() === normalizedBranchId;
                 });
-                if (!filtered.length && list.length) {
-                    filtered = list;
-                }
                 currentStaff = filtered;
                 renderStaffList();
             } catch (err) {
