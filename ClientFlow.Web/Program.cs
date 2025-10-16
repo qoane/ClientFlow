@@ -10,8 +10,16 @@ using System.Text;
 var builder = WebApplication.CreateBuilder(args);
 
 // DB
+var connectionString =
+    builder.Configuration.GetConnectionString("DefaultConnection") ??
+    builder.Configuration.GetConnectionString("Default") ??
+    builder.Configuration["ConnectionStrings:DefaultConnection"] ??
+    builder.Configuration["ConnectionStrings:Default"] ??
+    throw new InvalidOperationException(
+        "A SQL Server connection string named 'DefaultConnection' or 'Default' must be configured.");
+
 builder.Services.AddDbContext<AppDbContext>(opt =>
-    opt.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
+    opt.UseSqlServer(connectionString));
 
 // DI
 builder.Services.AddScoped<ISurveyRepository, SurveyRepository>();

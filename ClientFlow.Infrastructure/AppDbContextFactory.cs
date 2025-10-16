@@ -29,7 +29,9 @@ public sealed class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbConte
 
         var cs =
             config.GetConnectionString("DefaultConnection")
+            ?? config.GetConnectionString("Default")
             ?? Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+            ?? Environment.GetEnvironmentVariable("ConnectionStrings__Default")
             ?? "Server=.;Database=ClientFlow;Trusted_Connection=True;TrustServerCertificate=True;";
 
         var options = new DbContextOptionsBuilder<AppDbContext>()
