@@ -69,16 +69,16 @@
     </header>
     <div class="shell">
         <nav>
-            <a href="/admin/dashboard.html">Dashboard</a>
-            <a href="/admin/branches.html" class="active">Branches</a>
-            <a href="/admin/users.html">Users</a>
-            <a href="/admin/settings.html">Settings</a>
-            <a href="/admin/flow-dash.html">Surveys</a>
-            <a href="/kiosk-dashboard.html" target="_blank">Kiosk Dashboard</a>
+            <a href="dashboard.html">Dashboard</a>
+            <a href="branches.html" class="active">Branches</a>
+            <a href="users.html">Users</a>
+            <a href="settings.html">Settings</a>
+            <a href="flow-dash.html">Surveys</a>
+            <a href="../kiosk-dashboard.html" target="_blank">Kiosk Dashboard</a>
         </nav>
         <main>
             <div class="inline-actions">
-                <a href="/admin/branches.html" class="secondary" style="text-decoration:none; padding:8px 12px; border-radius:10px; border:1px solid var(--border); background: linear-gradient(180deg,#1a2248,#141c3f); color: var(--text);">&larr; Back to branches</a>
+                <a href="branches.html" class="secondary" style="text-decoration:none; padding:8px 12px; border-radius:10px; border:1px solid var(--border); background: linear-gradient(180deg,#1a2248,#141c3f); color: var(--text);">&larr; Back to branches</a>
             </div>
             <div id="branchDetails" class="card"></div>
             <div id="staffSection" class="card">
@@ -92,9 +92,10 @@
             </div>
         </main>
     </div>
+    <script src="../app-base.js"></script>
     <script>
         const token = localStorage.getItem('authToken');
-        if (!token) { window.location.href = '/login.html'; }
+        if (!token) { window.location.href = appBuildUrl('login.html'); }
         const emailSpan = document.getElementById('userEmail');
         if (emailSpan) {
             emailSpan.textContent = localStorage.getItem('userEmail') || '';
@@ -102,13 +103,13 @@
         const role = localStorage.getItem('userRole');
         document.getElementById('signOut').addEventListener('click', () => {
             localStorage.clear();
-            window.location.href = '/login.html';
+            window.location.href = appBuildUrl('login.html');
         });
 
         const params = new URLSearchParams(window.location.search);
         const branchId = params.get('id');
         if (!branchId) {
-            window.location.href = '/admin/branches.html';
+            window.location.href = appBuildUrl('admin/branches.html');
         }
 
         const branchDetailsDiv = document.getElementById('branchDetails');
@@ -124,7 +125,7 @@
                 'Authorization': 'Bearer ' + token,
                 'Content-Type': 'application/json'
             });
-            const res = await fetch(url, opts);
+            const res = await appApiFetch(url, opts);
             if (!res.ok) {
                 const txt = await res.text();
                 throw new Error(txt || 'Request failed');
@@ -190,7 +191,7 @@
                     delete payload.name;
                 }
                 try {
-                    await api(`/api/branches/${encodeURIComponent(branchId)}`, {
+                    await api(`api/branches/${encodeURIComponent(branchId)}`, {
                         method: 'PUT',
                         body: JSON.stringify(payload)
                     });
@@ -290,7 +291,7 @@
                     return;
                 }
                 try {
-                    await api('/api/staff', {
+                    await api('api/staff', {
                         method: 'POST',
                         body: JSON.stringify(payload)
                     });
@@ -321,7 +322,7 @@
                     return;
                 }
                 try {
-                    await api(`/api/staff/${staff.id}`, {
+                        await api(`api/staff/${staff.id}`, {
                         method: 'PUT',
                         body: JSON.stringify(payload)
                     });
@@ -337,7 +338,7 @@
 
         async function toggleStaffDuty(staff) {
             try {
-                await api(`/api/staff/${staff.id}`, {
+                await api(`api/staff/${staff.id}`, {
                     method: 'PUT',
                     body: JSON.stringify({ isActive: !staff.isActive })
                 });
@@ -352,7 +353,7 @@
                 return;
             }
             try {
-                await api(`/api/staff/${staff.id}`, {
+                await api(`api/staff/${staff.id}`, {
                     method: 'DELETE'
                 });
                 await loadStaff();
@@ -363,7 +364,7 @@
 
         async function loadBranch() {
             try {
-                currentBranch = await api(`/api/branches/${encodeURIComponent(branchId)}`);
+                currentBranch = await api(`api/branches/${encodeURIComponent(branchId)}`);
                 renderBranchDetails();
             } catch (err) {
                 branchDetailsDiv.innerHTML = `<p class="error">Unable to load branch: ${err.message}</p>`;
@@ -372,7 +373,7 @@
 
         async function loadStaff() {
             try {
-                const staff = await api(`/api/staff?branchId=${encodeURIComponent(branchId)}`);
+                const staff = await api(`api/staff?branchId=${encodeURIComponent(branchId)}`);
                 const normalizedBranchId = (branchId || '').toLowerCase();
                 const list = Array.isArray(staff) ? staff : [];
                 const filtered = list.filter(s => {

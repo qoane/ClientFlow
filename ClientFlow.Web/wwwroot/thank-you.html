@@ -236,6 +236,7 @@
         <div class="sparks" id="sparks"></div>
     </div>
 
+    <script src="app-base.js"></script>
     <script>
     // Duration comes from ?seconds= or defaults to CSS var --dur
     const qs = new URLSearchParams(location.search);
@@ -264,7 +265,7 @@
       if (document.referrer) { location.replace(document.referrer); return; }
 
       // last-chance fallback: go to home
-      location.href = '/';
+      appRedirect('');
     }
 
     // Lightweight sparkle field

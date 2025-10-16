@@ -81,10 +81,11 @@
             <button type="submit">Sign In</button>
         </form>
     </div>
+    <script src="app-base.js"></script>
     <script>
         // Redirect authenticated users to the dashboard
         if (localStorage.getItem('authToken')) {
-            window.location.href = '/admin/dashboard.html';
+            window.location.href = appBuildUrl('admin/dashboard.html');
         }
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -93,7 +94,7 @@
             const errorDiv = document.getElementById('error');
             errorDiv.style.display = 'none';
             try {
-                const res = await fetch('/api/users/login', {
+                const res = await appApiFetch('api/users/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password })
@@ -113,7 +114,7 @@
                 // Store the email for display purposes
                 localStorage.setItem('userEmail', email);
                 // redirect to dashboard
-                window.location.href = '/admin/dashboard.html';
+                window.location.href = appBuildUrl('admin/dashboard.html');
             } catch (err) {
                 errorDiv.textContent = err.message;
                 errorDiv.style.display = '';

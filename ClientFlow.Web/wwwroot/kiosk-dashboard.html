@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="https://unpkg.com/flatpickr/dist/flatpickr.min.css">
     <link rel="stylesheet" href="https://unpkg.com/tabulator-tables@5.6.2/dist/css/tabulator.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <script src="app-base.js"></script>
     <script src="https://unpkg.com/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
@@ -216,7 +217,7 @@
         const userRole = localStorage.getItem('userRole');
         const userBranchId = localStorage.getItem('branchId');
         if (!authToken) {
-            window.location.href = '/login.html';
+            appRedirect('login.html');
         }
         const els = {
             from: document.getElementById('dateFrom'),
@@ -597,14 +598,14 @@
             exportCsvClient(norm);
         });
         document.getElementById('exportPdf').addEventListener('click', exportPdfClient);
-        document.getElementById('openKiosk').addEventListener('click', () => location.href = 'kiosk.html');
-        document.getElementById('openAdmin').addEventListener('click', () => location.href = 'kiosk-admin.html');
+        document.getElementById('openKiosk').addEventListener('click', () => appRedirect('kiosk.html'));
+        document.getElementById('openAdmin').addEventListener('click', () => appRedirect('kiosk-admin.html'));
 
         // Init
         (async function () {
             await loadLookups();
             await apply();
-            if ('serviceWorker' in navigator) { navigator.serviceWorker.register('/sw.js').catch(() => { }); }
+            if ('serviceWorker' in navigator) { navigator.serviceWorker.register(appBuildUrl('sw.js')).catch(() => { }); }
         })();
     </script>
 </body>
