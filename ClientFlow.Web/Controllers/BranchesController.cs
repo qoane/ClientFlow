@@ -131,7 +131,7 @@ public class BranchesController : ControllerBase
     /// </summary>
     [HttpDelete("{id:guid}")]
     [Authorize(Roles = "SuperAdmin")]
-    public async Task<IActionResult> Delete(Guid id, [FromQuery] bool cascade = false, CancellationToken ct)
+    public async Task<IActionResult> Delete(Guid id, CancellationToken ct, [FromQuery] bool cascade = false)
     {
         var branch = await _db.Branches.FindAsync(new object?[] { id }, cancellationToken: ct);
         if (branch == null) return NotFound();

@@ -190,7 +190,7 @@ public class StaffController : ControllerBase
     /// </summary>
     [HttpDelete("{id}")]
     [Authorize]
-    public async Task<IActionResult> Delete(Guid id, [FromQuery] bool cascade = false, CancellationToken ct)
+    public async Task<IActionResult> Delete(Guid id,  CancellationToken ct, [FromQuery] bool cascade = false)
     {
         var staff = await _db.Staff.FindAsync(new object?[] { id }, ct);
         if (staff == null) return NotFound();
