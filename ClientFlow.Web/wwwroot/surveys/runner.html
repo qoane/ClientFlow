@@ -226,6 +226,12 @@
 
                 let input;
                 switch (q.type) {
+                    case 'message':
+                        lab.remove();
+                        input = document.createElement('div');
+                        input.className = 'alert alert-info';
+                        input.textContent = q.prompt;
+                        break;
                     case 'nps':
                     case 'number':
                         input = document.createElement('input');
