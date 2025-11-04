@@ -132,7 +132,7 @@ namespace ClientFlow.Infrastructure.Migrations
                             Id = new Guid("11111111-1111-1111-1111-111111111111"),
                             BranchId = new Guid("00000000-0000-0000-0000-000000000001"),
                             IsActive = true,
-                            Name = "Neo Ramohlabi"
+                            Name = "Neo Ramohabi"
                         },
                         new
                         {
@@ -146,14 +146,14 @@ namespace ClientFlow.Infrastructure.Migrations
                             Id = new Guid("33333333-3333-3333-3333-333333333333"),
                             BranchId = new Guid("00000000-0000-0000-0000-000000000001"),
                             IsActive = true,
-                            Name = "Ts'epo Chefa"
+                            Name = "Tsepo Chefa"
                         },
                         new
                         {
                             Id = new Guid("44444444-4444-4444-4444-444444444444"),
                             BranchId = new Guid("00000000-0000-0000-0000-000000000001"),
                             IsActive = true,
-                            Name = "Mpho Phahlang"
+                            Name = "Mpho Phalafang"
                         });
                 });
 
@@ -315,26 +315,114 @@ namespace ClientFlow.Infrastructure.Migrations
                     b.HasData(
                         new
                         {
-                            Id = new Guid("cccccccc-cccc-cccc-cccc-cccccccccccc"),
-                            Key = "nps",
+                            Id = new Guid("10000000-0000-0000-0000-000000000001"),
+                            Key = "phone",
                             Order = 1,
-                            Prompt = "How likely are you to recommend Liberty to a friend or colleague?",
+                            Prompt = "Please enter your phone number.",
                             Required = true,
                             SectionId = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
                             SurveyId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
-                            Type = "nps_0_10"
+                            Type = "phone"
                         },
                         new
                         {
-                            Id = new Guid("dddddddd-dddd-dddd-dddd-dddddddddddd"),
-                            Key = "reason",
+                            Id = new Guid("10000000-0000-0000-0000-000000000002"),
+                            Key = "staff",
                             Order = 2,
-                            Prompt = "What is the primary reason for your score?",
+                            Prompt = "I was assisted by…",
+                            Required = true,
+                            SectionId = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbc"),
+                            SurveyId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                            Type = "radio"
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000003"),
+                            Key = "service",
+                            Order = 3,
+                            Prompt = "Which Liberty service were you assisted with today?",
+                            Required = true,
+                            SectionId = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbc"),
+                            SurveyId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                            Type = "radio"
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000004"),
+                            Key = "satisfaction",
+                            Order = 4,
+                            Prompt = "How satisfied are you with your recent interaction with Liberty?",
+                            Required = true,
+                            SectionId = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbd"),
+                            SurveyId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                            Type = "radio"
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000005"),
+                            Key = "timeliness",
+                            Order = 5,
+                            Prompt = "Was your query handled within a reasonable time?",
+                            Required = true,
+                            SectionId = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbd"),
+                            SurveyId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                            Type = "radio"
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000006"),
+                            Key = "professionalism",
+                            Order = 6,
+                            Prompt = "Did our staff treat you professionally and with respect?",
+                            Required = true,
+                            SectionId = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbd"),
+                            SurveyId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                            Type = "radio"
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000007"),
+                            Key = "recommend",
+                            Order = 7,
+                            Prompt = "How likely are you to recommend Liberty to a friend or family member?",
+                            Required = true,
+                            SectionId = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbd"),
+                            SurveyId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                            Type = "radio"
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000008"),
+                            Key = "follow_up",
+                            Order = 8,
+                            Prompt = "Would you like someone to contact you about your experience?",
+                            Required = true,
+                            SectionId = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbe"),
+                            SurveyId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                            Type = "radio"
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000009"),
+                            Key = "improvement",
+                            Order = 9,
+                            Prompt = "Please tell us briefly what we could do better.",
                             Required = false,
-                            SectionId = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
-                            SettingsJson = "{\"placeholder\":\"Tell us more…\"}",
+                            SectionId = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbe"),
+                            SettingsJson = "{\"placeholder\":\"Your feedback helps us improve.\"}",
                             SurveyId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
                             Type = "text"
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-00000000000a"),
+                            Key = "end",
+                            Order = 10,
+                            Prompt = "Thank you for your feedback! Your input helps us improve our service.",
+                            Required = false,
+                            SectionId = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbf"),
+                            SurveyId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                            Type = "message"
                         });
                 });
 
@@ -364,6 +452,264 @@ namespace ClientFlow.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("Options");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("20000000-0000-0000-0000-000000000001"),
+                            Label = "Neo Ramohabi",
+                            Order = 1,
+                            QuestionId = new Guid("10000000-0000-0000-0000-000000000002"),
+                            Value = "neo-ramohabi"
+                        },
+                        new
+                        {
+                            Id = new Guid("20000000-0000-0000-0000-000000000002"),
+                            Label = "Baradi Boikanyo",
+                            Order = 2,
+                            QuestionId = new Guid("10000000-0000-0000-0000-000000000002"),
+                            Value = "baradi-boikanyo"
+                        },
+                        new
+                        {
+                            Id = new Guid("20000000-0000-0000-0000-000000000003"),
+                            Label = "Tsepo Chefa",
+                            Order = 3,
+                            QuestionId = new Guid("10000000-0000-0000-0000-000000000002"),
+                            Value = "tsepo-chefa"
+                        },
+                        new
+                        {
+                            Id = new Guid("20000000-0000-0000-0000-000000000004"),
+                            Label = "Mpho Phalafang",
+                            Order = 4,
+                            QuestionId = new Guid("10000000-0000-0000-0000-000000000002"),
+                            Value = "mpho-phalafang"
+                        },
+                        new
+                        {
+                            Id = new Guid("20000000-0000-0000-0000-000000000101"),
+                            Label = "Policy enquiry",
+                            Order = 1,
+                            QuestionId = new Guid("10000000-0000-0000-0000-000000000003"),
+                            Value = "policy-enquiry"
+                        },
+                        new
+                        {
+                            Id = new Guid("20000000-0000-0000-0000-000000000102"),
+                            Label = "Claim",
+                            Order = 2,
+                            QuestionId = new Guid("10000000-0000-0000-0000-000000000003"),
+                            Value = "claim"
+                        },
+                        new
+                        {
+                            Id = new Guid("20000000-0000-0000-0000-000000000103"),
+                            Label = "New policy application",
+                            Order = 3,
+                            QuestionId = new Guid("10000000-0000-0000-0000-000000000003"),
+                            Value = "new-policy-application"
+                        },
+                        new
+                        {
+                            Id = new Guid("20000000-0000-0000-0000-000000000104"),
+                            Label = "Payment",
+                            Order = 4,
+                            QuestionId = new Guid("10000000-0000-0000-0000-000000000003"),
+                            Value = "payment"
+                        },
+                        new
+                        {
+                            Id = new Guid("20000000-0000-0000-0000-000000000105"),
+                            Label = "Amendments/ Policy Changes",
+                            Order = 5,
+                            QuestionId = new Guid("10000000-0000-0000-0000-000000000003"),
+                            Value = "amendments"
+                        },
+                        new
+                        {
+                            Id = new Guid("20000000-0000-0000-0000-000000000106"),
+                            Label = "Other",
+                            Order = 6,
+                            QuestionId = new Guid("10000000-0000-0000-0000-000000000003"),
+                            Value = "other"
+                        },
+                        new
+                        {
+                            Id = new Guid("20000000-0000-0000-0000-000000000201"),
+                            Label = "😊 1 = Very Poor",
+                            Order = 1,
+                            QuestionId = new Guid("10000000-0000-0000-0000-000000000004"),
+                            Value = "1"
+                        },
+                        new
+                        {
+                            Id = new Guid("20000000-0000-0000-0000-000000000202"),
+                            Label = "😐 2 = Poor",
+                            Order = 2,
+                            QuestionId = new Guid("10000000-0000-0000-0000-000000000004"),
+                            Value = "2"
+                        },
+                        new
+                        {
+                            Id = new Guid("20000000-0000-0000-0000-000000000203"),
+                            Label = "🙂 3 = Okay",
+                            Order = 3,
+                            QuestionId = new Guid("10000000-0000-0000-0000-000000000004"),
+                            Value = "3"
+                        },
+                        new
+                        {
+                            Id = new Guid("20000000-0000-0000-0000-000000000204"),
+                            Label = "😀 4 = Good",
+                            Order = 4,
+                            QuestionId = new Guid("10000000-0000-0000-0000-000000000004"),
+                            Value = "4"
+                        },
+                        new
+                        {
+                            Id = new Guid("20000000-0000-0000-0000-000000000205"),
+                            Label = "😁 5 = Excellent",
+                            Order = 5,
+                            QuestionId = new Guid("10000000-0000-0000-0000-000000000004"),
+                            Value = "5"
+                        },
+                        new
+                        {
+                            Id = new Guid("20000000-0000-0000-0000-000000000301"),
+                            Label = "Not at all",
+                            Order = 1,
+                            QuestionId = new Guid("10000000-0000-0000-0000-000000000005"),
+                            Value = "not-at-all"
+                        },
+                        new
+                        {
+                            Id = new Guid("20000000-0000-0000-0000-000000000302"),
+                            Label = "No",
+                            Order = 2,
+                            QuestionId = new Guid("10000000-0000-0000-0000-000000000005"),
+                            Value = "no"
+                        },
+                        new
+                        {
+                            Id = new Guid("20000000-0000-0000-0000-000000000303"),
+                            Label = "Neutral",
+                            Order = 3,
+                            QuestionId = new Guid("10000000-0000-0000-0000-000000000005"),
+                            Value = "neutral"
+                        },
+                        new
+                        {
+                            Id = new Guid("20000000-0000-0000-0000-000000000304"),
+                            Label = "Yes, mostly",
+                            Order = 4,
+                            QuestionId = new Guid("10000000-0000-0000-0000-000000000005"),
+                            Value = "yes-mostly"
+                        },
+                        new
+                        {
+                            Id = new Guid("20000000-0000-0000-0000-000000000305"),
+                            Label = "Absolutely",
+                            Order = 5,
+                            QuestionId = new Guid("10000000-0000-0000-0000-000000000005"),
+                            Value = "absolutely"
+                        },
+                        new
+                        {
+                            Id = new Guid("20000000-0000-0000-0000-000000000401"),
+                            Label = "Not at all",
+                            Order = 1,
+                            QuestionId = new Guid("10000000-0000-0000-0000-000000000006"),
+                            Value = "not-at-all"
+                        },
+                        new
+                        {
+                            Id = new Guid("20000000-0000-0000-0000-000000000402"),
+                            Label = "No",
+                            Order = 2,
+                            QuestionId = new Guid("10000000-0000-0000-0000-000000000006"),
+                            Value = "no"
+                        },
+                        new
+                        {
+                            Id = new Guid("20000000-0000-0000-0000-000000000403"),
+                            Label = "Neutral",
+                            Order = 3,
+                            QuestionId = new Guid("10000000-0000-0000-0000-000000000006"),
+                            Value = "neutral"
+                        },
+                        new
+                        {
+                            Id = new Guid("20000000-0000-0000-0000-000000000404"),
+                            Label = "Yes, mostly",
+                            Order = 4,
+                            QuestionId = new Guid("10000000-0000-0000-0000-000000000006"),
+                            Value = "yes-mostly"
+                        },
+                        new
+                        {
+                            Id = new Guid("20000000-0000-0000-0000-000000000405"),
+                            Label = "Absolutely",
+                            Order = 5,
+                            QuestionId = new Guid("10000000-0000-0000-0000-000000000006"),
+                            Value = "absolutely"
+                        },
+                        new
+                        {
+                            Id = new Guid("20000000-0000-0000-0000-000000000501"),
+                            Label = "😡 1 = Not at all likely",
+                            Order = 1,
+                            QuestionId = new Guid("10000000-0000-0000-0000-000000000007"),
+                            Value = "1"
+                        },
+                        new
+                        {
+                            Id = new Guid("20000000-0000-0000-0000-000000000502"),
+                            Label = "😞 2",
+                            Order = 2,
+                            QuestionId = new Guid("10000000-0000-0000-0000-000000000007"),
+                            Value = "2"
+                        },
+                        new
+                        {
+                            Id = new Guid("20000000-0000-0000-0000-000000000503"),
+                            Label = "😐 3",
+                            Order = 3,
+                            QuestionId = new Guid("10000000-0000-0000-0000-000000000007"),
+                            Value = "3"
+                        },
+                        new
+                        {
+                            Id = new Guid("20000000-0000-0000-0000-000000000504"),
+                            Label = "😃 4",
+                            Order = 4,
+                            QuestionId = new Guid("10000000-0000-0000-0000-000000000007"),
+                            Value = "4"
+                        },
+                        new
+                        {
+                            Id = new Guid("20000000-0000-0000-0000-000000000505"),
+                            Label = "😊 5 = Extremely likely",
+                            Order = 5,
+                            QuestionId = new Guid("10000000-0000-0000-0000-000000000007"),
+                            Value = "5"
+                        },
+                        new
+                        {
+                            Id = new Guid("20000000-0000-0000-0000-000000000601"),
+                            Label = "Yes",
+                            Order = 1,
+                            QuestionId = new Guid("10000000-0000-0000-0000-000000000008"),
+                            Value = "yes"
+                        },
+                        new
+                        {
+                            Id = new Guid("20000000-0000-0000-0000-000000000602"),
+                            Label = "No",
+                            Order = 2,
+                            QuestionId = new Guid("10000000-0000-0000-0000-000000000008"),
+                            Value = "no"
+                        });
                 });
 
             modelBuilder.Entity("ClientFlow.Domain.Surveys.QuestionRule", b =>
@@ -526,7 +872,39 @@ namespace ClientFlow.Infrastructure.Migrations
                             Columns = 1,
                             Order = 1,
                             SurveyId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
-                            Title = "Main"
+                            Title = "Client Identification"
+                        },
+                        new
+                        {
+                            Id = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbc"),
+                            Columns = 1,
+                            Order = 2,
+                            SurveyId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                            Title = "Service Interaction"
+                        },
+                        new
+                        {
+                            Id = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbd"),
+                            Columns = 1,
+                            Order = 3,
+                            SurveyId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                            Title = "Core Satisfaction Questions"
+                        },
+                        new
+                        {
+                            Id = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbe"),
+                            Columns = 1,
+                            Order = 4,
+                            SurveyId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                            Title = "Feedback & Follow-Up"
+                        },
+                        new
+                        {
+                            Id = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbf"),
+                            Columns = 1,
+                            Order = 5,
+                            SurveyId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                            Title = "End Screen"
                         });
                 });
 

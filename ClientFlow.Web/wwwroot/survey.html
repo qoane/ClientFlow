@@ -35,66 +35,198 @@
     <script>
 (async function(){
   const code = new URLSearchParams(location.search).get('code') || 'liberty-nps';
-  const s = await API.getSurvey(code);
-
-  document.getElementById('title').textContent = s.title;
-  if(s.description) document.getElementById('desc').textContent = s.description;
-
+  const titleEl = document.getElementById('title');
+  const descEl = document.getElementById('desc');
   const form = document.getElementById('form');
+  const alertEl = document.getElementById('alert');
 
-  // build controls from questions (only NPS + reason for seed)
-  for(const q of s.questions.sort((a,b)=>a.order-b.order)){
-    const wrap = document.createElement('div'); wrap.className='mb-3';
-    const label = document.createElement('label'); label.className='form-label fw-semibold'; label.textContent = q.prompt + (q.required?' *':'');
-    wrap.appendChild(label);
+  const parseSettings = (json) => {
+    if(!json) return {};
+    try { return JSON.parse(json); } catch { return {}; }
+  };
 
-    if(q.type === 'nps_0_10'){
-      const row = document.createElement('div'); row.className='d-flex gap-2 flex-wrap nps';
-      for(let i=0;i<=10;i++){
-        const id = `${q.key}-${i}`;
-        row.insertAdjacentHTML('beforeend',
-          `<input class="btn-check" type="radio" name="${q.key}" id="${id}" value="${i}" ${q.required?'required':''}>
-           <label class="btn btn-outline-secondary" for="${id}">${i}</label>`);
+  try {
+    const [survey, definition] = await Promise.all([
+      API.getSurvey(code).catch(() => null),
+      API.getSurveyDefinition(code)
+    ]);
+
+    const surveyCode = definition?.code ?? survey?.code ?? code;
+    const surveyTitle = definition?.title ?? survey?.title ?? 'Survey';
+    titleEl.textContent = surveyTitle;
+    if (survey?.description) {
+      descEl.textContent = survey.description;
+    }
+
+    const sections = [...(definition?.sections ?? [])].sort((a, b) => a.order - b.order);
+    const questions = [...(definition?.questions ?? [])].sort((a, b) => a.order - b.order);
+    const optionsMap = new Map();
+    for (const opt of definition?.options ?? []) {
+      const list = optionsMap.get(opt.questionId) ?? [];
+      list.push(opt);
+      optionsMap.set(opt.questionId, list);
+    }
+    for (const list of optionsMap.values()) {
+      list.sort((a, b) => a.order - b.order);
+    }
+
+    const sectionsToRender = sections.length > 0 ? sections : [{ id: null, title: null, order: 0 }];
+
+    for (const section of sectionsToRender) {
+      const sectionQuestions = questions.filter(q => (q.sectionId ?? null) === (section.id ?? null));
+      if (sectionQuestions.length === 0) continue;
+
+      const block = document.createElement('div');
+      block.className = 'mb-4';
+      if (section.title) {
+        const head = document.createElement('h5');
+        head.className = 'mb-3 text-primary';
+        head.textContent = section.title;
+        block.appendChild(head);
       }
-      wrap.appendChild(row);
-      wrap.insertAdjacentHTML('beforeend',
-        `<div class="d-flex justify-content-between small text-muted mt-1">
-           <span>Not at all likely</span><span>Extremely likely</span>
-         </div>`);
+
+      for (const q of sectionQuestions) {
+        const wrap = document.createElement('div');
+        wrap.className = 'mb-3';
+
+        const label = document.createElement('label');
+        label.className = 'form-label fw-semibold';
+        label.textContent = q.prompt + (q.required ? ' *' : '');
+        wrap.appendChild(label);
+
+        if (q.type === 'message') {
+          label.classList.add('d-none');
+          const note = document.createElement('div');
+          note.className = 'alert alert-info mb-0';
+          note.textContent = q.prompt;
+          wrap.appendChild(note);
+          block.appendChild(wrap);
+          continue;
+        }
+
+        if (q.type === 'nps_0_10') {
+          const row = document.createElement('div');
+          row.className = 'd-flex gap-2 flex-wrap nps';
+          for (let i = 0; i <= 10; i++) {
+            const id = `${q.key}-${i}`;
+            const input = document.createElement('input');
+            input.className = 'btn-check';
+            input.type = 'radio';
+            input.name = q.key;
+            input.id = id;
+            input.value = String(i);
+            if (q.required && i === 0) input.required = true;
+            const lbl = document.createElement('label');
+            lbl.className = 'btn btn-outline-secondary';
+            lbl.setAttribute('for', id);
+            lbl.textContent = String(i);
+            row.appendChild(input);
+            row.appendChild(lbl);
+          }
+          wrap.appendChild(row);
+          const scale = document.createElement('div');
+          scale.className = 'd-flex justify-content-between small text-muted mt-1';
+          scale.innerHTML = '<span>Not at all likely</span><span>Extremely likely</span>';
+          wrap.appendChild(scale);
+        }
+        else if (q.type === 'radio') {
+          const opts = optionsMap.get(q.id) ?? [];
+          const group = document.createElement('div');
+          group.className = 'd-flex flex-column gap-2';
+          opts.forEach((opt, idx) => {
+            const check = document.createElement('div');
+            check.className = 'form-check';
+            const input = document.createElement('input');
+            input.type = 'radio';
+            input.className = 'form-check-input';
+            input.name = q.key;
+            input.id = `${q.key}-${idx}`;
+            input.value = opt.value;
+            if (q.required && idx === 0) input.required = true;
+            const lbl = document.createElement('label');
+            lbl.className = 'form-check-label';
+            lbl.setAttribute('for', input.id);
+            lbl.textContent = opt.label;
+            check.appendChild(input);
+            check.appendChild(lbl);
+            group.appendChild(check);
+          });
+          wrap.appendChild(group);
+        }
+        else if (q.type === 'text') {
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.className = 'form-control';
+          const settings = parseSettings(q.settingsJson);
+          if (settings.placeholder) input.placeholder = settings.placeholder;
+          if (q.required) input.required = true;
+          input.name = q.key;
+          wrap.appendChild(input);
+        }
+        else if (q.type === 'phone') {
+          const input = document.createElement('input');
+          input.type = 'tel';
+          input.inputMode = 'tel';
+          input.className = 'form-control';
+          if (q.required) input.required = true;
+          input.name = q.key;
+          wrap.appendChild(input);
+        }
+        else if (q.type === 'textarea') {
+          const ta = document.createElement('textarea');
+          ta.className = 'form-control';
+          const settings = parseSettings(q.settingsJson);
+          if (settings.placeholder) ta.placeholder = settings.placeholder;
+          if (q.required) ta.required = true;
+          ta.name = q.key;
+          wrap.appendChild(ta);
+        }
+        else {
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.className = 'form-control';
+          if (q.required) input.required = true;
+          input.name = q.key;
+          wrap.appendChild(input);
+        }
+
+        block.appendChild(wrap);
+      }
+
+      form.appendChild(block);
     }
-    else if(q.type === 'text'){
-      const ta = document.createElement('textarea');
-      ta.className = 'form-control';
-      try{ const set = JSON.parse(q.settingsJson||'{}'); if(set.placeholder) ta.placeholder = set.placeholder; }catch{}
-      if(q.required) ta.required = true;
-      ta.name = q.key;
-      wrap.appendChild(ta);
-    }
-    // (extend more types as you add to the DB)
-    form.appendChild(wrap);
+
+    const btn = document.createElement('button');
+    btn.type = 'submit';
+    btn.className = 'btn btn-primary';
+    btn.textContent = 'Submit';
+    form.appendChild(btn);
+
+    const questionsForSubmit = questions.filter(q => q.type !== 'message');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const data = {};
+      for (const q of questionsForSubmit) {
+        const el = form.elements[q.key];
+        if (!el) continue;
+        if (typeof RadioNodeList !== 'undefined' && el instanceof RadioNodeList) {
+          data[q.key] = el.value ? el.value : null;
+        } else if (el.length && el[0]?.type === 'radio') {
+          const selected = Array.from(el).find(input => input.checked);
+          data[q.key] = selected ? selected.value : null;
+        } else {
+          data[q.key] = el.value ?? null;
+        }
+      }
+      await API.submit(surveyCode, data);
+      alertEl.classList.remove('d-none');
+      form.reset();
+    });
+  } catch (err) {
+    console.error(err);
+    form.innerHTML = '<div class="alert alert-danger">Unable to load survey at this time.</div>';
   }
-
-  const btn = document.createElement('button');
-  btn.type='submit'; btn.className='btn btn-primary'; btn.textContent='Submit';
-  form.appendChild(btn);
-
-  form.addEventListener('submit', async (e)=>{
-    e.preventDefault();
-    const data = {};
-    for(const q of s.questions){
-      const el = form.elements[q.key];
-      if(!el) continue;
-      if(q.type==='nps_0_10'){
-        const sel = form.querySelector(`input[name="${q.key}"]:checked`);
-        data[q.key] = sel ? sel.value : null;
-      }else{
-        data[q.key] = el.value ?? null;
-      }
-    }
-    await API.submit(s.code, data);
-    document.getElementById('alert').classList.remove('d-none');
-    form.reset();
-  });
 })();
     </script>
 </body>
