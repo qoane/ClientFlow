@@ -44,12 +44,25 @@
     .staff-card.selected { background: #d6daec; border-color: var(--highlight); box-shadow: 0 6px 16px rgba(13,26,74,.16) }
     .staff-card img { width: 80px; height: 80px; border-radius: 12px; object-fit: cover; background: #c6cbe3; margin-bottom: 12px }
     .staff-card .name { font-size: 1rem; font-weight: 600; color: var(--primary) }
+    .option-list { display: grid; grid-template-columns: repeat(auto-fit,minmax(200px,1fr)); gap: 20px; margin-top: 32px }
+    .option-item { background: var(--secondary); border: 2px solid var(--primary); border-radius: 16px; padding: 20px; font-size: 1.05rem; font-weight: 600; color: var(--primary); cursor: pointer; text-align: center; transition: transform .12s ease,box-shadow .12s ease,background-color .12s ease }
+    .option-item:hover { transform: translateY(-3px) }
+    .option-item.selected { background: #d6daec; border-color: var(--highlight); box-shadow: 0 6px 16px rgba(13,26,74,.16) }
+    .option-list.contact { grid-template-columns: repeat(auto-fit,minmax(160px,1fr)) }
     .rating-options { display: grid; grid-template-columns: repeat(auto-fit,minmax(120px,1fr)); gap: 20px; margin-top: 32px }
     .rating-option { background: var(--secondary); border: 2px solid var(--primary); border-radius: 16px; padding: 20px 12px; text-align: center; cursor: pointer; transition: transform .12s ease,filter .12s ease }
     .rating-option:hover { transform: translateY(-3px) }
     .rating-option.selected { filter: brightness(1.15) }
     .rating-option img { width: 60px; height: 60px; margin-bottom: 12px }
     .rating-option .label { font-size: .9rem; font-weight: 600; color: var(--primary) }
+    .recommend-options { display: grid; grid-template-columns: repeat(auto-fit,minmax(140px,1fr)); gap: 20px; margin-top: 32px }
+    .recommend-option { background: var(--secondary); border: 2px solid var(--primary); border-radius: 16px; padding: 24px 16px; text-align: center; cursor: pointer; transition: transform .12s ease,filter .12s ease }
+    .recommend-option:hover { transform: translateY(-3px) }
+    .recommend-option.selected { filter: brightness(1.15) }
+    .recommend-option .emoji { font-size: 2rem; margin-bottom: 12px; display: block }
+    .recommend-option .label { font-size: .95rem; font-weight: 600; color: var(--primary) }
+    .recommend-note { margin-top: 12px; font-size: .9rem; color: rgba(255,255,255,.8) }
+    #commentInput { width: 100%; padding: 16px 20px; font-size: 1.1rem; border: 2px solid var(--primary); border-radius: 12px; background: var(--secondary); color: var(--primary); resize: vertical; margin-top: 20px; min-height: 160px }
     .back-btn { margin-top: 36px; padding: 12px 24px; font-size: 1rem; border: 0; border-radius: 10px; background: var(--primary); color: var(--text-light); cursor: pointer }
     .progress { position: absolute; bottom: 32px; right: 36px; display: none; gap: 10px }
     .progress .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--primary); opacity: .3 }
@@ -185,7 +198,7 @@
         <!-- Phone -->
         <div class="page" id="page-phone">
             <h1 style="color:white;">Please enter your phone number</h1>
-            <input type="tel" id="phoneInput" value="+266 " placeholder="+266 5xx xxxx" autocomplete="tel" inputmode="tel" />
+            <input type="tel" id="phoneInput" placeholder="5xx xxxx" autocomplete="tel" inputmode="tel" />
             <button class="btn" id="btnProceed" disabled>Proceed</button>
         </div>
         <!-- Staff -->
@@ -193,6 +206,18 @@
             <h1 style="color:white;">I was assisted by…</h1>
             <div class="staff-grid" id="staffGrid"></div>
             <button class="back-btn" id="backFromStaff">Back</button>
+        </div>
+        <!-- Service -->
+        <div class="page" id="page-service">
+            <h1 style="color:white;">Which Liberty service were you assisted with today?</h1>
+            <div class="option-list" id="serviceOptions"></div>
+            <button class="back-btn" id="backFromService">Back</button>
+        </div>
+        <!-- Satisfaction -->
+        <div class="page" id="page-satisfaction">
+            <h1 style="color:white;">How satisfied are you with your recent interaction with Liberty?</h1>
+            <div class="rating-options" id="optsSatisfaction"></div>
+            <button class="back-btn" id="backFromSatisfaction">Back</button>
         </div>
         <!-- Time -->
         <div class="page" id="page-time">
@@ -206,16 +231,31 @@
             <div class="rating-options" id="optsRespect"></div>
             <button class="back-btn" id="backFromRespect">Back</button>
         </div>
-        <!-- Overall -->
-        <div class="page" id="page-overall">
-            <h1 style="color:white;">Overall Service Rating?</h1>
-            <div class="rating-options" id="optsOverall"></div>
-            <button class="back-btn" id="backFromOverall">Back</button>
+        <!-- Recommend -->
+        <div class="page" id="page-recommend">
+            <h1 style="color:white;">How likely are you to recommend Liberty to a friend or family member?</h1>
+            <div class="recommend-options" id="optsRecommend"></div>
+            <p class="recommend-note">(1 = Not at all likely &rarr; 5 = Extremely likely)</p>
+            <button class="back-btn" id="backFromRecommend">Back</button>
+        </div>
+        <!-- Contact -->
+        <div class="page" id="page-contact">
+            <h1 style="color:white;">Would you like someone to contact you about your experience?</h1>
+            <div class="option-list contact" id="optsContact"></div>
+            <button class="back-btn" id="backFromContact">Back</button>
+        </div>
+        <!-- Comment -->
+        <div class="page" id="page-comment">
+            <h1 style="color:white;">Please tell us briefly what we could do better.</h1>
+            <p style="color:white; opacity:.8;">Optional</p>
+            <textarea id="commentInput" placeholder="Type your feedback here..." rows="5"></textarea>
+            <button class="btn" id="btnSubmitComment">Submit Feedback</button>
+            <button class="back-btn" id="backFromComment">Back</button>
         </div>
         <!-- Final -->
         <div class="page final-page" id="page-final">
-            <h1 style="color:white;">Thank You for the Feedback!</h1>
-            <p style="color:white;">Liberty Life Lesotho Limited – Reg. No. 50966</p>
+            <h1 style="color:white;">Thank you for your feedback!</h1>
+            <p style="color:white;">Your input helps us improve our service.</p>
             <div class="progress-container">
                 <div class="progress-track"><div class="progress-fill" id="finalProgress"></div></div>
             </div>
@@ -226,30 +266,76 @@
             <div class="dot" data-step="1"></div>
             <div class="dot" data-step="2"></div>
             <div class="dot" data-step="3"></div>
+            <div class="dot" data-step="4"></div>
+            <div class="dot" data-step="5"></div>
+            <div class="dot" data-step="6"></div>
+            <div class="dot" data-step="7"></div>
         </div>
     </div>
 
         <script src="app-base.js"></script>
 <script>
         (function () {
-            const questions = [
-                { key: 'time', container: 'optsTime', labels: ['Not at all', 'No', 'Neutral', 'Yes, Mostly', 'Absolutely'] },
-                { key: 'respect', container: 'optsRespect', labels: ['Not at all', 'No', 'Neutral', 'Yes, Mostly', 'Absolutely'] },
-                { key: 'overall', container: 'optsOverall', labels: ['Very Poor', 'Poor', 'Okay', 'Good', 'Excellent'] }
+            const ratingQuestions = [
+                { key: 'overall', container: 'optsSatisfaction', labels: ['Very dissatisfied', 'Dissatisfied', 'Neutral', 'Satisfied', 'Very satisfied'], nextPage: 5 },
+                { key: 'time', container: 'optsTime', labels: ['Not at all', 'No', 'Neutral', 'Yes, Mostly', 'Absolutely'], nextPage: 6 },
+                { key: 'respect', container: 'optsRespect', labels: ['Not at all', 'No', 'Neutral', 'Yes, Mostly', 'Absolutely'], nextPage: 7 }
             ];
             const ratingColours = ['#e74c3c', '#e67e22', '#f1c40f', '#2ecc71', '#27ae60'];
+            const recommendOptions = [
+                { value: 1, emoji: '😡', label: 'Not at all likely' },
+                { value: 2, emoji: '😞', label: 'Slightly likely' },
+                { value: 3, emoji: '😐', label: 'Neutral' },
+                { value: 4, emoji: '😃', label: 'Very likely' },
+                { value: 5, emoji: '😊', label: 'Extremely likely' }
+            ];
+            const services = [
+                'Policy enquiry',
+                'Claim',
+                'New policy application',
+                'Payment',
+                'Amendments/ Policy Changes',
+                'Other'
+            ];
+            const contactChoices = [
+                { value: 'yes', label: 'Yes' },
+                { value: 'no', label: 'No' }
+            ];
 
-            const state = { phone: '+266 ', staff: null, staffName: null, staffBranchId: null, staffBranchName: null, time: null, respect: null, overall: null, startedAt: null, duration: 0 };
-            const pages = ['page-idle', 'page-phone', 'page-staff', 'page-time', 'page-respect', 'page-overall', 'page-final'];
+            const pages = ['page-idle', 'page-phone', 'page-staff', 'page-service', 'page-satisfaction', 'page-time', 'page-respect', 'page-recommend', 'page-contact', 'page-comment', 'page-final'];
+            const state = {
+                phone: '',
+                staff: null,
+                staffName: null,
+                staffBranchId: null,
+                staffBranchName: null,
+                service: null,
+                time: null,
+                respect: null,
+                overall: null,
+                recommend: null,
+                contactPreference: null,
+                comment: '',
+                startedAt: null,
+                duration: 0
+            };
             let currentIndex = 0;
             const byId = id => document.getElementById(id);
 
             function showPage(idx) {
                 currentIndex = idx;
-                pages.forEach((pid, i) => { const p = byId(pid); p.classList.toggle('active', i === idx); p.style.removeProperty('display'); });
+                pages.forEach((pid, i) => {
+                    const p = byId(pid);
+                    p.classList.toggle('active', i === idx);
+                    p.style.removeProperty('display');
+                });
                 const prog = byId('progress');
-                if (idx >= 2 && idx <= 5) { prog.style.display = 'flex'; prog.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === (idx - 2))); }
-                else { prog.style.display = 'none'; }
+                if (idx >= 2 && idx <= 9) {
+                    prog.style.display = 'flex';
+                    prog.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === (idx - 2)));
+                } else {
+                    prog.style.display = 'none';
+                }
                 document.body.classList.toggle('final-active', pages[idx] === 'page-final');
                 if (pages[idx] === 'page-phone') setTimeout(() => byId('phoneInput').focus(), 50);
             }
@@ -269,32 +355,101 @@
             }
 
             function renderStaff(roster) {
-                const host = byId('staffGrid'); host.innerHTML = '';
+                const host = byId('staffGrid');
+                host.innerHTML = '';
                 if (!roster || roster.length === 0) { host.innerHTML = '<p>No staff configured for this branch.</p>'; return; }
                 roster.forEach(m => {
                     const card = document.createElement('div');
-                    card.className = 'staff-card'; card.dataset.id = m.id;
+                    card.className = 'staff-card';
+                    card.dataset.id = m.id;
                     card.innerHTML = `<img src="${m.photo}" alt=""><div class="name">${m.name}</div>`;
                     card.addEventListener('click', () => {
-                        state.staff = m.id; state.staffName = m.name; state.staffBranchId = m.branchId; state.staffBranchName = m.branchName;
+                        state.staff = m.id;
+                        state.staffName = m.name;
+                        state.staffBranchId = m.branchId;
+                        state.staffBranchName = m.branchName;
                         host.querySelectorAll('.staff-card').forEach(c => c.classList.remove('selected'));
-                        card.classList.add('selected'); setTimeout(() => showPage(3), 150);
+                        card.classList.add('selected');
+                        setTimeout(() => showPage(3), 150);
                     });
                     host.appendChild(card);
                 });
             }
 
+            function renderServiceOptions() {
+                const host = byId('serviceOptions');
+                host.innerHTML = '';
+                services.forEach(service => {
+                    const opt = document.createElement('div');
+                    opt.className = 'option-item';
+                    opt.textContent = service;
+                    opt.addEventListener('click', () => {
+                        state.service = service;
+                        host.querySelectorAll('.option-item').forEach(o => o.classList.remove('selected'));
+                        opt.classList.add('selected');
+                        setTimeout(() => showPage(4), 150);
+                    });
+                    host.appendChild(opt);
+                });
+            }
+
             function renderRatings() {
                 const icons = ['angry', 'sad', 'meh', 'smile', 'laugh'];
-                questions.forEach(q => {
-                    const host = byId(q.container); host.innerHTML = '';
+                ratingQuestions.forEach(q => {
+                    const host = byId(q.container);
+                    host.innerHTML = '';
                     icons.forEach((icon, idx) => {
-                        const opt = document.createElement('div'); opt.className = 'rating-option'; opt.dataset.value = idx + 1;
+                        const opt = document.createElement('div');
+                        opt.className = 'rating-option';
+                        opt.dataset.value = idx + 1;
                         opt.innerHTML = `<img src="assets/icons/${icon}.svg" alt=""><div class="label">${q.labels[idx]}</div>`;
-                        opt.style.backgroundColor = ratingColours[idx]; opt.style.borderColor = ratingColours[idx];
-                        opt.addEventListener('click', () => { state[q.key] = idx + 1; host.querySelectorAll('.rating-option').forEach(o => o.classList.remove('selected')); opt.classList.add('selected'); const next = { time: 4, respect: 5, overall: 6 }[q.key]; setTimeout(() => showPage(next), 150); });
+                        opt.style.backgroundColor = ratingColours[idx];
+                        opt.style.borderColor = ratingColours[idx];
+                        opt.addEventListener('click', () => {
+                            state[q.key] = idx + 1;
+                            host.querySelectorAll('.rating-option').forEach(o => o.classList.remove('selected'));
+                            opt.classList.add('selected');
+                            setTimeout(() => showPage(q.nextPage), 150);
+                        });
                         host.appendChild(opt);
                     });
+                });
+            }
+
+            function renderRecommendOptions() {
+                const host = byId('optsRecommend');
+                host.innerHTML = '';
+                recommendOptions.forEach((opt, idx) => {
+                    const el = document.createElement('div');
+                    el.className = 'recommend-option';
+                    el.dataset.value = opt.value;
+                    el.innerHTML = `<span class="emoji">${opt.emoji}</span><span class="label">${opt.label}</span>`;
+                    el.style.backgroundColor = ratingColours[idx];
+                    el.style.borderColor = ratingColours[idx];
+                    el.addEventListener('click', () => {
+                        state.recommend = opt.value;
+                        host.querySelectorAll('.recommend-option').forEach(o => o.classList.remove('selected'));
+                        el.classList.add('selected');
+                        setTimeout(() => showPage(8), 150);
+                    });
+                    host.appendChild(el);
+                });
+            }
+
+            function renderContactOptions() {
+                const host = byId('optsContact');
+                host.innerHTML = '';
+                contactChoices.forEach(choice => {
+                    const el = document.createElement('div');
+                    el.className = 'option-item';
+                    el.textContent = choice.label;
+                    el.addEventListener('click', () => {
+                        state.contactPreference = choice.value;
+                        host.querySelectorAll('.option-item').forEach(o => o.classList.remove('selected'));
+                        el.classList.add('selected');
+                        setTimeout(() => showPage(9), 150);
+                    });
+                    host.appendChild(el);
                 });
             }
 
@@ -305,24 +460,63 @@
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
-                                phone: state.phone, staffId: state.staff, staffName: state.staffName,
-                                timeRating: state.time, respectRating: state.respect, overallRating: state.overall,
+                                phone: state.phone,
+                                staffId: state.staff,
+                                staffName: state.staffName,
+                                serviceType: state.service,
+                                timeRating: state.time,
+                                respectRating: state.respect,
+                                overallRating: state.overall,
+                                recommendRating: state.recommend,
+                                contactPreference: state.contactPreference,
+                                comment: state.comment,
                                 startedUtc: state.startedAt ? new Date(state.startedAt).toISOString() : undefined,
                                 durationSeconds: state.duration ?? 0,
-                                branchId: state.staffBranchId, branchName: state.staffBranchName
+                                branchId: state.staffBranchId,
+                                branchName: state.staffBranchName
                             })
                         });
-                    } catch (e) { console.warn('Feedback submit failed', e); }
+                    } catch (e) {
+                        console.warn('Feedback submit failed', e);
+                    }
                 })();
             }
 
             function resetState() {
-                state.phone = '+266 '; state.staff = null; state.staffName = null; state.staffBranchId = null; state.staffBranchName = null; state.time = null; state.respect = null; state.overall = null; state.duration = 0;
-                byId('phoneInput').value = '+266 '; byId('btnProceed').disabled = true;
-                [byId('staffGrid'), byId('optsTime'), byId('optsRespect'), byId('optsOverall')].forEach(h => h && h.querySelectorAll('.selected').forEach(el => el.classList.remove('selected')));
+                state.phone = '';
+                state.staff = null;
+                state.staffName = null;
+                state.staffBranchId = null;
+                state.staffBranchName = null;
+                state.service = null;
+                state.time = null;
+                state.respect = null;
+                state.overall = null;
+                state.recommend = null;
+                state.contactPreference = null;
+                state.comment = '';
+                state.duration = 0;
+                state.startedAt = null;
+                const phoneInput = byId('phoneInput');
+                phoneInput.value = '';
+                byId('btnProceed').disabled = true;
+                ['staffGrid', 'serviceOptions', 'optsSatisfaction', 'optsTime', 'optsRespect', 'optsRecommend', 'optsContact'].forEach(id => {
+                    const host = byId(id);
+                    if (host) host.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
+                });
+                const commentInput = byId('commentInput');
+                if (commentInput) commentInput.value = '';
             }
 
-            (async () => { const roster = await fetchRosterFromServer(); renderStaff(roster); renderRatings(); showPage(0); })();
+            (async () => {
+                const roster = await fetchRosterFromServer();
+                renderStaff(roster);
+                renderServiceOptions();
+                renderRatings();
+                renderRecommendOptions();
+                renderContactOptions();
+                showPage(0);
+            })();
 
             byId('btnStart').addEventListener('click', () => {
                 if (currentIndex === 0) {
@@ -330,18 +524,57 @@
                     showPage(1);
                 }
             });
-            const phoneInput = byId('phoneInput'), btnProceed = byId('btnProceed');
-            function validatePhone(v) { return v.replace(/\s+/g, '').startsWith('+266') && v.replace(/\s+/g, '').length >= 8; }
-            phoneInput.addEventListener('input', () => { state.phone = phoneInput.value.trim(); btnProceed.disabled = !validatePhone(state.phone); });
-            phoneInput.addEventListener('keydown', ev => { if (ev.key === 'Enter' && !btnProceed.disabled) { ev.preventDefault(); showPage(2); } });
+
+            const phoneInput = byId('phoneInput');
+            const btnProceed = byId('btnProceed');
+            function validatePhone(v) {
+                const digits = v.replace(/\D/g, '');
+                return digits.length >= 8;
+            }
+            phoneInput.addEventListener('input', () => {
+                state.phone = phoneInput.value.trim();
+                btnProceed.disabled = !validatePhone(state.phone);
+            });
+            phoneInput.addEventListener('keydown', ev => {
+                if (ev.key === 'Enter' && !btnProceed.disabled) {
+                    ev.preventDefault();
+                    showPage(2);
+                }
+            });
             btnProceed.addEventListener('click', () => showPage(2));
             byId('backFromStaff').addEventListener('click', () => showPage(1));
-            byId('backFromTime').addEventListener('click', () => showPage(2));
-            byId('backFromRespect').addEventListener('click', () => showPage(3));
-            byId('backFromOverall').addEventListener('click', () => showPage(4));
-            const observer = new MutationObserver(() => { if (pages[currentIndex] === 'page-final') { state.duration = state.startedAt ? Math.round((Date.now() - state.startedAt) / 1000) : 0; persistResponse(); const bar = byId('finalProgress'); if (bar) { bar.style.width = '0%'; setTimeout(() => { bar.style.width = '100%'; }, 50); } setTimeout(() => { resetState(); showPage(0); }, 4000); } });
+            byId('backFromService').addEventListener('click', () => showPage(2));
+            byId('backFromSatisfaction').addEventListener('click', () => showPage(3));
+            byId('backFromTime').addEventListener('click', () => showPage(4));
+            byId('backFromRespect').addEventListener('click', () => showPage(5));
+            byId('backFromRecommend').addEventListener('click', () => showPage(6));
+            byId('backFromContact').addEventListener('click', () => showPage(7));
+            byId('backFromComment').addEventListener('click', () => showPage(8));
+            byId('btnSubmitComment').addEventListener('click', () => {
+                const commentInput = byId('commentInput');
+                state.comment = commentInput ? commentInput.value.trim() : '';
+                showPage(10);
+            });
+
+            const observer = new MutationObserver(() => {
+                if (pages[currentIndex] === 'page-final') {
+                    state.duration = state.startedAt ? Math.round((Date.now() - state.startedAt) / 1000) : 0;
+                    persistResponse();
+                    const bar = byId('finalProgress');
+                    if (bar) {
+                        bar.style.width = '0%';
+                        setTimeout(() => { bar.style.width = '100%'; }, 50);
+                    }
+                    setTimeout(() => {
+                        resetState();
+                        showPage(0);
+                    }, 4000);
+                }
+            });
             observer.observe(byId('page-final'), { attributes: true, attributeFilter: ['class'] });
-            if ('serviceWorker' in navigator) { navigator.serviceWorker.register(appBuildUrl('sw.js')).catch(() => { }); }
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register(appBuildUrl('sw.js')).catch(() => { });
+            }
         })();
 
         const canvas = document.getElementById('bgAnimation');
