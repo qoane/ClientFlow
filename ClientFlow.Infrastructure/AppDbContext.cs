@@ -258,11 +258,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000106"), QuestionId = qServiceId, Value = "other", Label = "Other", Order = 6 },
 
             // Satisfaction scale
-            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000201"), QuestionId = qSatisfactionId, Value = "1", Label = "😊 1 = Very Poor", Order = 1 },
-            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000202"), QuestionId = qSatisfactionId, Value = "2", Label = "😐 2 = Poor", Order = 2 },
-            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000203"), QuestionId = qSatisfactionId, Value = "3", Label = "🙂 3 = Okay", Order = 3 },
-            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000204"), QuestionId = qSatisfactionId, Value = "4", Label = "😀 4 = Good", Order = 4 },
-            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000205"), QuestionId = qSatisfactionId, Value = "5", Label = "😁 5 = Excellent", Order = 5 },
+            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000201"), QuestionId = qSatisfactionId, Value = "1", Label = "😊 1 = Excellent", Order = 1 },
+            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000202"), QuestionId = qSatisfactionId, Value = "2", Label = "😃 2 = Good", Order = 2 },
+            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000203"), QuestionId = qSatisfactionId, Value = "3", Label = "😐 3 = Okay", Order = 3 },
+            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000204"), QuestionId = qSatisfactionId, Value = "4", Label = "😞 4 = Poor", Order = 4 },
+            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000205"), QuestionId = qSatisfactionId, Value = "5", Label = "😡 5 = Very Poor", Order = 5 },
 
             // Timeliness scale
             new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000301"), QuestionId = qTimelinessId, Value = "not-at-all", Label = "Not at all", Order = 1 },
@@ -279,11 +279,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000405"), QuestionId = qProfessionalismId, Value = "absolutely", Label = "Absolutely", Order = 5 },
 
             // Recommendation scale
-            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000501"), QuestionId = qRecommendId, Value = "1", Label = "😡 1 = Not at all likely", Order = 1 },
-            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000502"), QuestionId = qRecommendId, Value = "2", Label = "😞 2", Order = 2 },
-            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000503"), QuestionId = qRecommendId, Value = "3", Label = "😐 3", Order = 3 },
-            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000504"), QuestionId = qRecommendId, Value = "4", Label = "😃 4", Order = 4 },
-            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000505"), QuestionId = qRecommendId, Value = "5", Label = "😊 5 = Extremely likely", Order = 5 },
+            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000501"), QuestionId = qRecommendId, Value = "1", Label = "😊 1 = Extremely likely", Order = 1 },
+            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000502"), QuestionId = qRecommendId, Value = "2", Label = "😃 2 = Very likely", Order = 2 },
+            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000503"), QuestionId = qRecommendId, Value = "3", Label = "😐 3 = Neutral", Order = 3 },
+            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000504"), QuestionId = qRecommendId, Value = "4", Label = "😞 4 = Slightly likely", Order = 4 },
+            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000505"), QuestionId = qRecommendId, Value = "5", Label = "😡 5 = Not at all likely", Order = 5 },
 
             // Follow-up yes/no
             new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000601"), QuestionId = qFollowUpId, Value = "yes", Label = "Yes", Order = 1 },
