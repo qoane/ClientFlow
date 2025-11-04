@@ -58,9 +58,22 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
         // ---- Seed Liberty survey ----
         var surveyId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
-        var sectionId = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
-        var qNpsId = Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc");
-        var qWhyId = Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd");
+        var sectionClientId = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
+        var sectionServiceId = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbc");
+        var sectionCoreId = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbd");
+        var sectionFeedbackId = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbe");
+        var sectionEndId = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbf");
+
+        var qPhoneId = Guid.Parse("10000000-0000-0000-0000-000000000001");
+        var qStaffId = Guid.Parse("10000000-0000-0000-0000-000000000002");
+        var qServiceId = Guid.Parse("10000000-0000-0000-0000-000000000003");
+        var qSatisfactionId = Guid.Parse("10000000-0000-0000-0000-000000000004");
+        var qTimelinessId = Guid.Parse("10000000-0000-0000-0000-000000000005");
+        var qProfessionalismId = Guid.Parse("10000000-0000-0000-0000-000000000006");
+        var qRecommendId = Guid.Parse("10000000-0000-0000-0000-000000000007");
+        var qFollowUpId = Guid.Parse("10000000-0000-0000-0000-000000000008");
+        var qImproveId = Guid.Parse("10000000-0000-0000-0000-000000000009");
+        var qEndMessageId = Guid.Parse("10000000-0000-0000-0000-00000000000A");
 
         b.Entity<Survey>().HasData(new Survey
         {
@@ -72,39 +85,209 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             ThemeJson = """{"accent":"#de2b2b"}"""
         });
 
-        b.Entity<SurveySection>().HasData(new SurveySection
-        {
-            Id = sectionId,
-            SurveyId = surveyId,
-            Title = "Main",
-            Order = 1,
-            Columns = 1
-        });
+        b.Entity<SurveySection>().HasData(
+            new SurveySection
+            {
+                Id = sectionClientId,
+                SurveyId = surveyId,
+                Title = "Client Identification",
+                Order = 1,
+                Columns = 1
+            },
+            new SurveySection
+            {
+                Id = sectionServiceId,
+                SurveyId = surveyId,
+                Title = "Service Interaction",
+                Order = 2,
+                Columns = 1
+            },
+            new SurveySection
+            {
+                Id = sectionCoreId,
+                SurveyId = surveyId,
+                Title = "Core Satisfaction Questions",
+                Order = 3,
+                Columns = 1
+            },
+            new SurveySection
+            {
+                Id = sectionFeedbackId,
+                SurveyId = surveyId,
+                Title = "Feedback & Follow-Up",
+                Order = 4,
+                Columns = 1
+            },
+            new SurveySection
+            {
+                Id = sectionEndId,
+                SurveyId = surveyId,
+                Title = "End Screen",
+                Order = 5,
+                Columns = 1
+            }
+        );
 
         b.Entity<Question>().HasData(
             new Question
             {
-                Id = qNpsId,
+                Id = qPhoneId,
                 SurveyId = surveyId,
-                SectionId = sectionId,
+                SectionId = sectionClientId,
                 Order = 1,
-                Type = "nps_0_10",
-                Prompt = "How likely are you to recommend Liberty to a friend or colleague?",
-                Key = "nps",
+                Type = "phone",
+                Prompt = "Please enter your phone number.",
+                Key = "phone",
                 Required = true
             },
             new Question
             {
-                Id = qWhyId,
+                Id = qStaffId,
                 SurveyId = surveyId,
-                SectionId = sectionId,
+                SectionId = sectionServiceId,
                 Order = 2,
+                Type = "radio",
+                Prompt = "I was assisted by…",
+                Key = "staff",
+                Required = true
+            },
+            new Question
+            {
+                Id = qServiceId,
+                SurveyId = surveyId,
+                SectionId = sectionServiceId,
+                Order = 3,
+                Type = "radio",
+                Prompt = "Which Liberty service were you assisted with today?",
+                Key = "service",
+                Required = true
+            },
+            new Question
+            {
+                Id = qSatisfactionId,
+                SurveyId = surveyId,
+                SectionId = sectionCoreId,
+                Order = 4,
+                Type = "radio",
+                Prompt = "How satisfied are you with your recent interaction with Liberty?",
+                Key = "satisfaction",
+                Required = true
+            },
+            new Question
+            {
+                Id = qTimelinessId,
+                SurveyId = surveyId,
+                SectionId = sectionCoreId,
+                Order = 5,
+                Type = "radio",
+                Prompt = "Was your query handled within a reasonable time?",
+                Key = "timeliness",
+                Required = true
+            },
+            new Question
+            {
+                Id = qProfessionalismId,
+                SurveyId = surveyId,
+                SectionId = sectionCoreId,
+                Order = 6,
+                Type = "radio",
+                Prompt = "Did our staff treat you professionally and with respect?",
+                Key = "professionalism",
+                Required = true
+            },
+            new Question
+            {
+                Id = qRecommendId,
+                SurveyId = surveyId,
+                SectionId = sectionCoreId,
+                Order = 7,
+                Type = "radio",
+                Prompt = "How likely are you to recommend Liberty to a friend or family member?",
+                Key = "recommend",
+                Required = true
+            },
+            new Question
+            {
+                Id = qFollowUpId,
+                SurveyId = surveyId,
+                SectionId = sectionFeedbackId,
+                Order = 8,
+                Type = "radio",
+                Prompt = "Would you like someone to contact you about your experience?",
+                Key = "follow_up",
+                Required = true
+            },
+            new Question
+            {
+                Id = qImproveId,
+                SurveyId = surveyId,
+                SectionId = sectionFeedbackId,
+                Order = 9,
                 Type = "text",
-                Prompt = "What is the primary reason for your score?",
-                Key = "reason",
+                Prompt = "Please tell us briefly what we could do better.",
+                Key = "improvement",
                 Required = false,
-                SettingsJson = """{"placeholder":"Tell us more…"}"""
+                SettingsJson = """{"placeholder":"Your feedback helps us improve."}"""
+            },
+            new Question
+            {
+                Id = qEndMessageId,
+                SurveyId = surveyId,
+                SectionId = sectionEndId,
+                Order = 10,
+                Type = "message",
+                Prompt = "Thank you for your feedback! Your input helps us improve our service.",
+                Key = "end",
+                Required = false
             }
+        );
+
+        b.Entity<QuestionOption>().HasData(
+            // Staff list
+            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000001"), QuestionId = qStaffId, Value = "neo-ramohabi", Label = "Neo Ramohabi", Order = 1 },
+            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000002"), QuestionId = qStaffId, Value = "baradi-boikanyo", Label = "Baradi Boikanyo", Order = 2 },
+            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000003"), QuestionId = qStaffId, Value = "tsepo-chefa", Label = "Tsepo Chefa", Order = 3 },
+            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000004"), QuestionId = qStaffId, Value = "mpho-phalafang", Label = "Mpho Phalafang", Order = 4 },
+
+            // Service type
+            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000101"), QuestionId = qServiceId, Value = "policy-enquiry", Label = "Policy enquiry", Order = 1 },
+            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000102"), QuestionId = qServiceId, Value = "claim", Label = "Claim", Order = 2 },
+            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000103"), QuestionId = qServiceId, Value = "new-policy-application", Label = "New policy application", Order = 3 },
+            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000104"), QuestionId = qServiceId, Value = "payment", Label = "Payment", Order = 4 },
+            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000105"), QuestionId = qServiceId, Value = "amendments", Label = "Amendments/ Policy Changes", Order = 5 },
+            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000106"), QuestionId = qServiceId, Value = "other", Label = "Other", Order = 6 },
+
+            // Satisfaction scale
+            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000201"), QuestionId = qSatisfactionId, Value = "1", Label = "😊 1 = Very Poor", Order = 1 },
+            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000202"), QuestionId = qSatisfactionId, Value = "2", Label = "😐 2 = Poor", Order = 2 },
+            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000203"), QuestionId = qSatisfactionId, Value = "3", Label = "🙂 3 = Okay", Order = 3 },
+            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000204"), QuestionId = qSatisfactionId, Value = "4", Label = "😀 4 = Good", Order = 4 },
+            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000205"), QuestionId = qSatisfactionId, Value = "5", Label = "😁 5 = Excellent", Order = 5 },
+
+            // Timeliness scale
+            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000301"), QuestionId = qTimelinessId, Value = "not-at-all", Label = "Not at all", Order = 1 },
+            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000302"), QuestionId = qTimelinessId, Value = "no", Label = "No", Order = 2 },
+            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000303"), QuestionId = qTimelinessId, Value = "neutral", Label = "Neutral", Order = 3 },
+            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000304"), QuestionId = qTimelinessId, Value = "yes-mostly", Label = "Yes, mostly", Order = 4 },
+            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000305"), QuestionId = qTimelinessId, Value = "absolutely", Label = "Absolutely", Order = 5 },
+
+            // Professionalism scale (same labels)
+            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000401"), QuestionId = qProfessionalismId, Value = "not-at-all", Label = "Not at all", Order = 1 },
+            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000402"), QuestionId = qProfessionalismId, Value = "no", Label = "No", Order = 2 },
+            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000403"), QuestionId = qProfessionalismId, Value = "neutral", Label = "Neutral", Order = 3 },
+            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000404"), QuestionId = qProfessionalismId, Value = "yes-mostly", Label = "Yes, mostly", Order = 4 },
+            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000405"), QuestionId = qProfessionalismId, Value = "absolutely", Label = "Absolutely", Order = 5 },
+
+            // Recommendation scale
+            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000501"), QuestionId = qRecommendId, Value = "1", Label = "😡 1 = Not at all likely", Order = 1 },
+            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000502"), QuestionId = qRecommendId, Value = "2", Label = "😞 2", Order = 2 },
+            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000503"), QuestionId = qRecommendId, Value = "3", Label = "😐 3", Order = 3 },
+            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000504"), QuestionId = qRecommendId, Value = "4", Label = "😃 4", Order = 4 },
+            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000505"), QuestionId = qRecommendId, Value = "5", Label = "😊 5 = Extremely likely", Order = 5 },
+
+            // Follow-up yes/no
+            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000601"), QuestionId = qFollowUpId, Value = "yes", Label = "Yes", Order = 1 },
+            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000602"), QuestionId = qFollowUpId, Value = "no", Label = "No", Order = 2 }
         );
 
         b.Entity<QuestionOption>()
@@ -128,10 +311,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         var defaultBranchId = Guid.Parse("00000000-0000-0000-0000-000000000001");
 
         b.Entity<ClientFlow.Domain.Feedback.Staff>().HasData(
-            new ClientFlow.Domain.Feedback.Staff { Id = staff1Id, Name = "Neo Ramohlabi", PhotoUrl = null, IsActive = true, BranchId = defaultBranchId },
+            new ClientFlow.Domain.Feedback.Staff { Id = staff1Id, Name = "Neo Ramohabi", PhotoUrl = null, IsActive = true, BranchId = defaultBranchId },
             new ClientFlow.Domain.Feedback.Staff { Id = staff2Id, Name = "Baradi Boikanyo", PhotoUrl = null, IsActive = true, BranchId = defaultBranchId },
-            new ClientFlow.Domain.Feedback.Staff { Id = staff3Id, Name = "Ts'epo Chefa", PhotoUrl = null, IsActive = true, BranchId = defaultBranchId },
-            new ClientFlow.Domain.Feedback.Staff { Id = staff4Id, Name = "Mpho Phahlang", PhotoUrl = null, IsActive = true, BranchId = defaultBranchId }
+            new ClientFlow.Domain.Feedback.Staff { Id = staff3Id, Name = "Tsepo Chefa", PhotoUrl = null, IsActive = true, BranchId = defaultBranchId },
+            new ClientFlow.Domain.Feedback.Staff { Id = staff4Id, Name = "Mpho Phalafang", PhotoUrl = null, IsActive = true, BranchId = defaultBranchId }
         );
 
         // ---- KioskFeedback relationship ----

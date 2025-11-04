@@ -8,6 +8,11 @@ const API = {
         if (!r.ok) throw new Error('survey not found');
         return r.json();
     },
+    async getSurveyDefinition(code) {
+        const r = await __fetchApi(`api/surveys/${encodeURIComponent(code)}/definition`);
+        if (!r.ok) throw new Error('survey definition not found');
+        return r.json();
+    },
     async submit(code, data) {
         const r = await __fetchApi(`api/surveys/${encodeURIComponent(code)}/responses`, {
             method: 'POST',
