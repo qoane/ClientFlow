@@ -1,6 +1,7 @@
 using ClientFlow.Application.Abstractions;
 using ClientFlow.Application.Services;
 using ClientFlow.Infrastructure;
+using ClientFlow.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
@@ -25,8 +26,8 @@ builder.Services.AddDbContext<AppDbContext>(opt =>
 // DI
 builder.Services.AddScoped<ISurveyRepository, SurveyRepository>();
 builder.Services.AddScoped<IResponseRepository, ResponseRepository>();
-builder.Services.AddScoped<IOptionRepository, ClientFlow.Infrastructure.Repositories.OptionRepository>();
-builder.Services.AddScoped<IRuleRepository, ClientFlow.Infrastructure.Repositories.RuleRepository>();
+builder.Services.AddScoped<IOptionRepository, OptionRepository>();
+builder.Services.AddScoped<IRuleRepository, RuleRepository>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<SurveyService>();
 builder.Services.AddScoped<ISectionRepository, SectionRepository>();
