@@ -74,6 +74,12 @@ public sealed class OptionRepository(AppDbContext db) : IOptionRepository
 
     public void RemoveRange(IEnumerable<QuestionOption> options)
         => db.Options.RemoveRange(options);
+
+    public Task<QuestionOption?> GetByIdAsync(Guid id, CancellationToken ct = default)
+        => db.Options.FirstOrDefaultAsync(o => o.Id == id, ct);
+
+    public void Remove(QuestionOption option)
+        => db.Options.Remove(option);
 }
 
 

@@ -646,6 +646,7 @@ public class AdminController(
 
     // ---------- DESIGNER: add option ----------
     public record AddOptionReq(Guid QuestionId, string Value, string Label, int Order = 0);
+    public record ReplaceOptionReq(string Value, string Label, int Order = 0);
 
     // POST /api/admin/surveys/{code}/options
     [HttpPost("surveys/{code}/options")]
@@ -663,6 +664,52 @@ public class AdminController(
             Order = req.Order
         }, ct);
 
+        await uow.SaveChangesAsync(ct);
+        return NoContent();
+    }
+
+    // PUT /api/admin/questions/{id}/options
+    [HttpPut("questions/{id:guid}/options")]
+    public async Task<IActionResult> ReplaceOptions(
+        Guid id,
+        [FromBody] List<ReplaceOptionReq> req,
+        [FromServices] IQuestionRepository questions,
+        CancellationToken ct)
+    {
+        var question = await questions.GetByIdAsync(id, ct);
+        if (question is null) return NotFound();
+
+        var existing = await options.GetByQuestionIdsAsync(new[] { id }, ct);
+        if (existing.Count > 0)
+            options.RemoveRange(existing);
+
+        if (req is { Count: > 0 })
+        {
+            foreach (var option in req.OrderBy(o => o.Order))
+            {
+                await options.AddAsync(new QuestionOption
+                {
+                    Id = Guid.NewGuid(),
+                    QuestionId = id,
+                    Value = option.Value,
+                    Label = option.Label,
+                    Order = option.Order
+                }, ct);
+            }
+        }
+
+        await uow.SaveChangesAsync(ct);
+        return NoContent();
+    }
+
+    // DELETE /api/admin/options/{id}
+    [HttpDelete("options/{id:guid}")]
+    public async Task<IActionResult> DeleteOption(Guid id, CancellationToken ct)
+    {
+        var option = await options.GetByIdAsync(id, ct);
+        if (option is null) return NotFound();
+
+        options.Remove(option);
         await uow.SaveChangesAsync(ct);
         return NoContent();
     }
