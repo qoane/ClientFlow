@@ -27,20 +27,25 @@ public interface IOptionRepository
 {
     Task<List<QuestionOption>> GetByQuestionIdsAsync(IEnumerable<Guid> questionIds, CancellationToken ct = default);
     Task AddAsync(QuestionOption option, CancellationToken ct = default);   // <-- add write method here
+    void RemoveRange(IEnumerable<QuestionOption> options);
 }
 
 public interface IRuleRepository
 {
     Task<List<QuestionRule>> GetBySurveyIdAsync(Guid surveyId, CancellationToken ct = default);
     Task AddAsync(QuestionRule rule, CancellationToken ct = default);
+    void RemoveRange(IEnumerable<QuestionRule> rules);
 }
 
 public interface ISectionRepository
 {
     Task AddAsync(SurveySection section, CancellationToken ct = default);
+    Task<SurveySection?> GetByIdAsync(Guid id, CancellationToken ct = default);
 }
 
 public interface IQuestionRepository
 {
     Task AddAsync(Question question, CancellationToken ct = default);
+    Task<Question?> GetByIdAsync(Guid id, CancellationToken ct = default);
+    void Remove(Question question);
 }

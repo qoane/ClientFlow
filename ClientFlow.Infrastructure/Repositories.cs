@@ -71,6 +71,9 @@ public sealed class OptionRepository(AppDbContext db) : IOptionRepository
 
     public Task AddAsync(QuestionOption option, CancellationToken ct = default)
         => db.Options.AddAsync(option, ct).AsTask();
+
+    public void RemoveRange(IEnumerable<QuestionOption> options)
+        => db.Options.RemoveRange(options);
 }
 
 
@@ -84,16 +87,28 @@ public sealed class RuleRepository(AppDbContext db) : IRuleRepository
 
     public Task AddAsync(QuestionRule rule, CancellationToken ct = default)
         => db.Rules.AddAsync(rule, ct).AsTask();
+
+    public void RemoveRange(IEnumerable<QuestionRule> rules)
+        => db.Rules.RemoveRange(rules);
 }
 
 public sealed class SectionRepository(AppDbContext db) : ISectionRepository
 {
     public Task AddAsync(SurveySection section, CancellationToken ct = default)
         => db.Sections.AddAsync(section, ct).AsTask();
+
+    public Task<SurveySection?> GetByIdAsync(Guid id, CancellationToken ct = default)
+        => db.Sections.FirstOrDefaultAsync(s => s.Id == id, ct);
 }
 
 public sealed class QuestionRepository(AppDbContext db) : IQuestionRepository
 {
     public Task AddAsync(Question q, CancellationToken ct = default)
         => db.Questions.AddAsync(q, ct).AsTask();
+
+    public Task<Question?> GetByIdAsync(Guid id, CancellationToken ct = default)
+        => db.Questions.FirstOrDefaultAsync(q => q.Id == id, ct);
+
+    public void Remove(Question question)
+        => db.Questions.Remove(question);
 }
