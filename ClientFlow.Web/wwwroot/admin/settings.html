@@ -361,6 +361,7 @@
                         <a href="#users">User Management <span class="small" style="margin-left:auto">roles, status</span></a>
                         <a href="#roles">Types of Users</a>
                         <a href="#kiosks">Kiosk Locations</a>
+                        <a href="#surveys">Surveys <span class="small" style="margin-left:auto">design &amp; share</span></a>
                         <a href="#features">Features & Toggles</a>
                         <a href="#security">Security & Access</a>
                         <a href="#integrations">Integrations</a>
@@ -483,6 +484,39 @@
                             <thead><tr><th>Code</th><th>Name</th><th>Address</th><th>Status</th><th>Last Ping</th></tr></thead>
                             <tbody></tbody>
                         </table>
+                    </div>
+                </section>
+
+                <!-- Surveys -->
+                <section id="surveys" class="panel">
+                    <div class="head">
+                        <strong>Surveys</strong>
+                        <div class="row" style="gap:8px">
+                            <span class="tag" id="surveyCount">—</span>
+                            <a class="btn" href="/admin/surveys.html">Manage</a>
+                            <a class="btn accent" href="/admin/designer.html">Open Designer →</a>
+                        </div>
+                    </div>
+                    <div class="body">
+                        <div class="grid2" style="gap:12px">
+                            <div class="panel" style="background:var(--panel2);border:1px solid var(--border);padding:12px;border-radius:12px;box-shadow:none">
+                                <strong style="display:block;margin-bottom:6px">Overview</strong>
+                                <div class="muted" id="surveyOverview">Loading surveys…</div>
+                                <div style="margin-top:10px;display:flex;gap:12px;flex-wrap:wrap" id="surveyStats"></div>
+                            </div>
+                            <div class="panel" style="background:var(--panel2);border:1px solid var(--border);padding:12px;border-radius:12px;box-shadow:none">
+                                <strong style="display:block;margin-bottom:6px">Last Published</strong>
+                                <div class="muted" id="surveyLastPublished">—</div>
+                                <button class="btn" style="margin-top:10px" id="btnRefreshSurveys">Refresh</button>
+                            </div>
+                        </div>
+                        <div style="margin-top:16px">
+                            <table class="table" id="surveyTable">
+                                <thead><tr><th>Code</th><th>Title</th><th>Status</th><th>Description</th></tr></thead>
+                                <tbody></tbody>
+                            </table>
+                            <div class="muted" style="margin-top:8px">Use the Designer to build experiences and publish to kiosks or shareable links.</div>
+                        </div>
                     </div>
                 </section>
 
@@ -630,7 +664,7 @@
   const elm=(id)=>document.getElementById(id);
 
   // --- Initial seed (if empty) ---
-  if(!localStorage.getItem(storeKey)){
+      if(!localStorage.getItem(storeKey)){
     W({
       branding:{name:'ClientFlow',tagline:'Experience that delights',email:'admin@company.com',phone:'+266 000 0000',darkHeader:true,showBeta:false,compact:false,css:'',accent:'#6cf0c2',panel:'#0f1530',logoDataUrl:''},
       mail:{from:'noreply@company.com',host:'smtp.example.com',user:'smtp-user',pass:'secret',schedule:{emails:['ops@company.com'],freq:'Weekly',time:'08:00',csv:true,png:false}},
@@ -644,6 +678,13 @@
         {code:'BEE-01',name:'BeeOnline First',addr:'Kingsway Road, Maseru',active:true,last:'2025-02-11 09:05:00'},
         {code:'LIB-01',name:'Liberty HQ',addr:'Pioneer Rd, Maseru',active:true,last:'2025-02-11 08:17:00'}
       ],
+      surveys:{
+        items:[
+          {code:'liberty-nps',title:'Liberty NPS 2025',isActive:true,description:'Flagship NPS program',publishedUtc:'2025-02-10T08:00:00Z'},
+          {code:'branch-kiosk',title:'Branch Kiosk Pulse',isActive:true,description:'Two-question kiosk touchpoint',publishedUtc:'2025-02-08T12:00:00Z'},
+          {code:'agent-followup',title:'Agent Follow-up',isActive:false,description:'Send after agent visit',publishedUtc:'2025-02-05T15:30:00Z'}
+        ]
+      },
       flags:{nps:true,kiosk:false,realtime:true,signup:false,portal:false,retention:365},
       security:{mfa:true,sso:false,len:12,lock:5,timeout:30},
       webhooks:{url:'',key:'',send:false,retry:true},
@@ -705,6 +746,9 @@
         tb.appendChild(tr);
       });
     },
+    surveys(){
+      loadSurveys();
+    },
     flags(){
       const f=S().flags;
       elm('fNps').checked=!!f.nps; elm('fKiosk').checked=!!f.kiosk; elm('fRealtime').checked=!!f.realtime;
@@ -749,6 +793,74 @@
     const box=elm('previewLogo');
     if(!dataUrl){ box.textContent='—'; box.style.background='transparent'; return; }
     box.textContent=''; box.style.background=`url(${dataUrl}) center/contain no-repeat`;
+  }
+
+  async function loadSurveys(){
+    const cached=(S().surveys?.items)||[];
+    updateSurveyUi(cached, true);
+    try{
+      const res=await fetch('/api/admin/surveys');
+      if(!res.ok) throw new Error('Bad response');
+      const data=await res.json();
+      updateSurveyUi(data, false);
+      const st=S(); st.surveys = st.surveys || {}; st.surveys.items = data; W(st);
+    }catch(err){
+      updateSurveyUi(cached, true, true);
+    }
+  }
+
+  function updateSurveyUi(list, isCached, isError=false){
+    list = Array.isArray(list)? list : [];
+    const total=list.length;
+    const active=list.filter(x=>Boolean(x.isActive ?? x.IsActive)).length;
+    const inactive=total-active;
+    elm('surveyCount').textContent = total? `${total} surveys` : 'No surveys';
+
+    const overview=elm('surveyOverview');
+    if(!total){
+      overview.textContent = isError? 'Unable to reach surveys API. Create your first survey in the Designer.' : 'Create your first survey in the Designer.';
+    } else if(isError){
+      overview.textContent = 'Showing cached surveys — refresh once back online.';
+    } else if(isCached){
+      overview.textContent = 'Loaded from cached settings. Refresh to sync with API.';
+    } else {
+      overview.textContent = `Synced ${new Date().toLocaleString()}`;
+    }
+
+    const stats=elm('surveyStats');
+    stats.innerHTML='';
+    const buildPill=(label,value)=>{
+      const pill=document.createElement('span');
+      pill.className='chip';
+      pill.textContent=`${label}: ${value}`;
+      pill.style.background='rgba(140,160,255,0.12)';
+      pill.style.border='1px solid var(--border)';
+      return pill;
+    };
+    stats.appendChild(buildPill('Active', active));
+    stats.appendChild(buildPill('Inactive', inactive));
+
+    const tableBody=elm('surveyTable').querySelector('tbody');
+    tableBody.innerHTML='';
+    list.forEach(item=>{
+      const status=Boolean(item.isActive ?? item.IsActive);
+      const tr=document.createElement('tr');
+      const desc=item.description ?? item.Description ?? '—';
+      tr.innerHTML=`<td>${item.code ?? item.Code}</td><td>${item.title ?? item.Title}</td><td><span class="tag" style="background:${status?'rgba(108,240,194,0.12)':'rgba(255,107,107,0.12)'};border-color:var(--border);color:${status?'#6cf0c2':'#ff9999'}">${status?'Active':'Inactive'}</span></td><td>${desc}</td>`;
+      tableBody.appendChild(tr);
+    });
+
+    const lastPublishedEl=elm('surveyLastPublished');
+    const published=list
+      .map(x=>x.publishedUtc ?? x.PublishedUtc)
+      .filter(Boolean)
+      .map(x=>new Date(x))
+      .sort((a,b)=>b-a)[0];
+    if(published){
+      lastPublishedEl.textContent = published.toLocaleString();
+    } else {
+      lastPublishedEl.textContent = isError? '— (API unavailable)' : (total? 'Updated just now' : 'Not published yet');
+    }
   }
 
   // --- Navigation active state ---
@@ -819,6 +931,7 @@
       catch{ alert('Invalid JSON'); }
     }; r.readAsText(f); }; i.click();
   };
+  elm('btnRefreshSurveys').onclick=()=>loadSurveys();
 
   // --- Modals ---
   function openModal(id){ const m=elm(id); m.style.display='flex'; m.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>m.style.display='none'); }
@@ -910,7 +1023,18 @@
   function addAudit(action,detail){ const st=S(); st.audit = st.audit || []; st.audit.push({at:now(),actor:'SuperAdmin',action,detail}); W(st); }
 
   // Initial render
-  function refreshAll(){ bind.branding(); bind.mail(); bind.roles(); bind.users(); bind.kiosks(); bind.flags(); bind.security(); bind.webhooks(); bind.audit(); }
+  function refreshAll(){
+    bind.branding();
+    bind.mail();
+    bind.roles();
+    bind.users();
+    bind.kiosks();
+    bind.surveys();
+    bind.flags();
+    bind.security();
+    bind.webhooks();
+    bind.audit();
+  }
   refreshAll();
     </script>
 </body>

@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ClientFlow – Form Designer (Drag & Drop)</title>
+    <title>ClientFlow – Survey Designer</title>
     <style>
         :root {
             --bg: #0b1020;
@@ -14,30 +14,28 @@
             --accent: #6cf0c2;
             --accent2: #89b4ff;
             --danger: #ff6b6b;
-            --warn: #ffd166;
-            --ok: #22c55e;
             --border: rgba(255,255,255,.08);
         }
 
         * {
-            box-sizing: border-box
+            box-sizing: border-box;
         }
 
         html, body {
-            height: 100%
+            height: 100%;
         }
 
         body {
             margin: 0;
             background: radial-gradient(1200px 800px at 80% -10%, #1b2550 0%, transparent 60%), var(--bg);
             color: var(--text);
-            font: 14px/1.45 system-ui,-apple-system,Segoe UI,Roboto
+            font: 14px/1.45 system-ui, -apple-system, Segoe UI, Roboto;
         }
 
         .app {
             display: grid;
-            grid-template-rows: 64px 1fr;
-            min-height: 100vh
+            grid-template-rows: 72px 1fr;
+            min-height: 100vh;
         }
 
         header {
@@ -45,14 +43,15 @@
             align-items: center;
             gap: 16px;
             padding: 0 20px;
-            border-bottom: 1px solid var(--border)
+            border-bottom: 1px solid var(--border);
+            background: linear-gradient(180deg,#141c3f,#0e1533);
         }
 
         .brand {
             display: flex;
             align-items: center;
-            gap: 10px;
-            font-weight: 700
+            gap: 12px;
+            font-weight: 600;
         }
 
         .logo {
@@ -60,827 +59,840 @@
             height: 28px;
             border-radius: 8px;
             background: conic-gradient(from 210deg, var(--accent), var(--accent2));
-            box-shadow: 0 0 0 2px rgba(255,255,255,.07) inset
+            box-shadow: 0 0 0 2px rgba(255,255,255,.07) inset;
         }
 
         .tag {
             padding: 2px 8px;
-            border: 1px solid var(--border);
             border-radius: 999px;
+            border: 1px solid var(--border);
             color: #b9c6ff;
-            font-size: 12px
+            font-size: 12px;
+        }
+
+        .toolbar {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .field label {
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        input, textarea, select {
+            background: var(--panel2);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 8px 10px;
+            color: var(--text);
+            font: inherit;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: 2px solid rgba(108,240,194,.4);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: linear-gradient(180deg,#1a2248,#141c3f);
+            color: #e9eeff;
+            cursor: pointer;
+            user-select: none;
+            transition: transform .12s ease;
+        }
+
+        .btn:hover { transform: translateY(-1px); }
+        .btn:disabled { opacity: .6; cursor: not-allowed; }
+        .btn.ghost { background: transparent; }
+        .btn.accent {
+            background: linear-gradient(180deg,#19cba0,#0dbb93);
+            color: #031b15;
+            border: none;
+        }
+        .btn.danger {
+            background: linear-gradient(180deg,#ef4444,#dc2626);
+            color: #fff;
+            border: none;
         }
 
         .shell {
             display: grid;
             grid-template-columns: 260px 1fr 320px;
-            gap: 12px;
-            padding: 12px
+            gap: 14px;
+            padding: 16px;
+        }
+
+        @media (max-width:1180px) {
+            .shell {
+                grid-template-columns: 220px 1fr;
+                grid-template-areas:
+                    "left main"
+                    "left side";
+            }
+            .properties {
+                grid-column: 1 / -1;
+            }
         }
 
         .panel {
             background: var(--panel);
             border: 1px solid var(--border);
             border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(0,0,0,.15);
-            overflow: hidden
+            box-shadow: 0 10px 30px rgba(0,0,0,.18);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
         }
 
-        .head {
-            padding: 12px 14px;
+        .panel .head {
+            padding: 12px 16px;
             border-bottom: 1px solid var(--border);
             display: flex;
             align-items: center;
-            justify-content: space-between
+            justify-content: space-between;
+            gap: 12px;
         }
 
-        .body {
-            padding: 12px 14px
+        .panel .body {
+            padding: 14px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
         }
 
-        /* Palette */
-        .palette {
+        .tools {
             display: grid;
-            gap: 8px
+            gap: 10px;
         }
 
         .tool {
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 10px;
+            background: linear-gradient(180deg,#1a2248,#141c3f);
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .tool strong { font-size: 14px; }
+        .tool small { color: rgba(203,214,255,.8); font-size: 12px; }
+
+        .canvas {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .canvas-section {
+            background: var(--panel);
+            border: 1px solid rgba(255,255,255,.06);
+            border-radius: 14px;
+            padding: 12px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            box-shadow: 0 6px 20px rgba(0,0,0,.15);
+        }
+
+        .canvas-section.selected {
+            border-color: rgba(108,240,194,.6);
+            box-shadow: 0 0 0 2px rgba(108,240,194,.25);
+        }
+
+        .section-meta {
             display: flex;
             align-items: center;
-            gap: 8px;
-            padding: 8px 10px;
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            background: linear-gradient(180deg,#1a2248,#141c3f);
-            cursor: grab
+            gap: 10px;
         }
 
-            .tool small {
-                opacity: .85;
-                color: #cfe0ff
-            }
-
-        /* Canvas */
-        .canvas {
-            min-height: 420px;
-            border: 2px dashed var(--border);
-            border-radius: 12px;
-            background: var(--panel2);
-            padding: 10px
+        .section-meta h3 {
+            margin: 0;
+            font-size: 16px;
         }
 
-        .section-head {
-            margin: 8px 0 6px;
-            padding: 6px 10px;
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            background: #0c1330;
-            color: #cfe0ff;
-            font-weight: 600;
+        .section-meta .actions {
+            margin-left: auto;
             display: flex;
-            justify-content: space-between;
-            align-items: center
+            gap: 6px;
         }
 
-        .grid-2 {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px
+        .question-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
         }
 
-        .hint {
-            color: #9fb0ff;
-            opacity: .9
-        }
-
-        .drop-hover {
-            outline: 2px dashed var(--accent)
-        }
-
-        .field {
-            border: 1px solid var(--border);
+        .question-card {
+            border: 1px solid rgba(255,255,255,.05);
             border-radius: 12px;
-            background: #0e1431;
-            padding: 10px;
-            margin-bottom: 8px;
+            padding: 10px 12px;
+            background: var(--panel2);
             display: grid;
             grid-template-columns: 1fr auto;
-            gap: 8px
+            gap: 12px;
+            cursor: grab;
         }
 
-            .field .meta {
-                display: flex;
-                gap: 8px;
-                align-items: center;
-                opacity: .9
-            }
+        .question-card.selected {
+            border-color: rgba(108,240,194,.6);
+            box-shadow: 0 0 0 2px rgba(108,240,194,.25);
+        }
 
-            .field .actions {
-                display: flex;
-                gap: 6px
-            }
+        .question-card small { color: var(--muted); font-size: 12px; }
 
-        .btn {
-            display: inline-flex;
+        .question-actions {
+            display: flex;
             align-items: center;
-            gap: 8px;
-            padding: 8px 10px;
-            border-radius: 10px;
-            border: 1px solid var(--border);
-            background: linear-gradient(180deg,#1a2248,#141c3f);
-            color: #e9eeff;
-            cursor: pointer
+            gap: 6px;
         }
 
-            .btn.icon {
-                padding: 6px 8px
-            }
-
-            .btn.accent {
-                background: linear-gradient(180deg,#19cba0,#0dbb93);
-                color: #031b15;
-                border: none
-            }
-
-            .btn.danger {
-                background: linear-gradient(180deg,#ef4444,#dc2626);
-                color: #fff;
-                border: none
-            }
-
-        .selected {
-            box-shadow: 0 0 0 2px #19cba044
+        .drop-slot {
+            height: 10px;
+            border-radius: 6px;
+            border: 1px dashed transparent;
         }
 
-        /* Properties */
-        .prop {
+        .drop-slot.active {
+            border-color: rgba(108,240,194,.6);
+            background: rgba(108,240,194,.18);
+        }
+
+        .properties .body label {
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .properties .body .row {
             display: grid;
             gap: 6px;
-            margin-bottom: 10px
         }
 
-        label {
-            font-size: 12px;
-            color: #b9c6ff
+        .properties textarea {
+            min-height: 90px;
+            resize: vertical;
         }
 
-        input[type="text"], input[type="number"], textarea, select {
-            width: 100%;
-            padding: 8px 10px;
-            border-radius: 10px;
-            border: 1px solid var(--border);
-            background: var(--panel2);
-            color: var(--text)
+        .switch {
+            position: relative;
+            width: 40px;
+            height: 22px;
+            display: inline-block;
         }
-
-        textarea {
-            min-height: 72px
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255,255,255,.2);
+            transition: .2s;
+            border-radius: 999px;
         }
-
-        .grid2 {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            top: 3px;
+            background: #0b1020;
+            transition: .2s;
+            border-radius: 50%;
         }
-
-        .grid3 {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 8px
+        .switch input:checked + .slider {
+            background: rgba(108,240,194,.6);
         }
-
-        .row {
-            display: flex;
-            gap: 8px;
-            align-items: center
-        }
-
-        .footer {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap
+        .switch input:checked + .slider:before {
+            transform: translateX(16px);
         }
 
         pre {
-            background: #0f1530;
+            background: var(--panel2);
             border: 1px solid var(--border);
             border-radius: 12px;
-            padding: 10px;
-            white-space: pre-wrap;
-            max-height: 220px;
-            overflow: auto
+            padding: 12px;
+            color: #cfe0ff;
+            overflow: auto;
+            max-height: 260px;
         }
 
         .toast {
             position: fixed;
-            right: 18px;
-            bottom: 18px;
-            background: #0f1530;
+            bottom: 24px;
+            right: 24px;
+            padding: 12px 16px;
+            border-radius: 12px;
+            background: rgba(15,21,48,.95);
             border: 1px solid var(--border);
-            padding: 10px 14px;
-            border-radius: 10px;
-            color: #fff;
-            box-shadow: 0 10px 30px rgba(0,0,0,.3)
+            box-shadow: 0 10px 30px rgba(0,0,0,.35);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 10;
         }
 
-        @media (max-width: 1200px) {
-            .shell {
-                grid-template-columns: 1fr
-            }
+        .toast.error {
+            border-color: rgba(255,107,107,.5);
+            color: #ffbaba;
+        }
+
+        .empty-state {
+            padding: 40px 0;
+            text-align: center;
+            color: var(--muted);
         }
     </style>
 </head>
 <body>
     <div class="app">
         <header>
-            <div class="brand"><div class="logo"></div> ClientFlow — Form Designer <span class="tag">Drag & Drop • Entity-bound</span></div>
-            <div style="margin-left:auto;display:flex;gap:8px">
-                <button class="btn" id="btnLoad">Load JSON</button>
-                <button class="btn" id="btnExport">Export JSON</button>
-                <button class="btn accent" id="btnPreview">Preview</button>
+            <div class="brand">
+                <div class="logo"></div>
+                ClientFlow — <span>Survey Designer</span>
+                <span class="tag">Drag &amp; Drop</span>
+            </div>
+            <div class="field">
+                <label for="surveyCode">Survey Code</label>
+                <input id="surveyCode" placeholder="liberty-nps" spellcheck="false" />
+            </div>
+            <div class="field">
+                <label for="surveyTitle">Title</label>
+                <input id="surveyTitle" placeholder="Liberty NPS 2025" />
+            </div>
+            <div class="toolbar">
+                <button class="btn ghost" id="btnImport">Import JSON</button>
+                <button class="btn" id="btnDownload">Download JSON</button>
+                <button class="btn accent" id="btnExport">Save to API</button>
             </div>
         </header>
 
         <div class="shell">
-            <!-- PALETTE -->
-            <section class="panel">
-                <div class="head"><strong>Field Palette</strong><span class="tag">Drag into canvas</span></div>
-                <div class="body">
-                    <div class="palette" id="palette"></div>
-                </div>
-            </section>
+            <aside class="panel" aria-label="Toolbox">
+                <div class="head"><strong>Question Types</strong></div>
+                <div class="body tools" id="toolbox"></div>
+            </aside>
 
-            <!-- CANVAS -->
-            <section class="panel">
-                <div class="head"><strong>Canvas</strong><span class="tag">Drop fields here</span></div>
-                <div class="body">
-                    <div class="prop grid3" id="styleBar" style="margin-bottom:10px">
-                        <div>
-                            <label>Primary Accent</label>
-                            <input type="color" id="colAccent" value="#6cf0c2" />
+            <main class="canvas" id="canvas">
+                <div class="panel" style="padding:0">
+                    <div class="head" style="justify-content:space-between">
+                        <div style="display:flex;align-items:center;gap:10px">
+                            <strong>Survey Flow</strong>
+                            <span class="tag" id="sectionCount">0 sections</span>
                         </div>
-                        <div>
-                            <label>Panel (canvas) Color</label>
-                            <input type="color" id="colPanel" value="#0f1530" />
-                        </div>
-                        <div>
-                            <label>Sections</label>
-                            <div class="row">
-                                <select id="sectionSelect"></select>
-                                <button class="btn" id="btnAddSection" type="button">Add</button>
-                            </div>
-                            <div class="grid2" style="margin-top:6px">
-                                <input type="text" id="secTitle" placeholder="Section title" />
-                                <select id="secCols">
-                                    <option value="1">1 col</option>
-                                    <option value="2">2 cols</option>
-                                </select>
-                            </div>
-                        </div>
+                        <button class="btn" id="btnAddSection">Add Section</button>
                     </div>
-                    <div id="canvas" class="canvas" tabindex="0">
-                        <div id="canvasHint" class="hint">Drag components here…</div>
-                    </div>
-                    <div class="footer" style="margin-top:10px">
-                        <button class="btn" id="btnClear">Clear</button>
-                        <button class="btn" id="btnUp">Move Up</button>
-                        <button class="btn" id="btnDown">Move Down</button>
-                        <button class="btn danger" id="btnDelete">Delete</button>
-                    </div>
+                    <div class="body" id="canvasSections"></div>
                 </div>
-            </section>
 
-            <!-- PROPERTIES -->
-            <section class="panel">
-                <div class="head"><strong>Properties</strong><span class="tag">Selected field</span></div>
-                <div class="body" id="props">
-                    <div class="hint">Select a field in the canvas to edit its properties.</div>
+                <div class="panel">
+                    <div class="head" style="justify-content:space-between">
+                        <strong>Normalized JSON</strong>
+                        <button class="btn ghost" id="btnCopyJson">Copy</button>
+                    </div>
+                    <div class="body">
+                        <pre id="jsonOutput">{}</pre>
+                    </div>
                 </div>
-                <div class="head"><strong>Custom CSS</strong><span class="tag">Scoped to Preview</span></div>
-                <div class="body">
-                    <textarea id="customCss" placeholder=":root { --accent: #19cba0; }
-label { font-weight:600; }
-.btn { border-radius: 999px; }" style="min-height:140px"></textarea>
-                    <div class="hint" style="margin-top:6px">CSS is automatically scoped to the preview container (<code>.cf-form</code>). <em>:root</em>, <em>html</em>, and <em>body</em> are remapped to that scope.</div>
-                </div>
-                <div class="head"><strong>Schema</strong><span class="tag">Read-only</span></div>
-                <div class="body"><pre id="schemaOut">[]</pre></div>
-            </section>
+            </main>
+
+            <aside class="panel properties" aria-label="Properties">
+                <div class="head"><strong>Properties</strong></div>
+                <div class="body" id="properties"></div>
+            </aside>
         </div>
     </div>
 
-    <!-- Preview Modal -->
-    <div id="modal" style="position:fixed;inset:0;display:none;background:rgba(0,0,0,.6);align-items:center;justify-content:center;z-index:50">
-        <div style="background:var(--panel);border:1px solid var(--border);border-radius:16px;max-width:720px;width:92%;padding:16px">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-                <strong>Preview Form</strong>
-                <button class="btn" id="mClose">✕</button>
-            </div>
-            <form id="previewForm"></form>
-        </div>
-    </div>
-    <section class="panel">
-        <div class="head"><strong>Entity Binding</strong><span class="tag">Optional</span></div>
-        <div class="body">
-            <div class="grid2">
-                <div class="prop"><label>Entity Name</label><input id="entityName" placeholder="Policy, Claim, Client"></div>
-                <div class="prop"><label>DB Table</label><input id="tableName" placeholder="dbo.Clients"></div>
-            </div>
-        </div>
-    </section>
-    <button class="btn accent" id="btnPublish">Publish to Survey</button>
-        <script src="../app-base.js"></script>
-<script>
+    <script type="module">
+        import { SurveyDesignerStore } from './survey-designer-store.js';
 
-        const entityNameEl = document.getElementById('entityName');
-        const tableNameEl = document.getElementById('tableName');
-        const safeVal = el => (el && typeof el.value === 'string') ? el.value.trim() : '';
-        async function publishToServer(code, schema) {
-            // 1) Create sections
-            const secIdMap = new Map(); // tempId -> realId
-            for (const sec of schema.sections) {
-                const body = { title: sec.title || 'Section', columns: sec.columns === 2 ? 2 : 1, order: 0 };
-                const r = await fetch(`/api/admin/surveys/${encodeURIComponent(code)}/sections`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
-                });
-                if (!r.ok) throw new Error('Failed to create section: ' + sec.title);
-                // Re-read definition to get server-generated IDs (simplest and safe)
-                const def = await fetch(`/api/admin/surveys/${encodeURIComponent(code)}/definition`).then(x => x.json());
-                // match by title+columns last added (or improve: add an "order" on POST and match by it)
-                const created = [...def.sections].sort((a, b) => b.order - a.order)[0];
-                secIdMap.set(sec.id, created.id);
+        const store = new SurveyDesignerStore();
+        const toolbox = document.getElementById('toolbox');
+        const canvasSections = document.getElementById('canvasSections');
+        const sectionCount = document.getElementById('sectionCount');
+        const properties = document.getElementById('properties');
+        const jsonOutput = document.getElementById('jsonOutput');
+        const surveyCodeInput = document.getElementById('surveyCode');
+        const surveyTitleInput = document.getElementById('surveyTitle');
+
+        let selectedSectionId = null;
+        let selectedQuestionId = null;
+        let draggingQuestionId = null;
+
+        const palette = [
+            { type: 'nps', label: 'NPS 0–10', hint: 'Detractors to promoters scale' },
+            { type: 'likert', label: 'Likert 1–5', hint: 'Agreement scale' },
+            { type: 'single', label: 'Single Select', hint: 'Radio buttons' },
+            { type: 'multi', label: 'Multi Select', hint: 'Checkbox list' },
+            { type: 'text', label: 'Free Text', hint: 'Short answer' },
+            { type: 'phone', label: 'Phone', hint: '+266 …' },
+            { type: 'number', label: 'Numeric', hint: 'Quantitative input' },
+            { type: 'date', label: 'Date', hint: 'Calendar picker' },
+            { type: 'boolean', label: 'Yes / No', hint: 'Binary choice' }
+        ];
+
+        function toast(message, isError = false) {
+            const node = document.createElement('div');
+            node.className = 'toast' + (isError ? ' error' : '');
+            node.textContent = message;
+            document.body.appendChild(node);
+            setTimeout(() => node.remove(), 2600);
+        }
+
+        function ensureSelection(state) {
+            if (!state.sections.some(sec => sec.id === selectedSectionId)) {
+                selectedSectionId = state.sections[0]?.id ?? null;
             }
+            if (!state.questions.some(q => q.id === selectedQuestionId)) {
+                selectedQuestionId = null;
+            }
+        }
 
-            // 2) Create questions
-            const qIdMap = new Map(); // key -> questionId
-            for (const f of schema.fields) {
-                const body = {
-                    sectionId: secIdMap.get(f.sectionId),
-                    type: f.type,
-                    prompt: f.label || f.key,
-                    key: f.key,
-                    required: !!f.required,
-                    order: f.order || 0,
-                    settingsJson: JSON.stringify(f.settings || null)
-                };
-                const r = await fetch(`/api/admin/surveys/${encodeURIComponent(code)}/questions`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
-                });
-                if (!r.ok) throw new Error('Failed to create question: ' + f.key);
-                // fetch latest def and grab the created question by key
-                const def = await fetch(`/api/admin/surveys/${encodeURIComponent(code)}/definition`).then(x => x.json());
-                const created = def.questions.find(q => q.key === f.key);
-                if (created) qIdMap.set(f.key, created.id);
+        function renderToolbox() {
+            toolbox.innerHTML = '';
+            palette.forEach(tool => {
+                const card = document.createElement('div');
+                card.className = 'tool';
+                card.innerHTML = `<strong>${tool.label}</strong><small>${tool.hint}</small>`;
+                card.onclick = () => addQuestion(tool.type);
+                toolbox.appendChild(card);
+            });
+        }
 
-                // 3) Options (for select/radio)
-                if (['select', 'radio'].includes(f.type)) {
-                    const opts = (f.settings?.options || '').split(',').map(x => x.trim()).filter(Boolean);
-                    let order = 0;
-                    for (const o of opts) {
-                        const bodyOpt = { questionId: qIdMap.get(f.key), value: o, label: o, order: order++ };
-                        const or = await fetch(`/api/admin/surveys/${encodeURIComponent(code)}/options`, {
-                            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(bodyOpt)
-                        });
-                        if (!or.ok) throw new Error('Failed to add option: ' + o + ' for ' + f.key);
-                    }
+        function addQuestion(type) {
+            const state = store.getState();
+            let targetSection = selectedSectionId;
+            if (!targetSection) {
+                const first = state.sections[0];
+                if (first) {
+                    targetSection = first.id;
+                } else {
+                    targetSection = store.addSection('Section 1').id;
                 }
             }
+            const question = store.addQuestion(targetSection, type);
+            selectedSectionId = targetSection;
+            selectedQuestionId = question.id;
+        }
 
-            // 4) Save theme + custom CSS for the survey
-            await fetch(`/api/admin/surveys/${encodeURIComponent(code)}/style`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    accent: schema.theme?.accent ?? '#6cf0c2',
-                    panel: schema.theme?.panel ?? '#0f1530',
-                    css: schema.style?.css ?? ''
-                })
+        function renderCanvas(state) {
+            sectionCount.textContent = `${state.sections.length} section${state.sections.length === 1 ? '' : 's'}`;
+            canvasSections.innerHTML = '';
+            if (state.sections.length === 0) {
+                const empty = document.createElement('div');
+                empty.className = 'empty-state';
+                empty.innerHTML = 'No sections yet. Add one to start designing.';
+                canvasSections.appendChild(empty);
+                return;
+            }
+
+            state.sections.forEach((section, sectionIndex) => {
+                const secEl = document.createElement('div');
+                secEl.className = 'canvas-section';
+                secEl.dataset.sectionId = section.id;
+                if (section.id === selectedSectionId) secEl.classList.add('selected');
+                secEl.onclick = (ev) => {
+                    if (ev.target.closest('button')) return;
+                    selectedSectionId = section.id;
+                    selectedQuestionId = null;
+                    renderProperties(store.getState());
+                    highlightSelection();
+                };
+
+                const meta = document.createElement('div');
+                meta.className = 'section-meta';
+
+                const titleInput = document.createElement('input');
+                titleInput.value = section.title;
+                titleInput.onchange = () => store.updateSection(section.id, { title: titleInput.value });
+                titleInput.onfocus = () => { selectedSectionId = section.id; highlightSelection(); };
+                titleInput.style.minWidth = '180px';
+                meta.appendChild(titleInput);
+
+                const sectionLabel = document.createElement('span');
+                sectionLabel.className = 'tag';
+                sectionLabel.textContent = `Order ${section.order}`;
+                meta.appendChild(sectionLabel);
+
+                const actions = document.createElement('div');
+                actions.className = 'actions';
+
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'btn ghost';
+                removeBtn.textContent = 'Delete';
+                removeBtn.onclick = (ev) => {
+                    ev.stopPropagation();
+                    if (!confirm('Delete this section? Questions will be removed.')) return;
+                    store.deleteSection(section.id);
+                };
+                actions.appendChild(removeBtn);
+
+                if (sectionIndex > 0) {
+                    const upBtn = document.createElement('button');
+                    upBtn.className = 'btn ghost';
+                    upBtn.textContent = '↑';
+                    upBtn.onclick = (ev) => { ev.stopPropagation(); store.moveSection(section.id, sectionIndex - 1); };
+                    actions.appendChild(upBtn);
+                }
+                if (sectionIndex < state.sections.length - 1) {
+                    const downBtn = document.createElement('button');
+                    downBtn.className = 'btn ghost';
+                    downBtn.textContent = '↓';
+                    downBtn.onclick = (ev) => { ev.stopPropagation(); store.moveSection(section.id, sectionIndex + 1); };
+                    actions.appendChild(downBtn);
+                }
+
+                meta.appendChild(actions);
+                secEl.appendChild(meta);
+
+                const list = document.createElement('div');
+                list.className = 'question-list';
+                list.dataset.sectionId = section.id;
+
+                const questions = state.questions
+                    .filter(q => (q.sectionId ?? null) === section.id)
+                    .sort((a, b) => a.order - b.order);
+
+                for (let i = 0; i <= questions.length; i++) {
+                    const drop = document.createElement('div');
+                    drop.className = 'drop-slot';
+                    drop.dataset.index = i;
+                    drop.addEventListener('dragover', ev => { ev.preventDefault(); drop.classList.add('active'); });
+                    drop.addEventListener('dragleave', () => drop.classList.remove('active'));
+                    drop.addEventListener('drop', ev => {
+                        ev.preventDefault();
+                        drop.classList.remove('active');
+                        if (draggingQuestionId) {
+                            store.moveQuestion(draggingQuestionId, section.id, Number(drop.dataset.index));
+                        }
+                    });
+                    list.appendChild(drop);
+
+                    if (i < questions.length) {
+                        const question = questions[i];
+                        const card = document.createElement('div');
+                        card.className = 'question-card';
+                        card.dataset.questionId = question.id;
+                        card.draggable = true;
+                        if (question.id === selectedQuestionId) card.classList.add('selected');
+                        card.addEventListener('dragstart', () => { draggingQuestionId = question.id; });
+                        card.addEventListener('dragend', () => { draggingQuestionId = null; });
+                        card.onclick = (ev) => {
+                            if (ev.target.closest('button')) return;
+                            selectedQuestionId = question.id;
+                            selectedSectionId = section.id;
+                            renderProperties(store.getState());
+                            highlightSelection();
+                        };
+
+                        const info = document.createElement('div');
+                        const title = document.createElement('div');
+                        title.textContent = question.prompt || 'Untitled question';
+                        const metaLine = document.createElement('small');
+                        metaLine.textContent = `${question.type.toUpperCase()} • ${question.key}`;
+                        info.appendChild(title);
+                        info.appendChild(metaLine);
+
+                        const qActions = document.createElement('div');
+                        qActions.className = 'question-actions';
+                        const reqTag = document.createElement('span');
+                        reqTag.className = 'tag';
+                        reqTag.textContent = question.required ? 'Required' : 'Optional';
+                        reqTag.style.background = question.required ? 'rgba(108,240,194,.12)' : 'rgba(159,176,255,.12)';
+                        qActions.appendChild(reqTag);
+
+                        const delBtn = document.createElement('button');
+                        delBtn.className = 'btn ghost';
+                        delBtn.textContent = 'Delete';
+                        delBtn.onclick = (ev) => { ev.stopPropagation(); store.deleteQuestion(question.id); };
+                        qActions.appendChild(delBtn);
+
+                        card.appendChild(info);
+                        card.appendChild(qActions);
+                        list.appendChild(card);
+                    }
+                }
+
+                const addAnother = document.createElement('button');
+                addAnother.className = 'btn ghost';
+                addAnother.textContent = 'Add question here';
+                addAnother.onclick = (ev) => { ev.stopPropagation(); selectedSectionId = section.id; addQuestion('text'); };
+                list.appendChild(addAnother);
+
+                secEl.appendChild(list);
+                canvasSections.appendChild(secEl);
             });
-
-            alert('Published ✓');
         }
 
-        document.getElementById('btnPublish').onclick = async () => {
-            const code = new URLSearchParams(location.search).get('code') || prompt('Survey code');
-            const schema = buildSchema();  // your existing function from DnD page
-            try { await publishToServer(code, schema); }
-            catch (e) { alert(e.message); }
-        };
-    </script>
-
-
-    <script>
-        // helpers (MOVED UP so uid is available to sections)
-        const uid = () => 'f_' + Math.random().toString(36).slice(2, 9);
-        const toast = (m) => { const t = document.createElement('div'); t.className = 'toast'; t.textContent = m; document.body.appendChild(t); setTimeout(() => t.remove(), 2200) }
-
-        // --- Component registry ---
-        const registry = {
-            text: { label: 'Text', defaults: { placeholder: '', required: false, width: 12 } },
-            textarea: { label: 'Textarea', defaults: { rows: 3, placeholder: '', required: false, width: 12 } },
-            number: { label: 'Number', defaults: { min: null, max: null, required: false, width: 6 } },
-            email: { label: 'Email', defaults: { placeholder: '', required: false, width: 6 } },
-            phone: { label: 'Phone', defaults: { placeholder: '', required: false, width: 6 } },
-            date: { label: 'Date', defaults: { required: false, width: 6 } },
-            checkbox: { label: 'Checkbox', defaults: { text: 'I agree', checked: false, width: 12 } },
-            radio: { label: 'Radio Group', defaults: { options: 'A,B,C', required: false, width: 12 } },
-            select: { label: 'Dropdown', defaults: { options: 'Option 1,Option 2', required: false, width: 6 } },
-            file: { label: 'File Upload', defaults: { accept: '', required: false, width: 12 } },
-            button: { label: 'Button', defaults: { text: 'Submit', variant: 'primary', width: 4 } }
-        };
-
-        const paletteEl = document.getElementById('palette');
-        const canvasEl = document.getElementById('canvas');
-        const propsEl = document.getElementById('props');
-        const schemaOut = document.getElementById('schemaOut');
-
-        // state
-        let fields = []; // [{id,type,label,key,...}]
-        let selectedId = null;
-        // sections & theme
-        let sections = [{ id: uid(), title: 'Main', columns: 1 }];
-        let currentSectionId = sections[0].id;
-        const theme = { accent: '#6cf0c2', panel: '#0f1530' };
-
-        // palette render
-        function renderPalette() {
-            paletteEl.innerHTML = Object.entries(registry).map(([type, def]) => {
-                return `<div class="tool" draggable="true" data-type="${type}"><strong>${def.label}</strong><small>${type}</small></div>`
-            }).join('');
-            paletteEl.querySelectorAll('.tool').forEach(t => {
-                t.addEventListener('dragstart', ev => { ev.dataTransfer.setData('text/plain', t.dataset.type); });
-            })
+        function highlightSelection() {
+            document.querySelectorAll('.canvas-section').forEach(section => section.classList.remove('selected'));
+            document.querySelectorAll('.question-card').forEach(card => card.classList.remove('selected'));
+            if (selectedSectionId) {
+                const container = document.querySelector(`.canvas-section[data-section-id="${selectedSectionId}"]`);
+                if (container) container.classList.add('selected');
+            }
+            if (selectedQuestionId) {
+                const card = document.querySelector(`.question-card[data-question-id="${selectedQuestionId}"]`);
+                if (card) card.classList.add('selected');
+            }
         }
 
-        // style & sections bar
-        function renderStyleBar() {
-            // colors
-            document.getElementById('colAccent').value = theme.accent;
-            document.getElementById('colPanel').value = theme.panel;
-            document.getElementById('colAccent').oninput = (e) => { theme.accent = e.target.value; document.documentElement.style.setProperty('--accent', theme.accent); };
-            document.getElementById('colPanel').oninput = (e) => { theme.panel = e.target.value; document.documentElement.style.setProperty('--panel2', theme.panel); };
+        function renderProperties(state) {
+            properties.innerHTML = '';
+            if (!selectedQuestionId) {
+                const hint = document.createElement('div');
+                hint.className = 'empty-state';
+                hint.innerHTML = 'Select a question to edit its properties.';
+                properties.appendChild(hint);
+                return;
+            }
 
-            // sections select
-            const sel = document.getElementById('sectionSelect');
-            sel.innerHTML = sections.map(s => `<option value="${s.id}">${s.title}</option>`).join('');
-            sel.value = currentSectionId;
-            sel.onchange = () => { currentSectionId = sel.value; const s = sections.find(x => x.id === currentSectionId); document.getElementById('secTitle').value = s.title; document.getElementById('secCols').value = String(s.columns); renderCanvas(); };
+            const question = state.questions.find(q => q.id === selectedQuestionId);
+            if (!question) {
+                selectedQuestionId = null;
+                renderProperties(state);
+                return;
+            }
 
-            const cur = sections.find(x => x.id === currentSectionId);
-            document.getElementById('secTitle').value = cur.title;
-            document.getElementById('secCols').value = String(cur.columns);
-            document.getElementById('secTitle').oninput = (e) => { cur.title = e.target.value; renderStyleBar(); renderCanvas(); };
-            document.getElementById('secCols').onchange = (e) => { cur.columns = parseInt(e.target.value || '1'); renderCanvas(); };
-            document.getElementById('btnAddSection').onclick = () => { const s = { id: uid(), title: 'Section ' + (sections.length + 1), columns: 1 }; sections.push(s); currentSectionId = s.id; renderStyleBar(); renderCanvas(); };
+            const makeRow = (label, control) => {
+                const row = document.createElement('div');
+                row.className = 'row';
+                const lab = document.createElement('label');
+                lab.textContent = label;
+                row.appendChild(lab);
+                row.appendChild(control);
+                return row;
+            };
+
+            const promptInput = document.createElement('textarea');
+            promptInput.value = question.prompt;
+            promptInput.oninput = () => store.updateQuestion(question.id, { prompt: promptInput.value });
+            properties.appendChild(makeRow('Prompt', promptInput));
+
+            const keyInput = document.createElement('input');
+            keyInput.value = question.key;
+            keyInput.onchange = () => store.updateQuestion(question.id, { key: keyInput.value.trim() });
+            properties.appendChild(makeRow('Key', keyInput));
+
+            const requiredToggle = document.createElement('label');
+            requiredToggle.className = 'switch';
+            const reqInput = document.createElement('input');
+            reqInput.type = 'checkbox';
+            reqInput.checked = !!question.required;
+            reqInput.onchange = () => store.updateQuestion(question.id, { required: reqInput.checked });
+            const slider = document.createElement('span'); slider.className = 'slider';
+            requiredToggle.appendChild(reqInput); requiredToggle.appendChild(slider);
+            properties.appendChild(makeRow('Required', requiredToggle));
+
+            if (['nps','likert','single','multi','boolean'].includes(question.type)) {
+                const choicesArea = document.createElement('textarea');
+                choicesArea.placeholder = 'value|Label';
+                choicesArea.value = question.choices.map(choice => `${choice.value}|${choice.label}`).join('\n');
+                choicesArea.onchange = () => {
+                    const lines = choicesArea.value.split('\n').map(x => x.trim()).filter(Boolean);
+                    const mapped = lines.map((line, idx) => {
+                        const [valuePart, labelPart] = line.includes('|') ? line.split('|') : [line, line];
+                        const value = (valuePart || '').trim();
+                        const label = (labelPart || valuePart || '').trim();
+                        const existing = question.choices[idx];
+                        return {
+                            id: existing?.id ?? (crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2)),
+                            value: value || label || `choice_${idx + 1}`,
+                            label: label || value || `Choice ${idx + 1}`
+                        };
+                    });
+                    store.updateQuestion(question.id, { choices: mapped });
+                };
+                properties.appendChild(makeRow('Choices', choicesArea));
+            }
+
+            const validationsArea = document.createElement('textarea');
+            validationsArea.placeholder = 'One validation per line (e.g. min:1)';
+            validationsArea.value = (question.validations || []).join('\n');
+            validationsArea.onchange = () => {
+                const items = validationsArea.value.split('\n').map(x => x.trim()).filter(Boolean);
+                store.updateQuestion(question.id, { validations: items });
+            };
+            properties.appendChild(makeRow('Validations', validationsArea));
+
+            const visibilityInput = document.createElement('input');
+            visibilityInput.placeholder = "e.g. showIf(nps >= 7)";
+            visibilityInput.value = question.visibility || '';
+            visibilityInput.onchange = () => store.updateQuestion(question.id, { visibility: visibilityInput.value.trim() });
+            properties.appendChild(makeRow('Visibility Rule', visibilityInput));
         }
 
-        // canvas drop
-        canvasEl.addEventListener('dragover', ev => { ev.preventDefault(); canvasEl.classList.add('drop-hover'); });
-        canvasEl.addEventListener('dragleave', () => canvasEl.classList.remove('drop-hover'));
-        canvasEl.addEventListener('drop', ev => {
-            ev.preventDefault(); canvasEl.classList.remove('drop-hover');
-            const type = ev.dataTransfer.getData('text/plain');
-            addField(type);
+        function renderJson() {
+            jsonOutput.textContent = JSON.stringify(store.toJSON(), null, 2);
+        }
+
+        renderToolbox();
+
+        store.subscribe(state => {
+            ensureSelection(state);
+            if (document.activeElement !== surveyTitleInput) surveyTitleInput.value = state.title ?? '';
+            if (document.activeElement !== surveyCodeInput) surveyCodeInput.value = state.code ?? '';
+            renderCanvas(state);
+            renderProperties(state);
+            renderJson();
+            highlightSelection();
         });
 
-        function addField(type) {
-            if (!registry[type]) return;
-            const id = uid();
-            const base = registry[type];
-            const key = `${type}_${fields.length + 1}`;
-            const f = { id, type, label: base.label, key, sectionId: currentSectionId, entityColumn: key, dataType: inferDataType(type), ...structuredClone(base.defaults) };
-            fields.push(f); selectedId = id; renderCanvas(); renderProps(); syncSchema();
-        }
+        document.getElementById('btnAddSection').onclick = () => {
+            const section = store.addSection(`Section ${store.getState().sections.length + 1}`);
+            selectedSectionId = section.id;
+        };
 
-        function inferDataType(type) {
-            switch (type) {
-                case 'number': return 'decimal(18,2)';
-                case 'checkbox': return 'bit';
-                case 'date': return 'date';
-                case 'file': return 'varbinary(max)';
-                default: return 'nvarchar(256)';
+        document.getElementById('btnCopyJson').onclick = async () => {
+            try {
+                await navigator.clipboard.writeText(JSON.stringify(store.toJSON(), null, 2));
+                toast('JSON copied ✓');
+            } catch {
+                toast('Clipboard not available', true);
             }
-        }
+        };
 
-        function renderCanvas() {
-            // Rebuild canvas HTML each time; include hint iff no fields
-            const grouped = sections.map(s => ({ s, items: fields.filter(f => f.sectionId === s.id) }));
-            const listHtml = grouped.map(g => {
-                const head = `<div class='section-head'><span>${escapeHtml(g.s.title)}</span><small>${g.items.length} field(s)</small></div>`;
-                const items = g.items.map(f => {
-                    const sel = (f.id === selectedId) ? ' selected' : '';
-                    return "<div class='field" + sel + "' data-id='" + f.id + "'>"
-                        + "<div class='meta'><strong>" + escapeHtml(f.label) + "</strong>"
-                        + "<span style='opacity:.7'>(" + f.type + ")</span>"
-                        + "<span class='tag'>" + f.key + "</span></div>"
-                        + "<div class='actions'>"
-                        + "<button class='btn icon' data-act='up' title='Move up'>▲</button>"
-                        + "<button class='btn icon' data-act='down' title='Move down'>▼</button>"
-                        + "<button class='btn icon danger' data-act='del' title='Delete'>✕</button>"
-                        + "</div></div>";
-                }).join('');
-                return head + items;
-            }).join('');
-            const hintHtml = fields.length ? '' : "<div id='canvasHint' class='hint'>Drag components here…</div>";
-            canvasEl.innerHTML = hintHtml + listHtml;
-
-            // Wire events after render
-            canvasEl.querySelectorAll('.field').forEach(el => {
-                el.addEventListener('click', () => { selectedId = el.dataset.id; renderCanvas(); renderProps(); });
-                el.querySelectorAll('button').forEach(b => b.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    const id = el.dataset.id; const act = b.dataset.act; const idx = fields.findIndex(x => x.id === id);
-                    if (act === 'up' && idx > 0) { const [m] = fields.splice(idx, 1); fields.splice(idx - 1, 0, m); }
-                    if (act === 'down' && idx < fields.length - 1) { const [m] = fields.splice(idx, 1); fields.splice(idx + 1, 0, m); }
-                    if (act === 'del') { fields = fields.filter(x => x.id !== id); if (selectedId === id) selectedId = null; }
-                    renderCanvas(); renderProps(); syncSchema();
-                }))
-            })
-        }
-
-        function renderProps() {
-            const f = fields.find(x => x.id === selectedId);
-            if (!f) { propsEl.innerHTML = `<div class='hint'>Select a field to configure it.</div>`; return; }
-            const bool = (v) => v ? 'checked' : '';
-            const common = `
-                <div class='prop'><label>Label</label><input type='text' id='p_label' value='${escapeHtml(f.label)}'></div>
-                <div class='grid2'>
-                  <div class='prop'><label>Key (API name)</label><input type='text' id='p_key' value='${escapeHtml(f.key)}'></div>
-                  <div class='prop'><label>Width (1-12)</label><input type='number' id='p_width' min='1' max='12' value='${f.width ?? 12}'></div>
-                </div>
-                <div class='grid2'>
-                  <div class='prop'><label>DB Column</label><input type='text' id='p_col' value='${escapeHtml(f.entityColumn)}'></div>
-                  <div class='prop'><label>DB Type</label><input type='text' id='p_dtype' value='${escapeHtml(f.dataType)}'></div>
-                </div>
-                <div class='grid2'>
-                  <div class='prop'>
-                    <label>Section</label>
-                    <select id='p_section'>${sections.map(s => `<option value='${s.id}' ${s.id === f.sectionId ? 'selected' : ''}>${escapeHtml(s.title)}</option>`).join('')}</select>
-                  </div>
-                  <div class='prop'><label>Visibility Condition (expr)</label><input type='text' id='p_cond' value='${escapeHtml(f.visibleWhen || "")}' placeholder="e.g. ClaimType=='Funeral'"></div>
-                </div>
-                <div class='row'><label style='min-width:90px'>Required</label><input type='checkbox' id='p_req' ${bool(f.required)}></div>
-              `;
-
-            let typeSpecific = '';
-            if (['text', 'email', 'phone'].includes(f.type)) {
-                typeSpecific = `
-                  <div class='prop'><label>Placeholder</label><input type='text' id='p_ph' value='${escapeHtml(f.placeholder || "")}'></div>
-                  <div class='grid2'>
-                    <div class='prop'><label>Regex (optional)</label><input type='text' id='p_rx' value='${escapeHtml(f.regex || "")}'></div>
-                    <div class='prop'><label>Default</label><input type='text' id='p_def' value='${escapeHtml(f.default || "")}'></div>
-                  </div>`
-            }
-            if (f.type === 'textarea') {
-                typeSpecific = `
-                  <div class='prop'><label>Rows</label><input type='number' id='p_rows' value='${f.rows || 3}'></div>
-                  <div class='prop'><label>Placeholder</label><input type='text' id='p_ph' value='${escapeHtml(f.placeholder || "")}'></div>`
-            }
-            if (f.type === 'number') {
-                typeSpecific = `
-                  <div class='grid2'>
-                    <div class='prop'><label>Min</label><input type='number' id='p_min' value='${f.min ?? ""}'></div>
-                    <div class='prop'><label>Max</label><input type='number' id='p_max' value='${f.max ?? ""}'></div>
-                  </div>
-                  <div class='prop'><label>Default</label><input type='number' id='p_defn' value='${f.default ?? ""}'></div>`
-            }
-            if (['radio', 'select'].includes(f.type)) {
-                typeSpecific = `
-                  <div class='prop'><label>Options (comma-separated)</label><textarea id='p_opts'>${escapeHtml(f.options || "")}</textarea></div>
-                  <div class='prop'><label>Default</label><input type='text' id='p_def' value='${escapeHtml(f.default || "")}'></div>`
-            }
-            if (f.type === 'checkbox') {
-                typeSpecific = `
-                  <div class='prop'><label>Text</label><input type='text' id='p_ctext' value='${escapeHtml(f.text || "I agree")}'></div>
-                  <div class='row'><label style='min-width:90px'>Checked</label><input type='checkbox' id='p_checked' ${bool(f.checked)}></div>`
-            }
-            if (f.type === 'file') {
-                typeSpecific = `
-                  <div class='prop'><label>Accept (mime/extensions)</label><input type='text' id='p_acc' value='${escapeHtml(f.accept || "")}' placeholder="image/*,.pdf"></div>`
-            }
-            if (f.type === 'button') {
-                typeSpecific = `
-                  <div class='grid2'>
-                    <div class='prop'><label>Text</label><input type='text' id='p_btxt' value='${escapeHtml(f.text || "Submit")}'></div>
-                    <div class='prop'><label>Variant</label>
-                      <select id='p_bvar'>
-                        <option ${f.variant === 'primary' ? 'selected' : ''}>primary</option>
-                        <option ${f.variant === 'secondary' ? 'selected' : ''}>secondary</option>
-                        <option ${f.variant === 'danger' ? 'selected' : ''}>danger</option>
-                      </select>
-                    </div>
-                  </div>`
-            }
-
-            propsEl.innerHTML = `
-                ${common}
-                ${typeSpecific}
-                <div class='footer'>
-                  <button class='btn accent' id='p_apply'>Apply</button>
-                </div>`;
-
-            // wire apply
-            propsEl.querySelector('#p_apply').onclick = () => {
-                f.label = document.getElementById('p_label').value.trim() || f.label;
-                f.key = document.getElementById('p_key').value.trim() || f.key;
-                f.width = clamp(parseInt(document.getElementById('p_width').value || 12), 1, 12);
-                f.entityColumn = document.getElementById('p_col').value.trim() || f.entityColumn;
-                f.dataType = document.getElementById('p_dtype').value.trim() || f.dataType;
-                f.visibleWhen = document.getElementById('p_cond').value.trim();
-                f.required = document.getElementById('p_req').checked;
-                f.sectionId = document.getElementById('p_section').value || f.sectionId;
-                // type specifics
-                if (['text', 'email', 'phone'].includes(f.type)) {
-                    f.placeholder = document.getElementById('p_ph').value;
-                    f.regex = document.getElementById('p_rx').value;
-                    f.default = document.getElementById('p_def').value;
-                }
-                if (f.type === 'textarea') {
-                    f.rows = parseInt(document.getElementById('p_rows').value || 3);
-                    f.placeholder = document.getElementById('p_ph').value;
-                }
-                if (f.type === 'number') {
-                    f.min = valOrNull(document.getElementById('p_min').value);
-                    f.max = valOrNull(document.getElementById('p_max').value);
-                    f.default = valOrNull(document.getElementById('p_defn').value);
-                }
-                if (['radio', 'select'].includes(f.type)) {
-                    f.options = document.getElementById('p_opts').value;
-                    f.default = document.getElementById('p_def').value;
-                }
-                if (f.type === 'checkbox') {
-                    f.text = document.getElementById('p_ctext').value;
-                    f.checked = document.getElementById('p_checked').checked;
-                }
-                if (f.type === 'file') {
-                    f.accept = document.getElementById('p_acc').value;
-                }
-                if (f.type === 'button') {
-                    f.text = document.getElementById('p_btxt').value;
-                    f.variant = document.getElementById('p_bvar').value;
-                }
-                renderCanvas(); syncSchema(); toast('Applied ✓');
-            }
-        }
-
-        function clamp(n, min, max) { return Math.max(min, Math.min(max, n)) }
-        function valOrNull(v) { return v === '' ? null : (isNaN(+v) ? v : +v) }
-        function escapeHtml(s) { return (s || '').replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[c])) }
-
-        // schema export
-        function buildSchema() { /* includes style.css */
-            return {
-                entity: { name: safeVal(entityNameEl), table: safeVal(tableNameEl) },
-                theme: { accent: theme.accent, panel: theme.panel },
-                sections: sections.map(s => ({ id: s.id, title: s.title, columns: s.columns })),
-                fields: fields.map(f => ({
-                    id: f.id, type: f.type, label: f.label, key: f.key, width: f.width, required: !!f.required, visibleWhen: f.visibleWhen || null, sectionId: f.sectionId,
-                    mapping: { column: f.entityColumn, dataType: f.dataType },
-                    settings: pickTypeSettings(f)
-                })),
-                style: { css: (document.getElementById('customCss')?.value || '') }
-            }
-        }
-        function pickTypeSettings(f) {
-            const keys = ['placeholder', 'regex', 'default', 'rows', 'min', 'max', 'options', 'text', 'checked', 'accept', 'variant'];
-            const o = {}; keys.forEach(k => { if (f[k] !== undefined) o[k] = f[k]; }); return o;
-        }
-        function syncSchema() { schemaOut.textContent = JSON.stringify(buildSchema(), null, 2); }
-
-        // buttons
-        document.getElementById('btnClear').onclick = () => { fields = []; selectedId = null; renderCanvas(); renderProps(); syncSchema(); toast('Canvas cleared') }
-        document.getElementById('btnDelete').onclick = () => { if (!selectedId) return; fields = fields.filter(x => x.id !== selectedId); selectedId = null; renderCanvas(); renderProps(); syncSchema(); }
-        document.getElementById('btnUp').onclick = () => { if (!selectedId) return; const i = fields.findIndex(x => x.id === selectedId); if (i > 0) { const [m] = fields.splice(i, 1); fields.splice(i - 1, 0, m); renderCanvas(); syncSchema(); } }
-        document.getElementById('btnDown').onclick = () => { if (!selectedId) return; const i = fields.findIndex(x => x.id === selectedId); if (i < fields.length - 1) { const [m] = fields.splice(i, 1); fields.splice(i + 1, 0, m); renderCanvas(); syncSchema(); } }
-
-        // export/load
-        document.getElementById('btnExport').onclick = () => {
-            const data = JSON.stringify(buildSchema(), null, 2);
+        document.getElementById('btnDownload').onclick = () => {
+            const data = JSON.stringify(store.toJSON(), null, 2);
             const a = document.createElement('a');
             a.href = URL.createObjectURL(new Blob([data], { type: 'application/json' }));
-            a.download = (safeVal(entityNameEl) || 'Form') + '_schema.json';
+            a.download = `${store.getState().code || 'survey'}_designer.json`;
             a.click();
-        }
-        document.getElementById('btnLoad').onclick = () => {
-            const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'application/json';
-            inp.onchange = () => {
-                const f = inp.files[0]; if (!f) return; const r = new FileReader(); r.onload = () => { try { const obj = JSON.parse(r.result); loadSchema(obj); toast('Schema loaded'); } catch (e) { alert('Invalid JSON'); } }; r.readAsText(f);
-            }; inp.click();
-        }
-        function loadSchema(s) {
-            if (entityNameEl) entityNameEl.value = s.entity?.name || '';
-            if (tableNameEl) tableNameEl.value = s.entity?.table || '';
-            // sections/theme (restore if provided; else keep current defaults)
-            if (Array.isArray(s.sections) && s.sections.length) {
-                sections = s.sections.map(x => ({ id: x.id || uid(), title: x.title || 'Section', columns: x.columns === 2 ? 2 : 1 }));
-                currentSectionId = sections[0].id;
+            setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+            toast('JSON downloaded');
+        };
+
+        surveyTitleInput.addEventListener('input', () => store.setMeta({ title: surveyTitleInput.value }));
+        surveyCodeInput.addEventListener('input', () => store.setMeta({ code: surveyCodeInput.value.trim() }));
+
+        async function importFromApi() {
+            const code = surveyCodeInput.value.trim();
+            if (!code) { toast('Enter a survey code to import', true); return; }
+            try {
+                const res = await fetch(`/api/admin/surveys/${encodeURIComponent(code)}/definition`);
+                if (!res.ok) throw new Error('Failed');
+                const def = await res.json();
+                loadDefinition(def);
+                toast('Definition imported');
+            } catch {
+                toast('Unable to fetch definition', true);
             }
-            if (s.theme) {
-                theme.accent = s.theme.accent || theme.accent;
-                theme.panel = s.theme.panel || theme.panel;
-                document.documentElement.style.setProperty('--accent', theme.accent);
-                document.documentElement.style.setProperty('--panel2', theme.panel);
-            }
-            fields = (s.fields || []).map(x => ({ id: x.id || uid(), type: x.type, label: x.label, key: x.key, width: x.width || 12, required: !!x.required, visibleWhen: x.visibleWhen || null, sectionId: x.sectionId || sections[0].id, entityColumn: x.mapping?.column || x.key, dataType: x.mapping?.dataType || inferDataType(x.type), ...x.settings }));
-            // load custom scoped css if present
-            const cssArea = document.getElementById('customCss');
-            if (cssArea && s.style && typeof s.style.css === 'string') cssArea.value = s.style.css;
-            renderStyleBar();
-            selectedId = fields[0]?.id || null; renderCanvas(); renderProps(); syncSchema();
         }
 
-        // preview
-        const modal = document.getElementById('modal');
-        document.getElementById('btnPreview').onclick = () => { renderPreview(); modal.style.display = 'flex'; }
-        document.getElementById('mClose').onclick = () => modal.style.display = 'none';
-
-        function scopeCss(css, scopeSel) {
-            if (!css) return '';
-            // crude prefixer: handles regular rules and @media blocks; leaves keyframes/font-face untouched
-            const parts = css.split('}');
-            const out = [];
-            for (let part of parts) {
-                if (!part.trim()) continue;
-                const idx = part.indexOf('{');
-                if (idx === -1) { continue; }
-                const sel = part.slice(0, idx).trim();
-                const body = part.slice(idx + 1);
-                if (sel.startsWith('@media')) {
-                    out.push(sel + '{' + scopeCss(body, scopeSel) + '}');
-                } else if (sel.startsWith('@keyframes') || sel.startsWith('@font-face')) {
-                    out.push(sel + '{' + body + '}');
-                } else {
-                    const scoped = sel.split(',').map(s => {
-                        s = s.trim();
-                        if (/^:root\b/.test(s) || /^html\b/.test(s) || /^body\b/.test(s)) return scopeSel;
-                        return scopeSel + ' ' + s;
-                    }).join(', ');
-                    out.push(scoped + '{' + body + '}');
-                }
-            }
-            return out.join('\n');
-        }
-
-        function renderPreview() {
-            const form = document.getElementById('previewForm');
-            form.innerHTML = '';
-            form.classList.add('cf-form');
-            const s = buildSchema();
-            // inject scoped CSS
-            const raw = (document.getElementById('customCss')?.value || '');
-            const scoped = scopeCss(raw, '.cf-form');
-            let tag = document.getElementById('cfScopedStyle');
-            if (!tag) { tag = document.createElement('style'); tag.id = 'cfScopedStyle'; document.head.appendChild(tag); }
-            tag.textContent = scoped;
-            // apply theme to preview
-            document.documentElement.style.setProperty('--accent', s.theme.accent);
-            document.documentElement.style.setProperty('--panel2', s.theme.panel);
-
-            // group by sections and render
-            s.sections.forEach(sec => {
-                const head = document.createElement('div'); head.className = 'section-head'; head.textContent = sec.title; form.appendChild(head);
-                const wrap = document.createElement('div'); wrap.style.display = 'grid'; wrap.style.gap = '10px'; wrap.style.gridTemplateColumns = sec.columns === 2 ? '1fr 1fr' : '1fr';
-                s.fields.filter(f => f.sectionId === sec.id).forEach(f => {
-                    const cell = document.createElement('div');
-                    const label = document.createElement('label'); label.textContent = f.label + (f.required ? ' *' : ''); label.style.display = 'block'; label.style.color = '#cfe0ff'; label.style.marginBottom = '4px';
-                    cell.appendChild(label);
-                    let input;
-                    switch (f.type) {
-                        case 'text': case 'email': case 'phone': case 'date': case 'number': case 'file': {
-                            input = document.createElement('input');
-                            input.type = f.type === 'phone' ? 'tel' : (f.type === 'text' ? 'text' : (f.type === 'file' ? 'file' : f.type));
-                            if (f.placeholder) input.placeholder = f.placeholder; if (f.default != null && f.type !== 'file') input.value = f.default;
-                            break;
-                        }
-                        case 'textarea': {
-                            input = document.createElement('textarea'); if (f.settings?.rows) input.rows = f.settings.rows; if (f.placeholder) input.placeholder = f.placeholder; break;
-                        }
-                        case 'checkbox': {
-                            input = document.createElement('input'); input.type = 'checkbox'; input.checked = !!f.settings?.checked; const span = document.createElement('span'); span.textContent = ' ' + (f.settings?.text || ''); cell.appendChild(input); cell.appendChild(span); input = null; break;
-                        }
-                        case 'radio': {
-                            const opts = (f.settings?.options || '').split(',').map(x => x.trim()).filter(Boolean);
-                            opts.forEach(o => { const r = document.createElement('label'); r.style.marginRight = '10px'; const i = document.createElement('input'); i.type = 'radio'; i.name = f.key; i.value = o; r.appendChild(i); r.appendChild(document.createTextNode(' ' + o)); cell.appendChild(r); });
-                            input = null; break;
-                        }
-                        case 'select': {
-                            const sel = document.createElement('select'); (f.settings?.options || '').split(',').map(x => x.trim()).filter(Boolean).forEach(o => { const op = document.createElement('option'); op.textContent = o; op.value = o; sel.appendChild(op); }); input = sel; break;
-                        }
-                        case 'button': {
-                            const b = document.createElement('button'); b.type = 'button'; b.textContent = f.settings?.text || 'Submit'; b.className = 'btn'; cell.appendChild(b); input = null; break;
-                        }
-                    }
-                    if (input) { input.style.width = '100%'; input.style.padding = '8px 10px'; input.style.borderRadius = '10px'; input.style.border = '1px solid var(--border)'; input.style.background = 'var(--panel2)'; input.style.color = 'var(--text)'; cell.appendChild(input); }
-                    wrap.appendChild(cell);
+        async function exportToApi() {
+            const code = surveyCodeInput.value.trim();
+            if (!code) { toast('Survey code required to save', true); return; }
+            const payload = store.toJSON();
+            payload.code = code;
+            payload.title = store.getState().title || payload.title || code;
+            try {
+                const res = await fetch(`/api/admin/surveys/${encodeURIComponent(code)}/definition`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
                 });
-                form.appendChild(wrap);
-            });
-            const save = document.createElement('button'); save.textContent = 'Simulate Submit'; save.className = 'btn accent'; save.type = 'button'; save.onclick = () => { alert('Submitted (demo)'); };
-            form.appendChild(save);
+                if (!res.ok) throw new Error('Failed');
+                toast('Survey saved to API ✓');
+            } catch {
+                toast('Failed to save survey', true);
+            }
         }
 
-        // init
-        renderPalette(); renderStyleBar(); renderCanvas(); syncSchema();
+        document.getElementById('btnImport').onclick = importFromApi;
+        document.getElementById('btnExport').onclick = exportToApi;
+
+        function loadDefinition(definition) {
+            const sectionsRaw = definition.sections ?? definition.Sections ?? [];
+            const optionsRaw = definition.options ?? definition.Options ?? [];
+            const questionsRaw = definition.questions ?? definition.Questions ?? [];
+            const rulesRaw = definition.rules ?? definition.Rules ?? [];
+            const themeRaw = definition.theme ?? definition.Theme;
+
+            const optionMap = new Map();
+            optionsRaw.forEach(opt => {
+                const questionId = opt.questionId ?? opt.QuestionId;
+                if (!optionMap.has(questionId)) optionMap.set(questionId, []);
+                optionMap.get(questionId).push({
+                    id: opt.id ?? opt.Id ?? (crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2)),
+                    value: opt.value ?? opt.Value,
+                    label: opt.label ?? opt.Label
+                });
+            });
+
+            const sections = sectionsRaw.map((sec, idx) => ({
+                id: sec.id ?? sec.Id ?? (crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2)),
+                title: sec.title ?? sec.Title ?? `Section ${idx + 1}`,
+                order: sec.order ?? sec.Order ?? idx + 1,
+                columns: sec.columns ?? sec.Columns ?? 1
+            }));
+
+            const questions = questionsRaw.map((q, idx) => {
+                let parsedSettings = {};
+                const rawJson = q.settingsJson ?? q.SettingsJson;
+                if (rawJson) {
+                    try { parsedSettings = JSON.parse(rawJson); } catch { parsedSettings = {}; }
+                }
+                const choices = optionMap.get(q.id ?? q.Id) ?? (parsedSettings.choices || []);
+                const cleanedSettings = { ...parsedSettings };
+                delete cleanedSettings.choices;
+                const validations = Array.isArray(parsedSettings.validations) ? parsedSettings.validations : [];
+                delete cleanedSettings.validations;
+                const visibility = typeof parsedSettings.visibility === 'string' ? parsedSettings.visibility : '';
+                delete cleanedSettings.visibility;
+                return {
+                    id: q.id ?? q.Id ?? (crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2)),
+                    sectionId: q.sectionId ?? q.SectionId ?? null,
+                    type: q.type ?? q.Type ?? 'text',
+                    prompt: q.prompt ?? q.Prompt ?? 'Question',
+                    key: q.key ?? q.Key ?? `question_${idx + 1}`,
+                    required: q.required ?? q.Required ?? false,
+                    order: q.order ?? q.Order ?? idx + 1,
+                    settings: cleanedSettings,
+                    choices: choices.map((opt, ci) => ({
+                        id: opt.id ?? opt.Id ?? (crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2)),
+                        value: opt.value ?? opt.Value ?? `choice_${ci + 1}`,
+                        label: opt.label ?? opt.Label ?? `Choice ${ci + 1}`
+                    })),
+                    validations,
+                    visibility
+                };
+            });
+
+            const rules = rulesRaw.map(rule => ({
+                id: rule.id ?? rule.Id ?? (crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2)),
+                sourceQuestionId: rule.sourceQuestionId ?? rule.SourceQuestionId,
+                condition: rule.condition ?? rule.Condition,
+                action: rule.action ?? rule.Action
+            }));
+
+            store.load({
+                code: definition.code ?? definition.Code ?? surveyCodeInput.value.trim(),
+                title: definition.title ?? definition.Title ?? surveyTitleInput.value,
+                sections,
+                questions,
+                rules,
+                theme: themeRaw ? { accent: themeRaw.accent ?? themeRaw.Accent, panel: themeRaw.panel ?? themeRaw.Panel } : undefined
+            });
+        }
+
+        // Boot with a default section for convenience
+        if (store.getState().sections.length === 0) {
+            store.addSection('Welcome');
+        }
     </script>
 </body>
 </html>
