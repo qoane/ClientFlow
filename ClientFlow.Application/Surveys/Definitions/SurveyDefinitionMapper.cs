@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using ClientFlow.Domain.Surveys;
@@ -32,6 +33,19 @@ public static class SurveyDefinitionMapper
                     .Select(o => new OptionDto(o.Id, o.Value, o.Label, o.Order))
                     .ToArray());
 
+        const string showPrefix = "show:";
+
+        var visibleIfLookup = rules
+            .Where(r => r.Action is not null && r.Action.StartsWith(showPrefix, StringComparison.OrdinalIgnoreCase))
+            .Select(r => new
+            {
+                TargetKey = r.Action.Substring(showPrefix.Length).Trim(),
+                Condition = string.IsNullOrWhiteSpace(r.Condition) ? null : r.Condition.Trim()
+            })
+            .Where(x => !string.IsNullOrWhiteSpace(x.TargetKey) && !string.IsNullOrWhiteSpace(x.Condition))
+            .GroupBy(x => x.TargetKey!, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.First().Condition!, StringComparer.OrdinalIgnoreCase);
+
         var questionDtos = survey.Questions
             .OrderBy(q => q.Order)
             .ThenBy(q => q.Key)
@@ -44,6 +58,7 @@ public static class SurveyDefinitionMapper
                 q.Required,
                 q.Order,
                 q.SettingsJson,
+                visibleIfLookup.TryGetValue(q.Key, out var ruleCondition) ? ruleCondition : null,
                 optionLookup.TryGetValue(q.Id, out var opts) ? opts : Array.Empty<OptionDto>()))
             .ToArray();
 

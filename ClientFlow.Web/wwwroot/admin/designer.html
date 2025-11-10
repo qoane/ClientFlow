@@ -729,11 +729,11 @@
             };
             properties.appendChild(makeRow('Validations', validationsArea));
 
-            const visibilityInput = document.createElement('input');
-            visibilityInput.placeholder = "e.g. showIf(nps >= 7)";
-            visibilityInput.value = question.visibility || '';
-            visibilityInput.onchange = () => store.updateQuestion(question.id, { visibility: visibilityInput.value.trim() });
-            properties.appendChild(makeRow('Visibility Rule', visibilityInput));
+            const visibleIfInput = document.createElement('input');
+            visibleIfInput.placeholder = "e.g. status = 'active'";
+            visibleIfInput.value = question.visibleIf || '';
+            visibleIfInput.onchange = () => store.updateQuestion(question.id, { visibleIf: visibleIfInput.value.trim() });
+            properties.appendChild(makeRow('Visible If', visibleIfInput));
         }
 
         function renderJson() {
@@ -851,8 +851,10 @@
                 delete cleanedSettings.choices;
                 const validations = Array.isArray(parsedSettings.validations) ? parsedSettings.validations : [];
                 delete cleanedSettings.validations;
-                const visibility = typeof parsedSettings.visibility === 'string' ? parsedSettings.visibility : '';
+                const visibilityFromSettings = typeof parsedSettings.visibility === 'string' ? parsedSettings.visibility : '';
                 delete cleanedSettings.visibility;
+                const visibleIfFromDto = typeof (q.visibleIf ?? q.VisibleIf) === 'string' ? (q.visibleIf ?? q.VisibleIf) : '';
+                const visibleIf = visibleIfFromDto || visibilityFromSettings;
                 return {
                     id: q.id ?? q.Id ?? (crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2)),
                     sectionId: q.sectionId ?? q.SectionId ?? null,
@@ -868,7 +870,7 @@
                         label: opt.label ?? opt.Label ?? `Choice ${ci + 1}`
                     })),
                     validations,
-                    visibility
+                    visibleIf
                 };
             });
 
