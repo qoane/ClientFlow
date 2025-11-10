@@ -199,6 +199,106 @@
             gap: 12px;
         }
 
+        .preview {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .preview-section {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            border: 1px solid rgba(255,255,255,.08);
+            border-radius: 12px;
+            padding: 14px 16px;
+            background: var(--panel2);
+        }
+
+        .preview-section h3 {
+            margin: 0;
+            font-size: 15px;
+        }
+
+        .preview-section small {
+            color: var(--muted);
+        }
+
+        .preview-questions {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .preview-question {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            border-radius: 10px;
+            padding: 10px 12px;
+            background: rgba(9,13,30,.45);
+            border: 1px solid rgba(255,255,255,.05);
+        }
+
+        .preview-question label {
+            font-weight: 600;
+        }
+
+        .preview-static {
+            background: rgba(9,13,30,.25);
+            border-style: dashed;
+        }
+
+        .preview-choice-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px 12px;
+        }
+
+        .preview-choice-list label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 400;
+        }
+
+        .preview-rating {
+            display: inline-flex;
+            gap: 4px;
+            color: var(--accent2);
+            font-size: 18px;
+        }
+
+        .preview-matrix {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .preview-matrix th,
+        .preview-matrix td {
+            border: 1px solid rgba(255,255,255,.08);
+            padding: 6px 8px;
+            font-size: 13px;
+        }
+
+        .preview-divider {
+            border: 0;
+            border-top: 1px solid rgba(255,255,255,.25);
+            margin: 6px 0;
+        }
+
+        .preview-spacer {
+            width: 100%;
+            background: rgba(255,255,255,.04);
+            border-radius: 8px;
+        }
+
+        .preview-empty {
+            text-align: center;
+            color: var(--muted);
+            padding: 20px 0;
+        }
+
         .canvas-section {
             background: var(--panel);
             border: 1px solid rgba(255,255,255,.06);
@@ -400,6 +500,13 @@
                 </div>
 
                 <div class="panel">
+                    <div class="head"><strong>Live Preview</strong></div>
+                    <div class="body">
+                        <form id="previewForm" class="preview" aria-label="Survey preview"></form>
+                    </div>
+                </div>
+
+                <div class="panel">
                     <div class="head" style="justify-content:space-between">
                         <strong>Normalized JSON</strong>
                         <button class="btn ghost" id="btnCopyJson">Copy</button>
@@ -426,6 +533,7 @@
         const sectionCount = document.getElementById('sectionCount');
         const properties = document.getElementById('properties');
         const jsonOutput = document.getElementById('jsonOutput');
+        const previewForm = document.getElementById('previewForm');
         const surveyCodeInput = document.getElementById('surveyCode');
         const surveyTitleInput = document.getElementById('surveyTitle');
 
@@ -442,8 +550,20 @@
             { type: 'phone', label: 'Phone', hint: '+266 …' },
             { type: 'number', label: 'Numeric', hint: 'Quantitative input' },
             { type: 'date', label: 'Date', hint: 'Calendar picker' },
-            { type: 'boolean', label: 'Yes / No', hint: 'Binary choice' }
+            { type: 'boolean', label: 'Yes / No', hint: 'Binary choice' },
+            { type: 'static_text', label: 'Static Text', hint: 'Display-only paragraph' },
+            { type: 'static_html', label: 'Static HTML', hint: 'Raw HTML fragment' },
+            { type: 'image', label: 'Image', hint: 'Illustrations or logos' },
+            { type: 'video', label: 'Video', hint: 'Embedded media' },
+            { type: 'divider', label: 'Divider', hint: 'Section separator' },
+            { type: 'spacer', label: 'Spacer', hint: 'Add vertical space' },
+            { type: 'matrix', label: 'Matrix', hint: 'Rows × columns grid' },
+            { type: 'file', label: 'File Upload', hint: 'Collect attachments' },
+            { type: 'signature', label: 'Signature', hint: 'Capture drawn signature' },
+            { type: 'rating_stars', label: 'Rating (Stars)', hint: '1–N star rating' }
         ];
+
+        const paletteLabelMap = new Map(palette.map(tool => [tool.type, tool.label]));
 
         function toast(message, isError = false) {
             const node = document.createElement('div');
@@ -451,6 +571,44 @@
             node.textContent = message;
             document.body.appendChild(node);
             setTimeout(() => node.remove(), 2600);
+        }
+
+        function createTempId() {
+            if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+                return crypto.randomUUID();
+            }
+            return Math.random().toString(36).slice(2);
+        }
+
+        function describeQuestion(question) {
+            const settings = question.settings || {};
+            switch (question.type) {
+                case 'static_text':
+                    return (settings.text || '').toString().trim() || 'Static text block';
+                case 'static_html': {
+                    const html = (settings.html || '').toString();
+                    const plain = html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+                    return plain || 'Static HTML';
+                }
+                case 'image':
+                    return settings.caption || settings.alt || settings.url || 'Image';
+                case 'video':
+                    return settings.caption || settings.url || 'Video';
+                case 'divider':
+                    return 'Divider';
+                case 'spacer':
+                    return 'Spacer';
+                case 'matrix':
+                    return question.prompt || 'Matrix';
+                case 'file':
+                    return question.prompt || 'File upload';
+                case 'signature':
+                    return question.prompt || 'Signature';
+                case 'rating_stars':
+                    return question.prompt || 'Star rating';
+                default:
+                    return question.prompt || 'Untitled question';
+            }
         }
 
         function ensureSelection(state) {
@@ -601,9 +759,10 @@
 
                         const info = document.createElement('div');
                         const title = document.createElement('div');
-                        title.textContent = question.prompt || 'Untitled question';
+                        title.textContent = describeQuestion(question);
                         const metaLine = document.createElement('small');
-                        metaLine.textContent = `${question.type.toUpperCase()} • ${question.key}`;
+                        const paletteLabel = paletteLabelMap.get(question.type) || question.type.toUpperCase();
+                        metaLine.textContent = `${paletteLabel} • ${question.key}`;
                         info.appendChild(title);
                         info.appendChild(metaLine);
 
@@ -668,6 +827,8 @@
                 return;
             }
 
+            const settings = question.settings || {};
+
             const makeRow = (label, control) => {
                 const row = document.createElement('div');
                 row.className = 'row';
@@ -678,10 +839,42 @@
                 return row;
             };
 
-            const promptInput = document.createElement('textarea');
-            promptInput.value = question.prompt;
-            promptInput.oninput = () => store.updateQuestion(question.id, { prompt: promptInput.value });
-            properties.appendChild(makeRow('Prompt', promptInput));
+            const getLatestQuestion = () => store.getState().questions.find(q => q.id === question.id) ?? question;
+
+            const updateSettings = (producer) => {
+                const latest = getLatestQuestion();
+                const base = { ...(latest.settings ?? {}) };
+                const next = producer(base) ?? base;
+                store.updateQuestion(question.id, { settings: next });
+            };
+
+            const setSettingValue = (key, value, removeEmpty = false) => {
+                updateSettings(current => {
+                    const next = { ...current };
+                    const shouldRemove = removeEmpty && (value === '' || value === null || value === undefined || (typeof value === 'number' && !Number.isFinite(value)));
+                    if (shouldRemove) {
+                        delete next[key];
+                    } else {
+                        next[key] = value;
+                    }
+                    return next;
+                });
+            };
+
+            const isStatic = question.type.startsWith('static_');
+            const isLayoutOnly = ['divider', 'spacer'].includes(question.type);
+            const isMedia = ['image', 'video'].includes(question.type);
+            const showPrompt = !['static_text', 'static_html', 'divider', 'spacer'].includes(question.type);
+            const allowRequired = !isStatic && !isLayoutOnly && !isMedia;
+            const showValidations = !isStatic && !isLayoutOnly && !isMedia;
+            const showChoices = ['nps', 'likert', 'single', 'multi', 'boolean'].includes(question.type);
+
+            if (showPrompt) {
+                const promptInput = document.createElement('textarea');
+                promptInput.value = question.prompt;
+                promptInput.oninput = () => store.updateQuestion(question.id, { prompt: promptInput.value });
+                properties.appendChild(makeRow('Prompt', promptInput));
+            }
 
             const keyInput = document.createElement('input');
             keyInput.value = question.key;
@@ -692,25 +885,29 @@
             requiredToggle.className = 'switch';
             const reqInput = document.createElement('input');
             reqInput.type = 'checkbox';
-            reqInput.checked = !!question.required;
+            reqInput.checked = allowRequired ? !!question.required : false;
+            reqInput.disabled = !allowRequired;
             reqInput.onchange = () => store.updateQuestion(question.id, { required: reqInput.checked });
-            const slider = document.createElement('span'); slider.className = 'slider';
-            requiredToggle.appendChild(reqInput); requiredToggle.appendChild(slider);
+            const slider = document.createElement('span');
+            slider.className = 'slider';
+            requiredToggle.appendChild(reqInput);
+            requiredToggle.appendChild(slider);
             properties.appendChild(makeRow('Required', requiredToggle));
 
-            if (['nps','likert','single','multi','boolean'].includes(question.type)) {
+            if (showChoices) {
                 const choicesArea = document.createElement('textarea');
                 choicesArea.placeholder = 'value|Label';
                 choicesArea.value = question.choices.map(choice => `${choice.value}|${choice.label}`).join('\n');
                 choicesArea.onchange = () => {
+                    const latest = getLatestQuestion();
                     const lines = choicesArea.value.split('\n').map(x => x.trim()).filter(Boolean);
                     const mapped = lines.map((line, idx) => {
                         const [valuePart, labelPart] = line.includes('|') ? line.split('|') : [line, line];
                         const value = (valuePart || '').trim();
                         const label = (labelPart || valuePart || '').trim();
-                        const existing = question.choices[idx];
+                        const existing = latest?.choices?.[idx];
                         return {
-                            id: existing?.id ?? (crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2)),
+                            id: existing?.id ?? createTempId(),
                             value: value || label || `choice_${idx + 1}`,
                             label: label || value || `Choice ${idx + 1}`
                         };
@@ -720,20 +917,722 @@
                 properties.appendChild(makeRow('Choices', choicesArea));
             }
 
-            const validationsArea = document.createElement('textarea');
-            validationsArea.placeholder = 'One validation per line (e.g. min:1)';
-            validationsArea.value = (question.validations || []).join('\n');
-            validationsArea.onchange = () => {
-                const items = validationsArea.value.split('\n').map(x => x.trim()).filter(Boolean);
-                store.updateQuestion(question.id, { validations: items });
-            };
-            properties.appendChild(makeRow('Validations', validationsArea));
+            switch (question.type) {
+                case 'static_text': {
+                    const textArea = document.createElement('textarea');
+                    textArea.style.minHeight = '140px';
+                    textArea.placeholder = 'Display text';
+                    textArea.value = settings.text || '';
+                    textArea.oninput = () => setSettingValue('text', textArea.value, true);
+                    properties.appendChild(makeRow('Text', textArea));
+
+                    const alignSelect = document.createElement('select');
+                    [
+                        { value: '', label: 'Automatic' },
+                        { value: 'left', label: 'Left' },
+                        { value: 'center', label: 'Center' },
+                        { value: 'right', label: 'Right' },
+                        { value: 'justify', label: 'Justify' }
+                    ].forEach(opt => {
+                        const option = document.createElement('option');
+                        option.value = opt.value;
+                        option.textContent = opt.label;
+                        alignSelect.appendChild(option);
+                    });
+                    alignSelect.value = settings.alignment ?? '';
+                    alignSelect.onchange = () => setSettingValue('alignment', alignSelect.value, true);
+                    properties.appendChild(makeRow('Alignment', alignSelect));
+                    break;
+                }
+                case 'static_html': {
+                    const htmlArea = document.createElement('textarea');
+                    htmlArea.style.minHeight = '180px';
+                    htmlArea.placeholder = '<p>Welcome!</p>';
+                    htmlArea.value = settings.html || '';
+                    htmlArea.oninput = () => setSettingValue('html', htmlArea.value, true);
+                    properties.appendChild(makeRow('HTML', htmlArea));
+
+                    const cssArea = document.createElement('textarea');
+                    cssArea.placeholder = '.wrapper { color: #fff; }';
+                    cssArea.value = settings.scopedCss || '';
+                    cssArea.onchange = () => setSettingValue('scopedCss', cssArea.value.trim(), true);
+                    properties.appendChild(makeRow('Scoped CSS', cssArea));
+                    break;
+                }
+                case 'image': {
+                    const urlInput = document.createElement('input');
+                    urlInput.placeholder = 'https://example.com/image.png';
+                    urlInput.value = settings.url || '';
+                    urlInput.onchange = () => setSettingValue('url', urlInput.value.trim(), true);
+                    properties.appendChild(makeRow('Image URL', urlInput));
+
+                    const altInput = document.createElement('input');
+                    altInput.placeholder = 'Accessible alt text';
+                    altInput.value = settings.alt || '';
+                    altInput.onchange = () => setSettingValue('alt', altInput.value.trim(), true);
+                    properties.appendChild(makeRow('Alt Text', altInput));
+
+                    const captionInput = document.createElement('input');
+                    captionInput.placeholder = 'Caption';
+                    captionInput.value = settings.caption || '';
+                    captionInput.onchange = () => setSettingValue('caption', captionInput.value.trim(), true);
+                    properties.appendChild(makeRow('Caption', captionInput));
+
+                    const widthInput = document.createElement('input');
+                    widthInput.placeholder = 'Width (e.g. 320px or 100%)';
+                    widthInput.value = settings.width || '';
+                    widthInput.onchange = () => setSettingValue('width', widthInput.value.trim(), true);
+                    properties.appendChild(makeRow('Width', widthInput));
+
+                    const heightInput = document.createElement('input');
+                    heightInput.placeholder = 'Height (optional)';
+                    heightInput.value = settings.height || '';
+                    heightInput.onchange = () => setSettingValue('height', heightInput.value.trim(), true);
+                    properties.appendChild(makeRow('Height', heightInput));
+                    break;
+                }
+                case 'video': {
+                    const urlInput = document.createElement('input');
+                    urlInput.placeholder = 'https://player.vimeo.com/...';
+                    urlInput.value = settings.url || '';
+                    urlInput.onchange = () => setSettingValue('url', urlInput.value.trim(), true);
+                    properties.appendChild(makeRow('Video URL', urlInput));
+
+                    const posterInput = document.createElement('input');
+                    posterInput.placeholder = 'Poster image URL';
+                    posterInput.value = settings.poster || '';
+                    posterInput.onchange = () => setSettingValue('poster', posterInput.value.trim(), true);
+                    properties.appendChild(makeRow('Poster', posterInput));
+
+                    const captionInput = document.createElement('input');
+                    captionInput.placeholder = 'Caption';
+                    captionInput.value = settings.caption || '';
+                    captionInput.onchange = () => setSettingValue('caption', captionInput.value.trim(), true);
+                    properties.appendChild(makeRow('Caption', captionInput));
+
+                    const autoplayToggle = document.createElement('label');
+                    autoplayToggle.className = 'switch';
+                    const autoplayInput = document.createElement('input');
+                    autoplayInput.type = 'checkbox';
+                    autoplayInput.checked = !!settings.autoplay;
+                    autoplayInput.onchange = () => updateSettings(current => {
+                        const next = { ...current };
+                        if (autoplayInput.checked) next.autoplay = true;
+                        else delete next.autoplay;
+                        return next;
+                    });
+                    const autoplaySlider = document.createElement('span');
+                    autoplaySlider.className = 'slider';
+                    autoplayToggle.appendChild(autoplayInput);
+                    autoplayToggle.appendChild(autoplaySlider);
+                    properties.appendChild(makeRow('Autoplay', autoplayToggle));
+
+                    const loopToggle = document.createElement('label');
+                    loopToggle.className = 'switch';
+                    const loopInput = document.createElement('input');
+                    loopInput.type = 'checkbox';
+                    loopInput.checked = !!settings.loop;
+                    loopInput.onchange = () => updateSettings(current => {
+                        const next = { ...current };
+                        if (loopInput.checked) next.loop = true;
+                        else delete next.loop;
+                        return next;
+                    });
+                    const loopSlider = document.createElement('span');
+                    loopSlider.className = 'slider';
+                    loopToggle.appendChild(loopInput);
+                    loopToggle.appendChild(loopSlider);
+                    properties.appendChild(makeRow('Loop', loopToggle));
+                    break;
+                }
+                case 'divider': {
+                    const styleSelect = document.createElement('select');
+                    [
+                        { value: 'solid', label: 'Solid' },
+                        { value: 'dashed', label: 'Dashed' },
+                        { value: 'dotted', label: 'Dotted' },
+                        { value: 'double', label: 'Double' }
+                    ].forEach(opt => {
+                        const option = document.createElement('option');
+                        option.value = opt.value;
+                        option.textContent = opt.label;
+                        styleSelect.appendChild(option);
+                    });
+                    styleSelect.value = settings.style || 'solid';
+                    styleSelect.onchange = () => setSettingValue('style', styleSelect.value || 'solid');
+                    properties.appendChild(makeRow('Style', styleSelect));
+
+                    const colorInput = document.createElement('input');
+                    colorInput.placeholder = '#6cf0c2 or var(--accent)';
+                    colorInput.value = settings.color || '';
+                    colorInput.onchange = () => setSettingValue('color', colorInput.value.trim(), true);
+                    properties.appendChild(makeRow('Color', colorInput));
+
+                    const thicknessInput = document.createElement('input');
+                    thicknessInput.type = 'number';
+                    thicknessInput.min = '1';
+                    thicknessInput.value = settings.thickness ?? 1;
+                    thicknessInput.onchange = () => {
+                        const value = parseInt(thicknessInput.value, 10);
+                        updateSettings(current => {
+                            const next = { ...current };
+                            if (Number.isFinite(value) && value > 0) next.thickness = value;
+                            else delete next.thickness;
+                            return next;
+                        });
+                    };
+                    properties.appendChild(makeRow('Thickness (px)', thicknessInput));
+                    break;
+                }
+                case 'spacer': {
+                    const sizeSelect = document.createElement('select');
+                    [
+                        { value: 'sm', label: 'Small' },
+                        { value: 'md', label: 'Medium' },
+                        { value: 'lg', label: 'Large' }
+                    ].forEach(opt => {
+                        const option = document.createElement('option');
+                        option.value = opt.value;
+                        option.textContent = opt.label;
+                        sizeSelect.appendChild(option);
+                    });
+                    sizeSelect.value = settings.size || 'md';
+                    sizeSelect.onchange = () => setSettingValue('size', sizeSelect.value || 'md');
+                    properties.appendChild(makeRow('Preset Size', sizeSelect));
+
+                    const heightInput = document.createElement('input');
+                    heightInput.type = 'number';
+                    heightInput.min = '0';
+                    heightInput.placeholder = 'Custom height (px)';
+                    heightInput.value = settings.customHeight ?? '';
+                    heightInput.onchange = () => {
+                        const value = parseInt(heightInput.value, 10);
+                        updateSettings(current => {
+                            const next = { ...current };
+                            if (Number.isFinite(value) && value > 0) next.customHeight = value;
+                            else delete next.customHeight;
+                            return next;
+                        });
+                    };
+                    properties.appendChild(makeRow('Custom Height', heightInput));
+                    break;
+                }
+                case 'matrix': {
+                    const rowsArea = document.createElement('textarea');
+                    rowsArea.placeholder = 'row_id|Row label';
+                    rowsArea.value = (settings.rows ?? []).map(row => `${row.id}|${row.label}`).join('\n');
+                    rowsArea.onchange = () => {
+                        const latest = getLatestQuestion();
+                        const existingRows = Array.isArray(latest?.settings?.rows) ? latest.settings.rows : (settings.rows ?? []);
+                        const lines = rowsArea.value.split('\n').map(x => x.trim()).filter(Boolean);
+                        const rows = lines.length ? lines.map((line, idx) => {
+                            const [idPart, labelPart] = line.includes('|') ? line.split('|') : [line, line];
+                            const existing = existingRows[idx];
+                            const id = (idPart || '').trim() || existing?.id || createTempId();
+                            const label = (labelPart || '').trim() || existing?.label || `Row ${idx + 1}`;
+                            return { id, label };
+                        }) : (existingRows.length ? existingRows : [{ id: createTempId(), label: 'Row 1' }]);
+                        updateSettings(current => ({ ...current, rows }));
+                    };
+                    properties.appendChild(makeRow('Rows', rowsArea));
+
+                    const colsArea = document.createElement('textarea');
+                    colsArea.placeholder = 'col_id|Column label|type';
+                    colsArea.value = (settings.columns ?? []).map(col => `${col.id}|${col.label}|${col.type ?? ''}`).join('\n');
+                    colsArea.onchange = () => {
+                        const latest = getLatestQuestion();
+                        const existingCols = Array.isArray(latest?.settings?.columns) ? latest.settings.columns : (settings.columns ?? []);
+                        const lines = colsArea.value.split('\n').map(x => x.trim()).filter(Boolean);
+                        const columns = lines.length ? lines.map((line, idx) => {
+                            const parts = line.split('|');
+                            const idPart = (parts[0] || '').trim();
+                            const labelPart = (parts[1] || '').trim();
+                            const typePart = (parts[2] || '').trim();
+                            const existing = existingCols[idx];
+                            const id = idPart || existing?.id || createTempId();
+                            const label = labelPart || existing?.label || `Column ${idx + 1}`;
+                            const type = typePart || existing?.type || settings.cellType || 'text';
+                            return { id, label, type };
+                        }) : (existingCols.length ? existingCols : [{ id: createTempId(), label: 'Column 1', type: settings.cellType || 'text' }]);
+                        updateSettings(current => ({ ...current, columns }));
+                    };
+                    properties.appendChild(makeRow('Columns', colsArea));
+
+                    const cellTypeInput = document.createElement('input');
+                    cellTypeInput.placeholder = 'Default cell type (e.g. text, radio)';
+                    cellTypeInput.value = settings.cellType || 'text';
+                    cellTypeInput.onchange = () => setSettingValue('cellType', cellTypeInput.value.trim(), true);
+                    properties.appendChild(makeRow('Default Cell Type', cellTypeInput));
+                    break;
+                }
+                case 'file': {
+                    const allowedArea = document.createElement('textarea');
+                    allowedArea.placeholder = 'image/*,application/pdf';
+                    allowedArea.value = Array.isArray(settings.allowedTypes) ? settings.allowedTypes.join('\n') : '';
+                    allowedArea.onchange = () => {
+                        const tokens = allowedArea.value.split(/[,\n]/).map(x => x.trim()).filter(Boolean);
+                        updateSettings(current => {
+                            const next = { ...current };
+                            if (tokens.length) next.allowedTypes = tokens;
+                            else delete next.allowedTypes;
+                            return next;
+                        });
+                    };
+                    properties.appendChild(makeRow('Allowed Types', allowedArea));
+
+                    const maxSizeInput = document.createElement('input');
+                    maxSizeInput.type = 'number';
+                    maxSizeInput.min = '0';
+                    maxSizeInput.step = '0.5';
+                    maxSizeInput.placeholder = 'Max size (MB)';
+                    maxSizeInput.value = settings.maxFileSize ? (settings.maxFileSize / (1024 * 1024)).toFixed(1).replace(/\.0$/, '') : '';
+                    maxSizeInput.onchange = () => {
+                        const value = parseFloat(maxSizeInput.value);
+                        updateSettings(current => {
+                            const next = { ...current };
+                            if (Number.isFinite(value) && value > 0) next.maxFileSize = Math.round(value * 1024 * 1024);
+                            else delete next.maxFileSize;
+                            return next;
+                        });
+                    };
+                    properties.appendChild(makeRow('Max File Size (MB)', maxSizeInput));
+
+                    const maxFilesInput = document.createElement('input');
+                    maxFilesInput.type = 'number';
+                    maxFilesInput.min = '1';
+                    maxFilesInput.placeholder = 'Max files';
+                    maxFilesInput.value = settings.maxFiles ?? '';
+                    maxFilesInput.onchange = () => {
+                        const value = parseInt(maxFilesInput.value, 10);
+                        updateSettings(current => {
+                            const next = { ...current };
+                            if (Number.isFinite(value) && value > 0) next.maxFiles = value;
+                            else delete next.maxFiles;
+                            return next;
+                        });
+                    };
+                    properties.appendChild(makeRow('Max Files', maxFilesInput));
+                    break;
+                }
+                case 'signature': {
+                    const bgInput = document.createElement('input');
+                    bgInput.placeholder = '#ffffff';
+                    bgInput.value = settings.backgroundColor || '';
+                    bgInput.onchange = () => setSettingValue('backgroundColor', bgInput.value.trim(), true);
+                    properties.appendChild(makeRow('Background Color', bgInput));
+
+                    const penInput = document.createElement('input');
+                    penInput.placeholder = '#000000';
+                    penInput.value = settings.penColor || '';
+                    penInput.onchange = () => setSettingValue('penColor', penInput.value.trim(), true);
+                    properties.appendChild(makeRow('Pen Color', penInput));
+
+                    const guideToggle = document.createElement('label');
+                    guideToggle.className = 'switch';
+                    const guideInput = document.createElement('input');
+                    guideInput.type = 'checkbox';
+                    guideInput.checked = settings.showGuideline !== false;
+                    guideInput.onchange = () => updateSettings(current => {
+                        const next = { ...current };
+                        next.showGuideline = guideInput.checked;
+                        return next;
+                    });
+                    const guideSlider = document.createElement('span');
+                    guideSlider.className = 'slider';
+                    guideToggle.appendChild(guideInput);
+                    guideToggle.appendChild(guideSlider);
+                    properties.appendChild(makeRow('Show Guideline', guideToggle));
+                    break;
+                }
+                case 'rating_stars': {
+                    const starsInput = document.createElement('input');
+                    starsInput.type = 'number';
+                    starsInput.min = '1';
+                    starsInput.max = '10';
+                    starsInput.value = settings.stars ?? 5;
+                    starsInput.onchange = () => {
+                        const value = parseInt(starsInput.value, 10);
+                        updateSettings(current => {
+                            const next = { ...current };
+                            if (Number.isFinite(value) && value > 0) next.stars = value;
+                            else delete next.stars;
+                            return next;
+                        });
+                    };
+                    properties.appendChild(makeRow('Stars', starsInput));
+
+                    const iconInput = document.createElement('input');
+                    iconInput.placeholder = 'Icon name';
+                    iconInput.value = settings.icon || 'star';
+                    iconInput.onchange = () => setSettingValue('icon', iconInput.value.trim(), true);
+                    properties.appendChild(makeRow('Icon', iconInput));
+
+                    const labelsToggle = document.createElement('label');
+                    labelsToggle.className = 'switch';
+                    const labelsInput = document.createElement('input');
+                    labelsInput.type = 'checkbox';
+                    labelsInput.checked = !!settings.showLabels;
+                    labelsInput.onchange = () => updateSettings(current => {
+                        const next = { ...current };
+                        if (labelsInput.checked) next.showLabels = true;
+                        else delete next.showLabels;
+                        return next;
+                    });
+                    const labelsSlider = document.createElement('span');
+                    labelsSlider.className = 'slider';
+                    labelsToggle.appendChild(labelsInput);
+                    labelsToggle.appendChild(labelsSlider);
+                    properties.appendChild(makeRow('Show Labels', labelsToggle));
+                    break;
+                }
+                default:
+                    break;
+            }
+
+            if (showValidations) {
+                const validationsArea = document.createElement('textarea');
+                validationsArea.placeholder = 'One validation per line (e.g. min:1)';
+                validationsArea.value = (question.validations || []).join('\n');
+                validationsArea.onchange = () => {
+                    const items = validationsArea.value.split('\n').map(x => x.trim()).filter(Boolean);
+                    store.updateQuestion(question.id, { validations: items });
+                };
+                properties.appendChild(makeRow('Validations', validationsArea));
+            }
 
             const visibleIfInput = document.createElement('input');
             visibleIfInput.placeholder = "e.g. status = 'active'";
             visibleIfInput.value = question.visibleIf || '';
             visibleIfInput.onchange = () => store.updateQuestion(question.id, { visibleIf: visibleIfInput.value.trim() });
             properties.appendChild(makeRow('Visible If', visibleIfInput));
+        }
+
+        function renderPreview(state) {
+            if (!previewForm) return;
+            previewForm.innerHTML = '';
+
+            const sections = state.sections.slice().sort((a, b) => a.order - b.order);
+            const questionsBySection = new Map();
+            state.questions.forEach(question => {
+                const key = question.sectionId ?? null;
+                if (!questionsBySection.has(key)) questionsBySection.set(key, []);
+                questionsBySection.get(key).push(question);
+            });
+            questionsBySection.forEach(list => list.sort((a, b) => a.order - b.order));
+
+            if (sections.length === 0 && !(questionsBySection.get(null)?.length)) {
+                const empty = document.createElement('div');
+                empty.className = 'preview-empty';
+                empty.textContent = 'Add sections to preview the survey.';
+                previewForm.appendChild(empty);
+                return;
+            }
+
+            sections.forEach(section => {
+                const sectionEl = document.createElement('div');
+                sectionEl.className = 'preview-section';
+
+                const heading = document.createElement('h3');
+                heading.textContent = section.title;
+                sectionEl.appendChild(heading);
+
+                const questionsEl = document.createElement('div');
+                questionsEl.className = 'preview-questions';
+
+                const questions = questionsBySection.get(section.id) ?? [];
+                if (questions.length === 0) {
+                    const placeholder = document.createElement('small');
+                    placeholder.textContent = 'No questions yet.';
+                    questionsEl.appendChild(placeholder);
+                } else {
+                    questions.forEach(question => {
+                        questionsEl.appendChild(renderPreviewQuestion(question));
+                    });
+                }
+
+                sectionEl.appendChild(questionsEl);
+                previewForm.appendChild(sectionEl);
+            });
+
+            const unassigned = questionsBySection.get(null) ?? [];
+            if (unassigned.length > 0) {
+                const sectionEl = document.createElement('div');
+                sectionEl.className = 'preview-section';
+
+                const heading = document.createElement('h3');
+                heading.textContent = 'Ungrouped Questions';
+                sectionEl.appendChild(heading);
+
+                const questionsEl = document.createElement('div');
+                questionsEl.className = 'preview-questions';
+                unassigned.forEach(question => {
+                    questionsEl.appendChild(renderPreviewQuestion(question));
+                });
+
+                sectionEl.appendChild(questionsEl);
+                previewForm.appendChild(sectionEl);
+            }
+        }
+
+        function renderPreviewQuestion(question) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'preview-question';
+            const settings = question.settings || {};
+            const label = paletteLabelMap.get(question.type) || question.type.toUpperCase();
+
+            switch (question.type) {
+                case 'static_text': {
+                    wrapper.classList.add('preview-static');
+                    const textBlock = document.createElement('p');
+                    textBlock.textContent = (settings.text || '').toString() || 'Static text';
+                    if (settings.alignment) textBlock.style.textAlign = settings.alignment;
+                    wrapper.appendChild(textBlock);
+                    break;
+                }
+                case 'static_html': {
+                    wrapper.classList.add('preview-static');
+                    const htmlBlock = document.createElement('div');
+                    htmlBlock.innerHTML = settings.html || '<em style="color:var(--muted)">Empty HTML</em>';
+                    wrapper.appendChild(htmlBlock);
+                    break;
+                }
+                case 'image': {
+                    wrapper.classList.add('preview-static');
+                    const figure = document.createElement('figure');
+                    figure.style.margin = '0';
+                    const img = document.createElement('img');
+                    img.style.maxWidth = '100%';
+                    if (settings.url) {
+                        img.src = settings.url;
+                    } else {
+                        img.alt = 'Image URL not set';
+                    }
+                    if (settings.alt) img.alt = settings.alt;
+                    if (settings.width) img.style.width = settings.width;
+                    if (settings.height) img.style.height = settings.height;
+                    figure.appendChild(img);
+                    if (settings.caption) {
+                        const figcaption = document.createElement('figcaption');
+                        figcaption.textContent = settings.caption;
+                        figcaption.style.fontSize = '12px';
+                        figcaption.style.color = 'var(--muted)';
+                        figure.appendChild(figcaption);
+                    }
+                    wrapper.appendChild(figure);
+                    break;
+                }
+                case 'video': {
+                    wrapper.classList.add('preview-static');
+                    const video = document.createElement('video');
+                    video.controls = true;
+                    video.style.maxWidth = '100%';
+                    if (settings.poster) video.poster = settings.poster;
+                    if (settings.autoplay) video.autoplay = true;
+                    if (settings.loop) video.loop = true;
+                    if (settings.url) {
+                        const source = document.createElement('source');
+                        source.src = settings.url;
+                        video.appendChild(source);
+                    } else {
+                        video.innerHTML = '<source />';
+                    }
+                    wrapper.appendChild(video);
+                    if (settings.caption) {
+                        const caption = document.createElement('div');
+                        caption.textContent = settings.caption;
+                        caption.style.fontSize = '12px';
+                        caption.style.color = 'var(--muted)';
+                        wrapper.appendChild(caption);
+                    }
+                    break;
+                }
+                case 'divider': {
+                    wrapper.classList.add('preview-static');
+                    const hr = document.createElement('hr');
+                    hr.className = 'preview-divider';
+                    if (settings.color) hr.style.borderTopColor = settings.color;
+                    if (settings.thickness) hr.style.borderTopWidth = `${settings.thickness}px`;
+                    if (settings.style) hr.style.borderTopStyle = settings.style;
+                    wrapper.appendChild(hr);
+                    break;
+                }
+                case 'spacer': {
+                    wrapper.classList.add('preview-static');
+                    const space = document.createElement('div');
+                    space.className = 'preview-spacer';
+                    const sizeMap = { sm: 16, md: 28, lg: 44 };
+                    const height = settings.customHeight ?? sizeMap[settings.size] ?? 28;
+                    space.style.height = `${height}px`;
+                    wrapper.appendChild(space);
+                    break;
+                }
+                case 'matrix': {
+                    const labelEl = document.createElement('label');
+                    labelEl.textContent = question.prompt || label;
+                    wrapper.appendChild(labelEl);
+                    const table = document.createElement('table');
+                    table.className = 'preview-matrix';
+                    const header = document.createElement('tr');
+                    header.appendChild(document.createElement('th'));
+                    (settings.columns ?? []).forEach(col => {
+                        const th = document.createElement('th');
+                        th.textContent = col.label || col.id;
+                        header.appendChild(th);
+                    });
+                    table.appendChild(header);
+                    (settings.rows ?? []).forEach(row => {
+                        const tr = document.createElement('tr');
+                        const th = document.createElement('th');
+                        th.textContent = row.label || row.id;
+                        tr.appendChild(th);
+                        const columns = settings.columns ?? [];
+                        if (columns.length === 0) {
+                            const td = document.createElement('td');
+                            td.textContent = '—';
+                            tr.appendChild(td);
+                        } else {
+                            columns.forEach(() => {
+                                const td = document.createElement('td');
+                                td.textContent = '○';
+                                tr.appendChild(td);
+                            });
+                        }
+                        table.appendChild(tr);
+                    });
+                    wrapper.appendChild(table);
+                    break;
+                }
+                case 'file': {
+                    const labelEl = document.createElement('label');
+                    labelEl.textContent = question.prompt || label;
+                    wrapper.appendChild(labelEl);
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.disabled = true;
+                    if (Array.isArray(settings.allowedTypes) && settings.allowedTypes.length) {
+                        input.accept = settings.allowedTypes.join(',');
+                    }
+                    if ((settings.maxFiles ?? 1) > 1) input.multiple = true;
+                    wrapper.appendChild(input);
+                    break;
+                }
+                case 'signature': {
+                    const labelEl = document.createElement('label');
+                    labelEl.textContent = question.prompt || label;
+                    wrapper.appendChild(labelEl);
+                    const pad = document.createElement('div');
+                    pad.textContent = 'Signature pad preview';
+                    pad.style.border = '1px dashed rgba(255,255,255,.25)';
+                    pad.style.borderRadius = '8px';
+                    pad.style.height = '120px';
+                    pad.style.display = 'flex';
+                    pad.style.alignItems = 'center';
+                    pad.style.justifyContent = 'center';
+                    pad.style.background = settings.backgroundColor || 'rgba(255,255,255,.05)';
+                    pad.style.color = settings.penColor || 'var(--muted)';
+                    wrapper.appendChild(pad);
+                    break;
+                }
+                case 'rating_stars': {
+                    const labelEl = document.createElement('label');
+                    labelEl.textContent = question.prompt || label;
+                    wrapper.appendChild(labelEl);
+                    const rating = document.createElement('div');
+                    rating.className = 'preview-rating';
+                    const total = settings.stars ?? 5;
+                    for (let i = 0; i < total; i++) {
+                        const star = document.createElement('span');
+                        star.textContent = '★';
+                        rating.appendChild(star);
+                    }
+                    wrapper.appendChild(rating);
+                    break;
+                }
+                default: {
+                    const labelEl = document.createElement('label');
+                    labelEl.textContent = question.prompt || label;
+                    wrapper.appendChild(labelEl);
+                    const control = createPreviewControl(question);
+                    if (control) wrapper.appendChild(control);
+                    break;
+                }
+            }
+
+            return wrapper;
+        }
+
+        function createPreviewControl(question) {
+            const controlType = question.type;
+            switch (controlType) {
+                case 'text': {
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.disabled = true;
+                    input.placeholder = 'Short answer';
+                    return input;
+                }
+                case 'phone': {
+                    const input = document.createElement('input');
+                    input.type = 'tel';
+                    input.disabled = true;
+                    input.placeholder = '+266 …';
+                    return input;
+                }
+                case 'number': {
+                    const input = document.createElement('input');
+                    input.type = 'number';
+                    input.disabled = true;
+                    return input;
+                }
+                case 'date': {
+                    const input = document.createElement('input');
+                    input.type = 'date';
+                    input.disabled = true;
+                    return input;
+                }
+                case 'boolean':
+                case 'single':
+                case 'likert':
+                case 'nps': {
+                    return createChoiceList(question, 'radio');
+                }
+                case 'multi': {
+                    return createChoiceList(question, 'checkbox');
+                }
+                default: {
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.disabled = true;
+                    return input;
+                }
+            }
+        }
+
+        function createChoiceList(question, inputType) {
+            const container = document.createElement('div');
+            container.className = 'preview-choice-list';
+            const choices = question.choices ?? [];
+            if (choices.length === 0) {
+                const placeholder = document.createElement('span');
+                placeholder.style.color = 'var(--muted)';
+                placeholder.textContent = 'No options defined';
+                container.appendChild(placeholder);
+                return container;
+            }
+            choices.forEach(choice => {
+                const item = document.createElement('label');
+                const input = document.createElement('input');
+                input.type = inputType;
+                input.disabled = true;
+                if (inputType === 'radio') input.name = question.id;
+                if (inputType === 'checkbox') input.name = `${question.id}[]`;
+                item.appendChild(input);
+                const span = document.createElement('span');
+                span.textContent = choice.label || choice.value;
+                item.appendChild(span);
+                container.appendChild(item);
+            });
+            return container;
         }
 
         function renderJson() {
@@ -748,6 +1647,7 @@
             if (document.activeElement !== surveyCodeInput) surveyCodeInput.value = state.code ?? '';
             renderCanvas(state);
             renderProperties(state);
+            renderPreview(state);
             renderJson();
             highlightSelection();
         });
