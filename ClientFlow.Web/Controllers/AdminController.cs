@@ -358,11 +358,19 @@ public class AdminController(
     public record AddQuestionReq(
         Guid SectionId,
         string Type,
-        string Prompt,
+        string? Prompt,
         string Key,
         bool Required = false,
         int Order = 0,
         string? SettingsJson = null);
+
+    public record UpdateQuestionReq(
+        string? Prompt,
+        bool? Required,
+        int? Order,
+        string? SettingsJson,
+        Guid? SectionId,
+        string? Type);
 
     // POST /api/admin/surveys/{code}/questions
     // POST /api/admin/surveys/{code}/questions
@@ -377,8 +385,27 @@ public class AdminController(
         if (s is null) return NotFound();
 
         // ensure key uniqueness inside survey
-        if (s.Questions.Any(q => q.Key.Equals(req.Key, StringComparison.OrdinalIgnoreCase)))
+        if (string.IsNullOrWhiteSpace(req.Key))
+            return BadRequest("Key is required.");
+
+        var key = req.Key.Trim();
+
+        if (s.Questions.Any(q => q.Key.Equals(key, StringComparison.OrdinalIgnoreCase)))
             return Conflict("Key already used in this survey.");
+
+        var section = s.Sections.FirstOrDefault(sec => sec.Id == req.SectionId);
+        if (section is null)
+            return BadRequest("Section does not belong to this survey.");
+
+        if (string.IsNullOrWhiteSpace(req.Type))
+            return BadRequest("Type is required.");
+
+        var type = req.Type.Trim();
+        var isStatic = type.StartsWith("static_", StringComparison.OrdinalIgnoreCase);
+
+        var prompt = req.Prompt?.Trim();
+        if (!isStatic && string.IsNullOrWhiteSpace(prompt))
+            return BadRequest("Prompt is required for non static question types.");
 
         var q = new Question
         {
@@ -386,14 +413,97 @@ public class AdminController(
             SurveyId = s.Id,
             SectionId = req.SectionId,
             Order = req.Order,
-            Type = req.Type,
-            Prompt = req.Prompt,
-            Key = req.Key,
-            Required = req.Required,
+            Type = type,
+            Prompt = prompt ?? string.Empty,
+            Key = key,
+            Required = isStatic ? false : req.Required,
             SettingsJson = req.SettingsJson
         };
 
         await questions.AddAsync(q, ct);   // <-- guarantees EntityState.Added → INSERT
+        await uow.SaveChangesAsync(ct);
+        return NoContent();
+    }
+
+    [HttpPut("questions/{id:guid}")]
+    public async Task<IActionResult> UpdateQuestion(
+        Guid id,
+        [FromBody] UpdateQuestionReq req,
+        [FromServices] IQuestionRepository questions,
+        [FromServices] ISectionRepository sectionsRepo,
+        CancellationToken ct)
+    {
+        var question = await questions.GetByIdAsync(id, ct);
+        if (question is null) return NotFound();
+
+        if (req.Type is not null)
+        {
+            if (string.IsNullOrWhiteSpace(req.Type))
+                return BadRequest("Type cannot be empty.");
+
+            question.Type = req.Type.Trim();
+        }
+
+        var isStatic = question.Type.StartsWith("static_", StringComparison.OrdinalIgnoreCase);
+
+        if (req.Prompt is not null)
+        {
+            var prompt = req.Prompt.Trim();
+            if (!isStatic && string.IsNullOrWhiteSpace(prompt))
+                return BadRequest("Prompt is required for non static question types.");
+
+            question.Prompt = string.IsNullOrWhiteSpace(prompt) ? string.Empty : prompt;
+        }
+        else if (!isStatic && string.IsNullOrWhiteSpace(question.Prompt))
+        {
+            return BadRequest("Prompt is required for non static question types.");
+        }
+
+        if (req.Required.HasValue)
+            question.Required = req.Required.Value;
+
+        if (req.Order.HasValue)
+            question.Order = req.Order.Value;
+
+        if (req.SettingsJson is not null)
+            question.SettingsJson = req.SettingsJson;
+
+        if (req.SectionId.HasValue)
+        {
+            var section = await sectionsRepo.GetByIdAsync(req.SectionId.Value, ct);
+            if (section is null) return NotFound("Section not found.");
+            if (section.SurveyId != question.SurveyId)
+                return Conflict("Section does not belong to the same survey.");
+
+            question.SectionId = section.Id;
+        }
+
+        if (isStatic)
+            question.Required = false;
+
+        await uow.SaveChangesAsync(ct);
+        return NoContent();
+    }
+
+    [HttpDelete("questions/{id:guid}")]
+    public async Task<IActionResult> DeleteQuestion(
+        Guid id,
+        [FromServices] IQuestionRepository questions,
+        CancellationToken ct)
+    {
+        var question = await questions.GetByIdAsync(id, ct);
+        if (question is null) return NotFound();
+
+        var optionList = await options.GetByQuestionIdsAsync(new[] { id }, ct);
+        if (optionList.Count > 0)
+            options.RemoveRange(optionList);
+
+        var ruleList = await rules.GetBySurveyIdAsync(question.SurveyId, ct);
+        var rulesToRemove = ruleList.Where(r => r.SourceQuestionId == id).ToList();
+        if (rulesToRemove.Count > 0)
+            rules.RemoveRange(rulesToRemove);
+
+        questions.Remove(question);
         await uow.SaveChangesAsync(ct);
         return NoContent();
     }
