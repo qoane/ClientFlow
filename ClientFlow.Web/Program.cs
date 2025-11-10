@@ -28,6 +28,7 @@ builder.Services.AddScoped<ISurveyRepository, SurveyRepository>();
 builder.Services.AddScoped<IResponseRepository, ResponseRepository>();
 builder.Services.AddScoped<IOptionRepository, OptionRepository>();
 builder.Services.AddScoped<IRuleRepository, RuleRepository>();
+builder.Services.AddScoped<ISurveyVersionRepository, SurveyVersionRepository>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<SurveyService>();
 builder.Services.AddScoped<ISectionRepository, SectionRepository>();

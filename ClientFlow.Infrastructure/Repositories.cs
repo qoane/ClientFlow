@@ -151,4 +151,35 @@ namespace ClientFlow.Infrastructure.Repositories
         public void Remove(Question question)
             => _db.Questions.Remove(question);
     }
+
+    public sealed class SurveyVersionRepository : ISurveyVersionRepository
+    {
+        private readonly AppDbContext _db;
+        public SurveyVersionRepository(AppDbContext db) => _db = db;
+
+        public Task AddAsync(SurveyVersion version, CancellationToken ct = default)
+            => _db.SurveyVersions.AddAsync(version, ct).AsTask();
+
+        public Task<List<SurveyVersion>> GetBySurveyIdAsync(Guid surveyId, CancellationToken ct = default)
+            => _db.SurveyVersions
+                .AsNoTracking()
+                .Where(v => v.SurveyId == surveyId)
+                .OrderByDescending(v => v.Version)
+                .ToListAsync(ct);
+
+        public Task<SurveyVersion?> GetBySurveyAndVersionAsync(Guid surveyId, int version, CancellationToken ct = default)
+            => _db.SurveyVersions
+                .AsNoTracking()
+                .FirstOrDefaultAsync(v => v.SurveyId == surveyId && v.Version == version, ct);
+
+        public async Task<int> GetMaxVersionAsync(Guid surveyId, CancellationToken ct = default)
+        {
+            var existing = await _db.SurveyVersions
+                .Where(v => v.SurveyId == surveyId)
+                .Select(v => (int?)v.Version)
+                .MaxAsync(ct);
+
+            return existing ?? 0;
+        }
+    }
 }

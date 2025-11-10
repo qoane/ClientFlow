@@ -14,6 +14,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<QuestionOption> Options => Set<QuestionOption>();
     public DbSet<QuestionRule> Rules => Set<QuestionRule>();
     public DbSet<ResponseSession> Sessions => Set<ResponseSession>();
+    public DbSet<SurveyVersion> SurveyVersions => Set<SurveyVersion>();
 
     // Kiosk feedback tables
     public DbSet<ClientFlow.Domain.Feedback.Staff> Staff => Set<ClientFlow.Domain.Feedback.Staff>();
@@ -55,6 +56,14 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         b.Entity<Answer>()
             .Property(a => a.ValueNumber)
             .HasPrecision(10, 2);
+
+        b.Entity<SurveyVersion>(e =>
+        {
+            e.ToTable("SurveyVersions");
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => new { x.SurveyId, x.Version }).IsUnique();
+            e.Property(x => x.DefinitionJson).HasColumnType("nvarchar(max)");
+        });
 
         // ---- Seed Liberty survey ----
         var surveyId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
