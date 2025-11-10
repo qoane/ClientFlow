@@ -2,7 +2,10 @@
 using ClientFlow.Application.Services;
 using ClientFlow.Domain.Surveys;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Text;
+using System.Text.Json;
+using ClientFlow.Infrastructure;
 
 namespace ClientFlow.Web.Controllers;
 
@@ -109,6 +112,216 @@ public class AdminController(
     {
         var def = await svc.GetDefinitionByCodeAsync(code, ct);
         return Ok(def ?? (object)new { });   // cast makes both sides 'object'
+    }
+
+
+    public record DesignerThemeDto(string? Accent, string? Panel);
+    public record DesignerSectionDto(Guid? Id, string? Title, int Order, int Columns);
+    public record DesignerOptionDto(Guid? Id, Guid QuestionId, string Value, string Label, int Order);
+    public record DesignerQuestionDto(
+        Guid? Id,
+        Guid? SectionId,
+        string Type,
+        string Prompt,
+        string Key,
+        bool Required,
+        int Order,
+        Dictionary<string, object?>? Settings,
+        List<DesignerOptionDto>? Choices,
+        List<string>? Validations,
+        string? Visibility);
+    public record DesignerRuleDto(Guid? Id, Guid SourceQuestionId, string Condition, string Action);
+    public record SaveSurveyDefinitionReq(
+        string? Code,
+        string? Title,
+        string? Description,
+        DesignerThemeDto? Theme,
+        List<DesignerSectionDto> Sections,
+        List<DesignerQuestionDto> Questions,
+        List<DesignerOptionDto>? Options,
+        List<DesignerRuleDto>? Rules);
+
+    [HttpPut("surveys/{code}/definition")]
+    public async Task<IActionResult> SaveDefinition(
+        string code,
+        [FromBody] SaveSurveyDefinitionReq req,
+        [FromServices] AppDbContext db,
+        CancellationToken ct)
+    {
+        var survey = await db.Surveys
+            .Include(s => s.Sections)
+            .Include(s => s.Questions)
+            .FirstOrDefaultAsync(s => s.Code == code, ct);
+
+        if (survey is null) return NotFound();
+
+        var existingQuestionIds = survey.Questions.Select(q => q.Id).ToList();
+        if (existingQuestionIds.Count > 0)
+        {
+            var existingOptions = await db.Options.Where(o => existingQuestionIds.Contains(o.QuestionId)).ToListAsync(ct);
+            db.Options.RemoveRange(existingOptions);
+        }
+
+        var existingRules = await db.Rules.Where(r => r.SurveyId == survey.Id).ToListAsync(ct);
+        db.Rules.RemoveRange(existingRules);
+
+        db.Questions.RemoveRange(survey.Questions);
+        db.Sections.RemoveRange(survey.Sections);
+        await db.SaveChangesAsync(ct);
+
+        var sectionMap = new Dictionary<Guid, Guid>();
+        var sectionEntities = new List<SurveySection>();
+        if (req.Sections is { Count: > 0 })
+        {
+            var orderedSections = req.Sections
+                .OrderBy(s => s.Order)
+                .Select((sec, index) => (sec, index));
+
+            foreach (var (sec, idx) in orderedSections)
+            {
+                var id = sec.Id ?? Guid.NewGuid();
+                sectionMap[id] = id;
+                sectionEntities.Add(new SurveySection
+                {
+                    Id = id,
+                    SurveyId = survey.Id,
+                    Title = string.IsNullOrWhiteSpace(sec.Title) ? $"Section {idx + 1}" : sec.Title.Trim(),
+                    Order = idx + 1,
+                    Columns = sec.Columns <= 0 ? 1 : Math.Min(sec.Columns, 2)
+                });
+            }
+        }
+
+        var questionEntities = new List<Question>();
+        var questionMap = new Dictionary<Guid, Guid>();
+        if (req.Questions is { Count: > 0 })
+        {
+            var orderedQuestions = req.Questions
+                .OrderBy(q => q.Order)
+                .Select((question, index) => (question, index));
+
+            foreach (var (q, idx) in orderedQuestions)
+            {
+                var qId = q.Id ?? Guid.NewGuid();
+                questionMap[qId] = qId;
+
+                Guid? sectionId = null;
+                if (q.SectionId.HasValue)
+                {
+                    sectionId = sectionMap.TryGetValue(q.SectionId.Value, out var mapped) ? mapped : q.SectionId;
+                }
+
+                Dictionary<string, object?>? settingsDict = null;
+                if (q.Settings is { Count: > 0 })
+                {
+                    settingsDict = new Dictionary<string, object?>(q.Settings, StringComparer.OrdinalIgnoreCase);
+                    settingsDict.Remove("choices");
+                }
+                if (q.Validations is { Count: > 0 })
+                {
+                    settingsDict ??= new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+                    settingsDict["validations"] = q.Validations;
+                }
+                if (!string.IsNullOrWhiteSpace(q.Visibility))
+                {
+                    settingsDict ??= new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+                    settingsDict["visibility"] = q.Visibility.Trim();
+                }
+
+                questionEntities.Add(new Question
+                {
+                    Id = qId,
+                    SurveyId = survey.Id,
+                    SectionId = sectionId,
+                    Type = q.Type,
+                    Prompt = q.Prompt,
+                    Key = q.Key,
+                    Required = q.Required,
+                    Order = idx + 1,
+                    SettingsJson = settingsDict is { Count: > 0 }
+                        ? JsonSerializer.Serialize(settingsDict)
+                        : null
+                });
+            }
+        }
+
+        var optionEntities = new List<QuestionOption>();
+        if (req.Options is { Count: > 0 })
+        {
+            foreach (var opt in req.Options.OrderBy(o => o.Order))
+            {
+                var targetQuestionId = questionMap.TryGetValue(opt.QuestionId, out var mapped) ? mapped : opt.QuestionId;
+                optionEntities.Add(new QuestionOption
+                {
+                    Id = opt.Id ?? Guid.NewGuid(),
+                    QuestionId = targetQuestionId,
+                    Value = opt.Value,
+                    Label = opt.Label,
+                    Order = opt.Order
+                });
+            }
+        }
+        else if (req.Questions is { Count: > 0 })
+        {
+            foreach (var q in req.Questions)
+            {
+                if (q.Choices is not { Count: > 0 }) continue;
+                foreach (var (choice, index) in q.Choices.Select((c, i) => (c, i)))
+                {
+                    var targetQuestionId = questionMap.TryGetValue(q.Id ?? Guid.Empty, out var mapped)
+                        ? mapped
+                        : (q.Id ?? Guid.Empty);
+                    if (targetQuestionId == Guid.Empty) continue;
+                    optionEntities.Add(new QuestionOption
+                    {
+                        Id = choice.Id ?? Guid.NewGuid(),
+                        QuestionId = targetQuestionId,
+                        Value = choice.Value,
+                        Label = choice.Label,
+                        Order = choice.Order != 0 ? choice.Order : index + 1
+                    });
+                }
+            }
+        }
+
+        var ruleEntities = new List<QuestionRule>();
+        if (req.Rules is { Count: > 0 })
+        {
+            foreach (var rule in req.Rules)
+            {
+                var sourceId = questionMap.TryGetValue(rule.SourceQuestionId, out var mapped)
+                    ? mapped
+                    : rule.SourceQuestionId;
+                ruleEntities.Add(new QuestionRule
+                {
+                    Id = rule.Id ?? Guid.NewGuid(),
+                    SurveyId = survey.Id,
+                    SourceQuestionId = sourceId,
+                    Condition = rule.Condition,
+                    Action = rule.Action
+                });
+            }
+        }
+
+        if (sectionEntities.Count > 0)
+            await db.Sections.AddRangeAsync(sectionEntities, ct);
+        if (questionEntities.Count > 0)
+            await db.Questions.AddRangeAsync(questionEntities, ct);
+        if (optionEntities.Count > 0)
+            await db.Options.AddRangeAsync(optionEntities, ct);
+        if (ruleEntities.Count > 0)
+            await db.Rules.AddRangeAsync(ruleEntities, ct);
+
+        if (!string.IsNullOrWhiteSpace(req.Title)) survey.Title = req.Title.Trim();
+        if (req.Description is not null) survey.Description = req.Description;
+        if (req.Theme is not null)
+        {
+            if (!string.IsNullOrWhiteSpace(req.Theme.Accent)) survey.ThemeAccent = req.Theme.Accent.Trim();
+            if (!string.IsNullOrWhiteSpace(req.Theme.Panel)) survey.ThemePanel = req.Theme.Panel.Trim();
+        }
+
+        await db.SaveChangesAsync(ct);
+        return NoContent();
     }
 
 
