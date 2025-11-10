@@ -55,6 +55,9 @@ namespace ClientFlow.Infrastructure.Repositories
 
         public Task AddAsync(QuestionOption option, CancellationToken ct = default)
             => _db.Options.AddAsync(option, ct).AsTask();   // <-- implements the missing method
+
+        public void RemoveRange(IEnumerable<QuestionOption> options)
+            => _db.Options.RemoveRange(options);
     }
 
     public sealed class RuleRepository : IRuleRepository
@@ -70,6 +73,9 @@ namespace ClientFlow.Infrastructure.Repositories
 
         public Task AddAsync(QuestionRule rule, CancellationToken ct = default)
             => _db.Rules.AddAsync(rule, ct).AsTask();       // <-- implements the missing method
+
+        public void RemoveRange(IEnumerable<QuestionRule> rules)
+            => _db.Rules.RemoveRange(rules);
     }
 
     public sealed class ResponseRepository : IResponseRepository
