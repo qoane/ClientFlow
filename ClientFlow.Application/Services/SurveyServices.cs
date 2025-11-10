@@ -3,6 +3,7 @@ using System.Linq;
 using ClientFlow.Application.Abstractions;
 using ClientFlow.Application.DTOs;
 using ClientFlow.Application.Mapping;
+using ClientFlow.Application.Surveys.Definitions;
 using ClientFlow.Domain.Surveys;
 
 namespace ClientFlow.Application.Services;
@@ -95,39 +96,14 @@ public class SurveyService
     // Definition for the runner (sections, questions, options, rules)
     public async Task<SurveyDefinitionDto?> GetDefinitionByCodeAsync(string code, CancellationToken ct = default)
     {
-        var s = await _surveys.GetByCodeWithSectionsAndQuestionsAsync(code, ct);
-        if (s is null) return null;
+        var survey = await _surveys.GetByCodeWithSectionsAndQuestionsAsync(code, ct);
+        if (survey is null) return null;
 
-        var qIds = s.Questions.Select(q => q.Id).ToList();
-        var options = await _options.GetByQuestionIdsAsync(qIds, ct);
-        var rules = await _rules.GetBySurveyIdAsync(s.Id, ct);
+        var questionIds = survey.Questions.Select(q => q.Id).ToList();
+        var options = await _options.GetByQuestionIdsAsync(questionIds, ct);
+        var rules = await _rules.GetBySurveyIdAsync(survey.Id, ct);
 
-        return new SurveyDefinitionDto(
-     s.Id,
-     s.Code,
-     s.Title,
-     s.Sections
-         .OrderBy(x => x.Order)
-         .Select(x => new SectionDto(x.Id, x.Title, x.Order)),
-     s.Questions
-         .OrderBy(x => x.Order)
-         .Select(q => new QuestionDto(
-             q.Id,
-             q.SectionId,
-             q.Type,
-             q.Prompt,
-             q.Key,
-             q.Required,
-             q.Order,
-             string.IsNullOrWhiteSpace(q.SettingsJson) ? null : q.SettingsJson)),
-     options
-         .OrderBy(o => o.Order)
-         .Select(o => new OptionDto(o.Id, o.QuestionId, o.Value, o.Label, o.Order)),
-     rules.Select(r => new RuleDto(r.Id, r.SourceQuestionId, r.Condition, r.Action)),
-     new ThemeDto(s.ThemeAccent, s.ThemePanel),        // <-- map stored theme
-     new StyleDto(s.CustomCss)                         // <-- map stored CSS (raw)
- );
-
+        return SurveyDefinitionMapper.FromEntities(survey, options, rules);
     }
 
 }
