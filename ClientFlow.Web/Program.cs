@@ -1,5 +1,6 @@
 using ClientFlow.Application.Abstractions;
 using ClientFlow.Application.Services;
+using ClientFlow.Application.Surveys.Validation;
 using ClientFlow.Infrastructure;
 using ClientFlow.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -33,6 +34,7 @@ builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<SurveyService>();
 builder.Services.AddScoped<ISectionRepository, SectionRepository>();
 builder.Services.AddScoped<IQuestionRepository, QuestionRepository>();
+builder.Services.AddSingleton<IQuestionSettingsValidator, JsonSchemaQuestionSettingsValidator>();
 
 // Email and reporting
 builder.Services.Configure<ClientFlow.Infrastructure.Email.EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
