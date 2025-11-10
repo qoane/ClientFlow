@@ -114,6 +114,32 @@ public class AdminController(
         return Ok(def ?? (object)new { });   // cast makes both sides 'object'
     }
 
+    [HttpPost("surveys/{code}/publish")]
+    public async Task<IActionResult> Publish(string code, CancellationToken ct)
+    {
+        var version = await svc.PublishSurveyAsync(code, ct);
+        if (version is null) return NotFound();
+        return Ok(new { version });
+    }
+
+    [HttpGet("surveys/{code}/versions")]
+    public async Task<IActionResult> ListVersions(string code, CancellationToken ct)
+    {
+        var versions = await svc.GetSurveyVersionsAsync(code, ct);
+        if (versions is null) return NotFound();
+        return Ok(versions);
+    }
+
+    [HttpPost("surveys/{code}/rollback")]
+    public async Task<IActionResult> Rollback(string code, [FromQuery] int version, CancellationToken ct)
+    {
+        if (version <= 0) return BadRequest("Version must be greater than zero.");
+
+        var success = await svc.SetPublishedVersionAsync(code, version, ct);
+        if (!success) return NotFound();
+        return Ok(new { version });
+    }
+
 
     public record DesignerThemeDto(string? Accent, string? Panel);
     public record DesignerSectionDto(Guid? Id, string? Title, int Order, int Columns);

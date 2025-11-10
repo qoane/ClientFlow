@@ -39,6 +39,14 @@ public interface IRuleRepository
     void RemoveRange(IEnumerable<QuestionRule> rules);
 }
 
+public interface ISurveyVersionRepository
+{
+    Task AddAsync(SurveyVersion version, CancellationToken ct = default);
+    Task<int> GetMaxVersionAsync(Guid surveyId, CancellationToken ct = default);
+    Task<SurveyVersion?> GetBySurveyAndVersionAsync(Guid surveyId, int version, CancellationToken ct = default);
+    Task<List<SurveyVersion>> GetBySurveyIdAsync(Guid surveyId, CancellationToken ct = default);
+}
+
 public interface ISectionRepository
 {
     Task AddAsync(SurveySection section, CancellationToken ct = default);

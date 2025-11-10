@@ -803,6 +803,9 @@ namespace ClientFlow.Infrastructure.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
+                    b.Property<int?>("PublishedVersion")
+                        .HasColumnType("int");
+
                     b.Property<string>("ScopedCss")
                         .HasColumnType("nvarchar(max)");
 
@@ -835,6 +838,33 @@ namespace ClientFlow.Infrastructure.Migrations
                             ThemeJson = "{\"accent\":\"#de2b2b\"}",
                             Title = "Liberty NPS 2025"
                         });
+                });
+
+            modelBuilder.Entity("ClientFlow.Domain.Surveys.SurveyVersion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("DefinitionJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("SurveyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SurveyId", "Version")
+                        .IsUnique();
+
+                    b.ToTable("SurveyVersions");
                 });
 
             modelBuilder.Entity("ClientFlow.Domain.Surveys.SurveySection", b =>
