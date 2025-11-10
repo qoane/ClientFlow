@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using ClientFlow.Infrastructure;
 
 namespace ClientFlow.Web.Controllers;
@@ -20,6 +21,7 @@ public class AdminController(
     IUnitOfWork uow,
     SurveyService svc) : ControllerBase
 {
+    private static readonly Regex VisibleIfKeyRegex = new(@"^\s*(?<key>[A-Za-z0-9_\-]+)", RegexOptions.Compiled);
     [HttpGet("surveys")]
     public async Task<IActionResult> List(CancellationToken ct)
     {
@@ -156,7 +158,7 @@ public class AdminController(
         Dictionary<string, object?>? Settings,
         List<DesignerOptionDto>? Choices,
         List<string>? Validations,
-        string? Visibility);
+        string? VisibleIf);
     public record DesignerRuleDto(Guid? Id, Guid SourceQuestionId, string Condition, string Action);
     public record SaveSurveyDefinitionReq(
         string? Code,
@@ -221,6 +223,7 @@ public class AdminController(
 
         var questionEntities = new List<Question>();
         var questionMap = new Dictionary<Guid, Guid>();
+        var pendingVisibleRules = new List<(Guid QuestionId, string VisibleIf)>();
         if (req.Questions is { Count: > 0 })
         {
             var orderedQuestions = req.Questions
@@ -249,11 +252,6 @@ public class AdminController(
                     settingsDict ??= new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
                     settingsDict["validations"] = q.Validations;
                 }
-                if (!string.IsNullOrWhiteSpace(q.Visibility))
-                {
-                    settingsDict ??= new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
-                    settingsDict["visibility"] = q.Visibility.Trim();
-                }
 
                 questionEntities.Add(new Question
                 {
@@ -269,8 +267,16 @@ public class AdminController(
                         ? JsonSerializer.Serialize(settingsDict)
                         : null
                 });
+
+                if (!string.IsNullOrWhiteSpace(q.VisibleIf))
+                {
+                    pendingVisibleRules.Add((qId, q.VisibleIf.Trim()));
+                }
             }
         }
+
+        var questionKeyById = questionEntities.ToDictionary(q => q.Id, q => q.Key);
+        var questionIdByKey = questionEntities.ToDictionary(q => q.Key, q => q.Id, StringComparer.OrdinalIgnoreCase);
 
         var optionEntities = new List<QuestionOption>();
         if (req.Options is { Count: > 0 })
@@ -312,6 +318,7 @@ public class AdminController(
         }
 
         var ruleEntities = new List<QuestionRule>();
+        var ruleSignatures = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         if (req.Rules is { Count: > 0 })
         {
             foreach (var rule in req.Rules)
@@ -327,7 +334,40 @@ public class AdminController(
                     Condition = rule.Condition,
                     Action = rule.Action
                 });
+
+                var signature = BuildRuleSignature(rule.Condition, rule.Action);
+                if (!string.IsNullOrWhiteSpace(signature))
+                {
+                    ruleSignatures.Add(signature);
+                }
             }
+        }
+
+        foreach (var (questionId, visibleIf) in pendingVisibleRules)
+        {
+            if (!questionKeyById.TryGetValue(questionId, out var targetKey) || string.IsNullOrWhiteSpace(targetKey))
+                continue;
+
+            var sourceKey = ExtractConditionKey(visibleIf);
+            if (string.IsNullOrWhiteSpace(sourceKey))
+                continue;
+
+            if (!questionIdByKey.TryGetValue(sourceKey, out var sourceQuestionId))
+                continue;
+
+            var action = $"show:{targetKey}";
+            var signature = BuildRuleSignature(visibleIf, action);
+            if (!ruleSignatures.Add(signature))
+                continue;
+
+            ruleEntities.Add(new QuestionRule
+            {
+                Id = Guid.NewGuid(),
+                SurveyId = survey.Id,
+                SourceQuestionId = sourceQuestionId,
+                Condition = visibleIf,
+                Action = action
+            });
         }
 
         if (sectionEntities.Count > 0)
@@ -349,6 +389,21 @@ public class AdminController(
 
         await db.SaveChangesAsync(ct);
         return NoContent();
+    }
+
+
+    private static string? ExtractConditionKey(string? condition)
+    {
+        if (string.IsNullOrWhiteSpace(condition)) return null;
+        var match = VisibleIfKeyRegex.Match(condition);
+        return match.Success ? match.Groups["key"].Value : null;
+    }
+
+    private static string BuildRuleSignature(string? condition, string? action)
+    {
+        var normalizedAction = action?.Trim() ?? string.Empty;
+        var normalizedCondition = condition?.Trim() ?? string.Empty;
+        return $"{normalizedAction}|{normalizedCondition}";
     }
 
 

@@ -15,7 +15,7 @@ export interface SurveyDesignerQuestion {
     settings: Record<string, unknown>;
     choices: SurveyDesignerChoice[];
     validations: string[];
-    visibility: string;
+    visibleIf: string;
 }
 
 export interface SurveyDesignerSection {
@@ -109,7 +109,11 @@ export class SurveyDesignerStore {
                     label: choice.label ?? choice.value ?? `Choice ${ci + 1}`,
                 })),
                 validations: Array.isArray(q.validations) ? [...q.validations] : [],
-                visibility: q.visibility ?? "",
+                visibleIf: (() => {
+                    const anyQuestion = q as Record<string, unknown>;
+                    const raw = anyQuestion["visibleIf"] ?? anyQuestion["Visibility"] ?? anyQuestion["visibility"];
+                    return typeof raw === "string" ? raw : "";
+                })(),
             }));
         }
 
@@ -198,7 +202,7 @@ export class SurveyDesignerStore {
                 label: choice.label ?? choice.value ?? "Choice",
             })) : this.defaultChoices(type),
             validations: input?.validations ? [...input.validations] : [],
-            visibility: input?.visibility ?? "",
+            visibleIf: input?.visibleIf ?? "",
         };
         this.state.questions.push(question);
         this.ensureQuestionOrder(sectionId);
@@ -223,7 +227,7 @@ export class SurveyDesignerStore {
             }));
         }
         if (patch.validations !== undefined) question.validations = [...patch.validations];
-        if (patch.visibility !== undefined) question.visibility = patch.visibility;
+        if (patch.visibleIf !== undefined) question.visibleIf = patch.visibleIf;
         if (patch.order !== undefined) question.order = patch.order;
         this.ensureAllQuestionOrder();
         this.emit();
@@ -305,16 +309,25 @@ export class SurveyDesignerStore {
         const questions = this.state.questions
             .slice()
             .sort((a, b) => a.order - b.order)
-            .map((q, index) => ({
-                id: q.id,
-                sectionId: q.sectionId,
-                type: q.type,
-                prompt: q.prompt,
-                key: q.key,
-                required: q.required,
-                order: index + 1,
-                settings: this.buildSettings(q),
-            }));
+            .map((q, index) => {
+                const payload: Record<string, unknown> = {
+                    id: q.id,
+                    sectionId: q.sectionId,
+                    type: q.type,
+                    prompt: q.prompt,
+                    key: q.key,
+                    required: q.required,
+                    order: index + 1,
+                    settings: this.buildSettings(q),
+                };
+
+                const visibleIf = q.visibleIf?.trim();
+                if (visibleIf) {
+                    payload["visibleIf"] = visibleIf;
+                }
+
+                return payload;
+            });
 
         let optionOrder = 1;
         const options = this.state.questions.flatMap(q => q.choices.map(choice => ({
@@ -352,7 +365,6 @@ export class SurveyDesignerStore {
     private buildSettings(question: SurveyDesignerQuestion): Record<string, unknown> | undefined {
         const settings: Record<string, unknown> = { ...question.settings };
         if (question.validations.length) settings["validations"] = [...question.validations];
-        if (question.visibility) settings["visibility"] = question.visibility;
         if (question.choices.length) settings["choices"] = question.choices.map(choice => ({
             id: choice.id,
             value: choice.value,

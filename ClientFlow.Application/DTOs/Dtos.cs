@@ -13,7 +13,16 @@ public record SurveyDto(
 
 public record SurveySectionDto(Guid Id, string Title, int Order, int Columns);
 
-public record QuestionDto(Guid Id, string Type, string Prompt, string Key, bool Required, int Order, Guid? SectionId, string? SettingsJson);
+public record QuestionDto(
+    Guid Id,
+    string Type,
+    string Prompt,
+    string Key,
+    bool Required,
+    int Order,
+    Guid? SectionId,
+    string? SettingsJson,
+    string? VisibleIf);
 
 public record SubmitResponseDto(Dictionary<string, string?> Data);
 
@@ -27,5 +36,6 @@ public record QuestionListItemDto(
     string Key,
     bool Required,
     int Order,
-    string? SettingsJson);
+    string? SettingsJson,
+    string? VisibleIf);
 
