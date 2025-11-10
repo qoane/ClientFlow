@@ -102,7 +102,7 @@ export class SurveyDesignerStore {
                 key: q.key ?? this.makeKey(q.type ?? "q", index),
                 required: q.required ?? false,
                 order: q.order ?? index + 1,
-                settings: { ...(q.settings ?? {}) },
+                settings: this.mergeSettings(this.defaultSettings(q.type ?? "text"), q.settings ?? {}),
                 choices: (q.choices ?? []).map((choice, ci) => ({
                     id: choice.id ?? this.newId(),
                     value: choice.value ?? choice.label ?? `choice_${ci + 1}`,
@@ -195,7 +195,7 @@ export class SurveyDesignerStore {
             key: input?.key ?? this.makeKey(type, this.state.questions.length + 1),
             required: input?.required ?? false,
             order: 0,
-            settings: { ...(input?.settings ?? {}) },
+            settings: this.mergeSettings(this.defaultSettings(type), input?.settings ?? {}),
             choices: input?.choices ? input.choices.map(choice => ({
                 id: choice.id ?? this.newId(),
                 value: choice.value ?? choice.label ?? this.makeKey("choice", 1),
@@ -204,6 +204,10 @@ export class SurveyDesignerStore {
             validations: input?.validations ? [...input.validations] : [],
             visibleIf: input?.visibleIf ?? "",
         };
+        if (this.isStaticType(type)) {
+            question.required = false;
+        }
+
         this.state.questions.push(question);
         this.ensureQuestionOrder(sectionId);
         this.emit();
@@ -214,11 +218,14 @@ export class SurveyDesignerStore {
         const question = this.state.questions.find(q => q.id === id);
         if (!question) return;
         if (patch.sectionId !== undefined) question.sectionId = patch.sectionId;
-        if (patch.type !== undefined) question.type = patch.type;
+        if (patch.type !== undefined) {
+            question.type = patch.type;
+            question.settings = this.mergeSettings(this.defaultSettings(question.type), question.settings ?? {});
+        }
         if (patch.prompt !== undefined) question.prompt = patch.prompt;
         if (patch.key !== undefined) question.key = patch.key;
         if (patch.required !== undefined) question.required = patch.required;
-        if (patch.settings !== undefined) question.settings = { ...patch.settings };
+        if (patch.settings !== undefined) question.settings = this.mergeSettings({}, patch.settings);
         if (patch.choices !== undefined) {
             question.choices = patch.choices.map(choice => ({
                 id: choice.id ?? this.newId(),
@@ -228,6 +235,9 @@ export class SurveyDesignerStore {
         }
         if (patch.validations !== undefined) question.validations = [...patch.validations];
         if (patch.visibleIf !== undefined) question.visibleIf = patch.visibleIf;
+        if (this.isStaticType(question.type)) {
+            question.required = false;
+        }
         if (patch.order !== undefined) question.order = patch.order;
         this.ensureAllQuestionOrder();
         this.emit();
@@ -417,6 +427,21 @@ export class SurveyDesignerStore {
                 return "Pick a date";
             case "boolean":
                 return "Yes or No";
+            case "matrix":
+                return "Matrix question";
+            case "file":
+                return "Upload a file";
+            case "signature":
+                return "Provide your signature";
+            case "rating_stars":
+                return "Rate your experience";
+            case "image":
+            case "video":
+            case "static_text":
+            case "static_html":
+            case "divider":
+            case "spacer":
+                return "";
             default:
                 return "Your response";
         }
@@ -451,6 +476,70 @@ export class SurveyDesignerStore {
             ];
         }
         return [];
+    }
+
+    private defaultSettings(type: string): Record<string, unknown> {
+        switch (type) {
+            case "static_text":
+                return { text: "Static text", alignment: "left" };
+            case "static_html":
+                return { html: "<p>Static HTML</p>", scopedCss: "" };
+            case "image":
+                return { url: "", alt: "", caption: "", width: "", height: "" };
+            case "video":
+                return { url: "", poster: "", autoplay: false, loop: false, caption: "" };
+            case "divider":
+                return { style: "solid", color: "", thickness: 1 };
+            case "spacer":
+                return { size: "md", customHeight: null };
+            case "matrix":
+                return {
+                    rows: [
+                        { id: this.newId(), label: "Row 1" },
+                        { id: this.newId(), label: "Row 2" },
+                    ],
+                    columns: [
+                        { id: this.newId(), label: "Column 1", type: "text" },
+                        { id: this.newId(), label: "Column 2", type: "text" },
+                    ],
+                    cellType: "text",
+                };
+            case "file":
+                return { allowedTypes: ["image/*", "application/pdf"], maxFileSize: null, maxFiles: 1 };
+            case "signature":
+                return { backgroundColor: "#ffffff", penColor: "#000000", showGuideline: true };
+            case "rating_stars":
+                return { stars: 5, icon: "star", showLabels: false };
+            default:
+                return {};
+        }
+    }
+
+    private mergeSettings(defaults: Record<string, unknown> = {}, overrides: Record<string, unknown> = {}): Record<string, unknown> {
+        const base = this.cloneValue(defaults);
+        const source = overrides ?? {};
+        for (const key of Object.keys(source)) {
+            base[key] = this.cloneValue(source[key]);
+        }
+        return base;
+    }
+
+    private cloneValue<T>(value: T): T {
+        if (Array.isArray(value)) {
+            return value.map(item => this.cloneValue(item)) as unknown as T;
+        }
+        if (value && typeof value === "object") {
+            const clone: Record<string, unknown> = {};
+            for (const key of Object.keys(value as Record<string, unknown>)) {
+                clone[key] = this.cloneValue((value as Record<string, unknown>)[key]);
+            }
+            return clone as unknown as T;
+        }
+        return value;
+    }
+
+    private isStaticType(type: string): boolean {
+        return typeof type === "string" && (type.startsWith("static_") || type === "divider" || type === "spacer" || type === "image" || type === "video");
     }
 
     private makeKey(prefix: string, index: number): string {
