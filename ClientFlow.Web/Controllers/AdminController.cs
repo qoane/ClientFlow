@@ -328,6 +328,7 @@ public class AdminController(
     // ---------- DESIGNER: add section ----------
     // in AdminController
     public record AddSectionReq(string Title, int Order = 0, int Columns = 1);
+    public record UpdateSectionOrderReq(int Order);
 
     [HttpPost("surveys/{code}/sections")]
     public async Task<IActionResult> AddSection(
@@ -353,6 +354,35 @@ public class AdminController(
         return NoContent();
     }
 
+    [HttpPut("sections/{id:guid}/order")]
+    public async Task<IActionResult> UpdateSectionOrder(
+        Guid id,
+        [FromBody] UpdateSectionOrderReq req,
+        [FromServices] ISectionRepository sectionsRepo,
+        CancellationToken ct)
+    {
+        var section = await sectionsRepo.GetByIdAsync(id, ct);
+        if (section is null) return NotFound();
+
+        var sections = await sectionsRepo.GetBySurveyIdAsync(section.SurveyId, ct);
+        var ordered = sections.OrderBy(s => s.Order).ToList();
+        var current = ordered.FirstOrDefault(s => s.Id == id);
+        if (current is null) return NotFound();
+
+        ordered.Remove(current);
+        var targetIndex = req.Order < 0 ? 0 : req.Order;
+        if (targetIndex > ordered.Count) targetIndex = ordered.Count;
+        ordered.Insert(targetIndex, current);
+
+        for (var i = 0; i < ordered.Count; i++)
+        {
+            ordered[i].Order = i;
+        }
+
+        await uow.SaveChangesAsync(ct);
+        return NoContent();
+    }
+
 
     // ---------- DESIGNER: add question ----------
     public record AddQuestionReq(
@@ -371,6 +401,9 @@ public class AdminController(
         string? SettingsJson,
         Guid? SectionId,
         string? Type);
+
+    public record UpdateQuestionOrderReq(int Order);
+    public record MoveQuestionReq(Guid SectionId, int Order);
 
     // POST /api/admin/surveys/{code}/questions
     // POST /api/admin/surveys/{code}/questions
@@ -421,6 +454,108 @@ public class AdminController(
         };
 
         await questions.AddAsync(q, ct);   // <-- guarantees EntityState.Added → INSERT
+        await uow.SaveChangesAsync(ct);
+        return NoContent();
+    }
+
+    [HttpPut("questions/{id:guid}/order")]
+    public async Task<IActionResult> UpdateQuestionOrder(
+        Guid id,
+        [FromBody] UpdateQuestionOrderReq req,
+        [FromServices] IQuestionRepository questions,
+        CancellationToken ct)
+    {
+        var question = await questions.GetByIdAsync(id, ct);
+        if (question is null) return NotFound();
+        if (question.SectionId is null)
+            return BadRequest("Question is not assigned to a section.");
+
+        var siblings = await questions.GetBySectionIdAsync(question.SectionId.Value, ct);
+        var ordered = siblings.OrderBy(q => q.Order).ToList();
+        var current = ordered.FirstOrDefault(q => q.Id == id);
+        if (current is null) return NotFound();
+
+        ordered.Remove(current);
+        var targetIndex = req.Order < 0 ? 0 : req.Order;
+        if (targetIndex > ordered.Count) targetIndex = ordered.Count;
+        ordered.Insert(targetIndex, current);
+
+        for (var i = 0; i < ordered.Count; i++)
+        {
+            ordered[i].Order = i;
+        }
+
+        await uow.SaveChangesAsync(ct);
+        return NoContent();
+    }
+
+    [HttpPut("questions/{id:guid}/move")]
+    public async Task<IActionResult> MoveQuestion(
+        Guid id,
+        [FromBody] MoveQuestionReq req,
+        [FromServices] IQuestionRepository questions,
+        [FromServices] ISectionRepository sectionsRepo,
+        CancellationToken ct)
+    {
+        var question = await questions.GetByIdAsync(id, ct);
+        if (question is null) return NotFound();
+
+        var destination = await sectionsRepo.GetByIdAsync(req.SectionId, ct);
+        if (destination is null) return NotFound();
+
+        if (question.SurveyId != destination.SurveyId)
+            return BadRequest("Section does not belong to the same survey as the question.");
+
+        if (question.SectionId == req.SectionId)
+        {
+            var sameSectionQuestions = await questions.GetBySectionIdAsync(req.SectionId, ct);
+            var sameOrdered = sameSectionQuestions.OrderBy(q => q.Order).ToList();
+            var current = sameOrdered.FirstOrDefault(q => q.Id == id);
+            if (current is null) return NotFound();
+
+            sameOrdered.Remove(current);
+            var sameTarget = req.Order < 0 ? 0 : req.Order;
+            if (sameTarget > sameOrdered.Count) sameTarget = sameOrdered.Count;
+            sameOrdered.Insert(sameTarget, current);
+
+            for (var i = 0; i < sameOrdered.Count; i++)
+            {
+                sameOrdered[i].Order = i;
+            }
+
+            await uow.SaveChangesAsync(ct);
+            return NoContent();
+        }
+
+        if (question.SectionId is Guid currentSectionId)
+        {
+            var currentSectionQuestions = await questions.GetBySectionIdAsync(currentSectionId, ct);
+            var currentOrdered = currentSectionQuestions.OrderBy(q => q.Order).ToList();
+            var current = currentOrdered.FirstOrDefault(q => q.Id == id);
+            if (current is not null)
+            {
+                currentOrdered.Remove(current);
+                for (var i = 0; i < currentOrdered.Count; i++)
+                {
+                    currentOrdered[i].Order = i;
+                }
+            }
+        }
+
+        var destinationQuestions = await questions.GetBySectionIdAsync(req.SectionId, ct);
+        var destinationOrdered = destinationQuestions.OrderBy(q => q.Order).ToList();
+
+        question.SectionId = req.SectionId;
+
+        var destinationIndex = req.Order < 0 ? 0 : req.Order;
+        if (destinationIndex > destinationOrdered.Count) destinationIndex = destinationOrdered.Count;
+        destinationOrdered.Insert(destinationIndex, question);
+
+        for (var i = 0; i < destinationOrdered.Count; i++)
+        {
+            destinationOrdered[i].Order = i;
+        }
+
         await uow.SaveChangesAsync(ct);
         return NoContent();
     }

@@ -41,11 +41,13 @@ public interface ISectionRepository
 {
     Task AddAsync(SurveySection section, CancellationToken ct = default);
     Task<SurveySection?> GetByIdAsync(Guid id, CancellationToken ct = default);
+    Task<List<SurveySection>> GetBySurveyIdAsync(Guid surveyId, CancellationToken ct = default);
 }
 
 public interface IQuestionRepository
 {
     Task AddAsync(Question question, CancellationToken ct = default);
     Task<Question?> GetByIdAsync(Guid id, CancellationToken ct = default);
+    Task<List<Question>> GetBySectionIdAsync(Guid sectionId, CancellationToken ct = default);
     void Remove(Question question);
 }
