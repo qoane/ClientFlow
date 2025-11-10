@@ -99,6 +99,12 @@ public sealed class SectionRepository(AppDbContext db) : ISectionRepository
 
     public Task<SurveySection?> GetByIdAsync(Guid id, CancellationToken ct = default)
         => db.Sections.FirstOrDefaultAsync(s => s.Id == id, ct);
+
+    public Task<List<SurveySection>> GetBySurveyIdAsync(Guid surveyId, CancellationToken ct = default)
+        => db.Sections
+            .Where(s => s.SurveyId == surveyId)
+            .OrderBy(s => s.Order)
+            .ToListAsync(ct);
 }
 
 public sealed class QuestionRepository(AppDbContext db) : IQuestionRepository
@@ -108,6 +114,12 @@ public sealed class QuestionRepository(AppDbContext db) : IQuestionRepository
 
     public Task<Question?> GetByIdAsync(Guid id, CancellationToken ct = default)
         => db.Questions.FirstOrDefaultAsync(q => q.Id == id, ct);
+
+    public Task<List<Question>> GetBySectionIdAsync(Guid sectionId, CancellationToken ct = default)
+        => db.Questions
+            .Where(q => q.SectionId == sectionId)
+            .OrderBy(q => q.Order)
+            .ToListAsync(ct);
 
     public void Remove(Question question)
         => db.Questions.Remove(question);
