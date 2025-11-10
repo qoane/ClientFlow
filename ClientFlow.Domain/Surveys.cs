@@ -13,6 +13,8 @@ public class Survey
     public string? ThemeJson { get; set; }   // e.g. { accent: "#de2b2b" }
     public string? ScopedCss { get; set; }   // optional custom CSS
 
+    public int? PublishedVersion { get; set; }
+
     public List<SurveySection> Sections { get; set; } = [];
     public List<Question> Questions { get; set; } = [];
 
@@ -100,5 +102,14 @@ public class ResponseSession
     public DateTime? CompletedUtc { get; set; }
     public string Channel { get; set; } = "web"; // kiosk, link, email, etc.
     public string? MetaJson { get; set; }
+}
+
+public class SurveyVersion
+{
+    public Guid Id { get; set; }
+    public Guid SurveyId { get; set; }
+    public int Version { get; set; }
+    public DateTimeOffset CreatedUtc { get; set; }
+    public string DefinitionJson { get; set; } = default!;
 }
 

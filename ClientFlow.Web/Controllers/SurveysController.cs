@@ -22,8 +22,7 @@ public class SurveysController(SurveyService svc) : ControllerBase
 
     [HttpGet("{code}/definition")]
     public async Task<IActionResult> GetDefinition(string code, CancellationToken ct)
-
-        => (await svc.GetDefinitionByCodeAsync(code, ct)) is { } r ? Ok(r) : NotFound();
+        => (await svc.GetPublishedDefinitionAsync(code, ct)) is { } r ? Ok(r) : NotFound();
 
 }
 
