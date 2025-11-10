@@ -29,7 +29,8 @@ public static class SurveyMapping
                     q.Key,
                     q.Required,
                     q.Order,
-                    q.SettingsJson))
+                    q.SettingsJson,
+                    null))
                 .ToList()
         );
 }

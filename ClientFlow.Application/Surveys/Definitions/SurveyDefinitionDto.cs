@@ -31,6 +31,7 @@ public sealed record QuestionDto(
     [property: JsonPropertyName("required")] bool Required,
     [property: JsonPropertyName("order")] int Order,
     [property: JsonPropertyName("settingsJson")] string? SettingsJson,
+    [property: JsonPropertyName("visibleIf")] string? VisibleIf,
     [property: JsonPropertyName("options")] IReadOnlyList<OptionDto> Options);
 
 public sealed record OptionDto(
