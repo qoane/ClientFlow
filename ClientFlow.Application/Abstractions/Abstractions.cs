@@ -28,6 +28,8 @@ public interface IOptionRepository
     Task<List<QuestionOption>> GetByQuestionIdsAsync(IEnumerable<Guid> questionIds, CancellationToken ct = default);
     Task AddAsync(QuestionOption option, CancellationToken ct = default);   // <-- add write method here
     void RemoveRange(IEnumerable<QuestionOption> options);
+    Task<QuestionOption?> GetByIdAsync(Guid id, CancellationToken ct = default);
+    void Remove(QuestionOption option);
 }
 
 public interface IRuleRepository
