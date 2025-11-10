@@ -1,5 +1,6 @@
 ﻿using ClientFlow.Application.Abstractions;
 using ClientFlow.Application.Services;
+using ClientFlow.Application.Surveys.Validation;
 using ClientFlow.Domain.Surveys;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -438,6 +439,7 @@ public class AdminController(
         string code,
         [FromBody] AddQuestionReq req,
         [FromServices] IQuestionRepository questions,   // <-- inject
+        [FromServices] IQuestionSettingsValidator settingsValidator,
         CancellationToken ct)
     {
         var s = await surveys.GetByCodeWithSectionsAndQuestionsAsync(code, ct);
@@ -465,6 +467,10 @@ public class AdminController(
         var prompt = req.Prompt?.Trim();
         if (!isStatic && string.IsNullOrWhiteSpace(prompt))
             return BadRequest("Prompt is required for non static question types.");
+
+        var validation = settingsValidator.Validate(type, req.SettingsJson);
+        if (!validation.IsValid)
+            return BadRequest(validation.ErrorMessage);
 
         var q = new Question
         {
@@ -592,10 +598,13 @@ public class AdminController(
         [FromBody] UpdateQuestionReq req,
         [FromServices] IQuestionRepository questions,
         [FromServices] ISectionRepository sectionsRepo,
+        [FromServices] IQuestionSettingsValidator settingsValidator,
         CancellationToken ct)
     {
         var question = await questions.GetByIdAsync(id, ct);
         if (question is null) return NotFound();
+
+        var pendingSettingsJson = req.SettingsJson;
 
         if (req.Type is not null)
         {
@@ -626,9 +635,6 @@ public class AdminController(
         if (req.Order.HasValue)
             question.Order = req.Order.Value;
 
-        if (req.SettingsJson is not null)
-            question.SettingsJson = req.SettingsJson;
-
         if (req.SectionId.HasValue)
         {
             var section = await sectionsRepo.GetByIdAsync(req.SectionId.Value, ct);
@@ -638,6 +644,13 @@ public class AdminController(
 
             question.SectionId = section.Id;
         }
+
+        var validation = settingsValidator.Validate(question.Type, pendingSettingsJson ?? question.SettingsJson);
+        if (!validation.IsValid)
+            return BadRequest(validation.ErrorMessage);
+
+        if (pendingSettingsJson is not null)
+            question.SettingsJson = pendingSettingsJson;
 
         if (isStatic)
             question.Required = false;
