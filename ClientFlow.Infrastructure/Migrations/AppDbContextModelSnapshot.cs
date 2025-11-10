@@ -537,7 +537,7 @@ namespace ClientFlow.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("20000000-0000-0000-0000-000000000201"),
-                            Label = "😊 1 = Very Poor",
+                            Label = "😊 1 = Excellent",
                             Order = 1,
                             QuestionId = new Guid("10000000-0000-0000-0000-000000000004"),
                             Value = "1"
@@ -545,7 +545,7 @@ namespace ClientFlow.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("20000000-0000-0000-0000-000000000202"),
-                            Label = "😐 2 = Poor",
+                            Label = "😃 2 = Good",
                             Order = 2,
                             QuestionId = new Guid("10000000-0000-0000-0000-000000000004"),
                             Value = "2"
@@ -553,7 +553,7 @@ namespace ClientFlow.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("20000000-0000-0000-0000-000000000203"),
-                            Label = "🙂 3 = Okay",
+                            Label = "😐 3 = Okay",
                             Order = 3,
                             QuestionId = new Guid("10000000-0000-0000-0000-000000000004"),
                             Value = "3"
@@ -561,7 +561,7 @@ namespace ClientFlow.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("20000000-0000-0000-0000-000000000204"),
-                            Label = "😀 4 = Good",
+                            Label = "😞 4 = Poor",
                             Order = 4,
                             QuestionId = new Guid("10000000-0000-0000-0000-000000000004"),
                             Value = "4"
@@ -569,7 +569,7 @@ namespace ClientFlow.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("20000000-0000-0000-0000-000000000205"),
-                            Label = "😁 5 = Excellent",
+                            Label = "😡 5 = Very Poor",
                             Order = 5,
                             QuestionId = new Guid("10000000-0000-0000-0000-000000000004"),
                             Value = "5"
@@ -657,7 +657,7 @@ namespace ClientFlow.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("20000000-0000-0000-0000-000000000501"),
-                            Label = "😡 1 = Not at all likely",
+                            Label = "😊 1 = Extremely likely",
                             Order = 1,
                             QuestionId = new Guid("10000000-0000-0000-0000-000000000007"),
                             Value = "1"
@@ -665,7 +665,7 @@ namespace ClientFlow.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("20000000-0000-0000-0000-000000000502"),
-                            Label = "😞 2",
+                            Label = "😃 2 = Very likely",
                             Order = 2,
                             QuestionId = new Guid("10000000-0000-0000-0000-000000000007"),
                             Value = "2"
@@ -673,7 +673,7 @@ namespace ClientFlow.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("20000000-0000-0000-0000-000000000503"),
-                            Label = "😐 3",
+                            Label = "😐 3 = Neutral",
                             Order = 3,
                             QuestionId = new Guid("10000000-0000-0000-0000-000000000007"),
                             Value = "3"
@@ -681,7 +681,7 @@ namespace ClientFlow.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("20000000-0000-0000-0000-000000000504"),
-                            Label = "😃 4",
+                            Label = "😞 4 = Slightly likely",
                             Order = 4,
                             QuestionId = new Guid("10000000-0000-0000-0000-000000000007"),
                             Value = "4"
@@ -689,7 +689,7 @@ namespace ClientFlow.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("20000000-0000-0000-0000-000000000505"),
-                            Label = "😊 5 = Extremely likely",
+                            Label = "😡 5 = Not at all likely",
                             Order = 5,
                             QuestionId = new Guid("10000000-0000-0000-0000-000000000007"),
                             Value = "5"
