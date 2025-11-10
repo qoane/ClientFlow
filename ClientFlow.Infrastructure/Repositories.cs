@@ -55,6 +55,12 @@ namespace ClientFlow.Infrastructure.Repositories
         public Task AddAsync(QuestionOption option, CancellationToken ct = default)
             => _db.Options.AddAsync(option, ct).AsTask();   // <-- implements the missing method
 
+        public Task<QuestionOption?> GetByIdAsync(Guid id, CancellationToken ct = default)
+            => _db.Options.FirstOrDefaultAsync(o => o.Id == id, ct);
+
+        public void Remove(QuestionOption option)
+            => _db.Options.Remove(option);
+
         public void RemoveRange(IEnumerable<QuestionOption> options)
             => _db.Options.RemoveRange(options);
     }
