@@ -478,6 +478,7 @@
 
     function staticTextRenderer(q) {
         const p = document.createElement('p');
+        p.className = 'survey-message';
         const settings = q.settings || {};
         const text = typeof settings.text === 'string' ? settings.text : q.prompt;
         p.textContent = text ?? '';
@@ -694,7 +695,7 @@
     register('matrix', matrixRenderer);
     register('file', fileRenderer);
     register('signature', signatureRenderer);
-    register('static_text', staticTextRenderer);
+    register('static_text', staticTextRenderer, ['message', 'note', 'info']);
     register('static_html', staticHtmlRenderer);
     register('image', imageRenderer);
     register('video', videoRenderer);
@@ -841,7 +842,7 @@
     function validateQuestion(q, state) {
         const value = state.answers[q.key];
         const errors = [];
-        const type = q.type;
+        const type = typeof q.type === 'string' ? q.type.trim().toLowerCase() : '';
 
         if (q.required) {
             if (type === 'file') {
@@ -889,14 +890,19 @@
                 }
                 break;
             }
-            case 'nps_0_10': {
+            case 'nps_0_10':
+            case 'nps':
+            case 'nps-0-10':
+            case 'nps0-10':
+            case 'nps0_10': {
                 const numeric = Number(value);
                 if (Number.isNaN(numeric) || numeric < 0 || numeric > 10) {
                     errors.push('Select a score between 0 and 10.');
                 }
                 break;
             }
-            case 'rating_stars': {
+            case 'rating_stars':
+            case 'rating': {
                 const numeric = Number(value);
                 const limit = q.settings && typeof q.settings.stars === 'number' ? q.settings.stars : 5;
                 if (Number.isNaN(numeric) || numeric < 1 || numeric > limit) {
