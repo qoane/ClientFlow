@@ -11,6 +11,12 @@
         return;
     }
 
+    const apiFetch = typeof window.appApiFetch === 'function'
+        ? window.appApiFetch.bind(window)
+        : (resource, init) => window.fetch(resource, init);
+
+    let sessionStarted = Date.now();
+
     function resolveSurveyCode() {
         const explicit = app.dataset.surveyCode || app.dataset.code;
         if (explicit) return explicit;
@@ -33,7 +39,7 @@
         if (etag) {
             headers['If-None-Match'] = etag;
         }
-        const response = await fetch(`/api/surveys/${encodeURIComponent(surveyCode)}/definition`, { headers });
+        const response = await apiFetch(`/api/surveys/${encodeURIComponent(surveyCode)}/definition`, { headers });
         if (response.status === 304 && cachedDefinition) {
             return cachedDefinition;
         }
@@ -182,7 +188,49 @@
         });
     }
 
+    function buildSubmitPayload(questions, state) {
+        const payload = {};
+        questions.forEach(question => {
+            if (isStaticType(question.type)) {
+                return;
+            }
+
+            const value = state.answers[question.key];
+            if (value === undefined || value === null) {
+                payload[question.key] = null;
+                return;
+            }
+
+            if (Array.isArray(value)) {
+                if (value.length === 0) {
+                    payload[question.key] = null;
+                } else if (String(question.type).trim().toLowerCase() === 'multi') {
+                    payload[question.key] = value.map(item => String(item)).join(',');
+                } else {
+                    const serialised = JSON.stringify(value);
+                    payload[question.key] = serialised === '[]' ? null : serialised;
+                }
+                return;
+            }
+
+            if (typeof value === 'object') {
+                const serialised = JSON.stringify(value);
+                payload[question.key] = serialised === '{}' ? null : serialised;
+                return;
+            }
+
+            const str = String(value);
+            payload[question.key] = str.trim() === '' ? null : str;
+        });
+
+        payload.__startedUtc = new Date(sessionStarted).toISOString();
+        payload.__durationSeconds = String(Math.max(0, Math.round((Date.now() - sessionStarted) / 1000)));
+
+        return payload;
+    }
+
     function renderSurvey(definition) {
+        sessionStarted = Date.now();
         app.classList.remove('loading');
         app.innerHTML = '';
         const state = createState();
@@ -390,10 +438,11 @@
             statusMessage.textContent = 'Submitting…';
             submitButton.disabled = true;
             try {
-                const response = await fetch(`/api/surveys/${encodeURIComponent(surveyCode)}/responses`, {
+                const answers = buildSubmitPayload(parsedQuestions, state);
+                const response = await apiFetch(`/api/surveys/${encodeURIComponent(surveyCode)}/submit`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ data: state.answers })
+                    body: JSON.stringify({ answers })
                 });
                 if (!response.ok) {
                     throw new Error('Submit failed');
@@ -424,6 +473,7 @@
                 attemptedSubmit = false;
                 state.errors = {};
                 syncErrors(questionRefs, {});
+                sessionStarted = Date.now();
                 showStep(0);
             } catch (error) {
                 console.error(error);
