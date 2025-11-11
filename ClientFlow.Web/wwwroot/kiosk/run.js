@@ -170,6 +170,7 @@
             .slice()
             .sort((a, b) => a.order - b.order)
             .map(parseQuestion);
+        const parsedById = new Map(parsedQuestions.map(q => [q.id, q]));
         parsedQuestions.forEach(question => {
             if (question.type === 'multi') {
                 state.answers[question.key] = Array.isArray(question.settings?.defaultValue)
@@ -198,46 +199,152 @@
         const questionRefs = [];
         const sectionRefs = [];
 
-        sections.forEach(section => {
+        function appendSection(sectionMeta, questions, fallbackTitle) {
+            if (!questions || questions.length === 0) {
+                return;
+            }
             const sectionContainer = document.createElement('section');
             sectionContainer.className = 'survey-section';
-            sectionContainer.dataset.sectionId = section.id;
-            if (section.title) {
+            if (sectionMeta && sectionMeta.id) {
+                sectionContainer.dataset.sectionId = sectionMeta.id;
+            }
+            const headingText = (sectionMeta && sectionMeta.title) || fallbackTitle || null;
+            if (headingText) {
                 const heading = document.createElement('h2');
-                heading.textContent = section.title;
+                heading.textContent = headingText;
                 sectionContainer.appendChild(heading);
             }
-            const questions = grouped.get(section.id) ?? [];
             const localRefs = [];
             questions.forEach(question => {
-                const parsed = parsedQuestions.find(q => q.id === question.id) ?? parseQuestion(question);
+                const parsed = parsedById.get(question.id) ?? parseQuestion(question);
                 const ref = createQuestionElement(parsed, state);
                 sectionContainer.appendChild(ref.container);
                 questionRefs.push(ref);
                 localRefs.push(ref);
             });
+            if (localRefs.length === 0) {
+                sectionContainer.hidden = true;
+            }
             form.appendChild(sectionContainer);
             sectionRefs.push({ container: sectionContainer, questions: localRefs });
+        }
+
+        sections.forEach(section => {
+            const questions = grouped.get(section.id) ?? [];
+            appendSection(section, questions);
         });
 
         const ungroupedQuestions = grouped.get(ungroupedKey) ?? [];
-        ungroupedQuestions.forEach(question => {
-            const parsed = parsedQuestions.find(q => q.id === question.id) ?? parseQuestion(question);
-            const ref = createQuestionElement(parsed, state);
-            form.appendChild(ref.container);
-            questionRefs.push(ref);
-        });
+        if (ungroupedQuestions.length > 0 || sectionRefs.length === 0) {
+            appendSection(null, ungroupedQuestions, sectionRefs.length === 0 ? definition.title : null);
+        }
 
         const statusMessage = document.createElement('div');
         statusMessage.className = 'survey-status';
         statusMessage.setAttribute('role', 'status');
         statusMessage.setAttribute('aria-live', 'polite');
 
+        const nav = document.createElement('div');
+        nav.className = 'survey-nav';
+
+        const progressContainer = document.createElement('div');
+        progressContainer.className = 'survey-progress';
+        const progressLabel = document.createElement('span');
+        const progressBar = document.createElement('div');
+        progressBar.className = 'survey-progress-bar';
+        const progressFill = document.createElement('span');
+        progressFill.style.width = '0%';
+        progressBar.appendChild(progressFill);
+        progressContainer.appendChild(progressLabel);
+        progressContainer.appendChild(progressBar);
+
+        const navButtons = document.createElement('div');
+        navButtons.className = 'survey-nav-buttons';
+
+        const backButton = document.createElement('button');
+        backButton.type = 'button';
+        backButton.className = 'secondary';
+        backButton.textContent = 'Back';
+
+        const nextButton = document.createElement('button');
+        nextButton.type = 'button';
+        nextButton.className = 'primary';
+        nextButton.textContent = 'Next';
+
         const submitButton = document.createElement('button');
         submitButton.type = 'submit';
+        submitButton.className = 'primary';
         submitButton.textContent = 'Submit';
-        form.appendChild(submitButton);
+
+        navButtons.appendChild(backButton);
+        navButtons.appendChild(nextButton);
+        navButtons.appendChild(submitButton);
+        nav.appendChild(progressContainer);
+        nav.appendChild(navButtons);
+
+        form.appendChild(nav);
         form.appendChild(statusMessage);
+
+        let currentStep = 0;
+
+        function visibleSectionEntries() {
+            return sectionRefs
+                .map((ref, index) => ({ ref, index }))
+                .filter(entry => !entry.ref.container.hidden);
+        }
+
+        function showStep(requestedIndex) {
+            const visibleEntries = visibleSectionEntries();
+            if (visibleEntries.length === 0) {
+                sectionRefs.forEach(section => {
+                    section.container.classList.remove('active');
+                    section.container.style.display = 'none';
+                });
+                nav.style.display = 'none';
+                progressLabel.textContent = '';
+                progressFill.style.width = '0%';
+                currentStep = 0;
+                return;
+            }
+
+            nav.style.display = '';
+            const targetIndex = Math.min(Math.max(requestedIndex, 0), visibleEntries.length - 1);
+
+            visibleEntries.forEach((entry, idx) => {
+                const isActive = idx === targetIndex;
+                entry.ref.container.classList.toggle('active', isActive);
+                entry.ref.container.style.display = isActive ? '' : 'none';
+            });
+
+            sectionRefs.forEach(section => {
+                if (section.container.hidden) {
+                    section.container.classList.remove('active');
+                    section.container.style.display = 'none';
+                }
+            });
+
+            currentStep = targetIndex;
+
+            const isFirst = currentStep === 0;
+            const isLast = currentStep === visibleEntries.length - 1;
+
+            backButton.disabled = isFirst;
+            backButton.hidden = visibleEntries.length <= 1;
+            nextButton.hidden = isLast;
+            submitButton.hidden = !isLast;
+
+            progressLabel.textContent = `Step ${currentStep + 1} of ${visibleEntries.length}`;
+            progressFill.style.width = `${((currentStep + 1) / visibleEntries.length) * 100}%`;
+            progressContainer.style.visibility = visibleEntries.length <= 1 ? 'hidden' : 'visible';
+        }
+
+        backButton.addEventListener('click', () => {
+            showStep(currentStep - 1);
+        });
+
+        nextButton.addEventListener('click', () => {
+            showStep(currentStep + 1);
+        });
 
         let attemptedSubmit = false;
 
@@ -247,6 +354,7 @@
                 const validation = SurveyRenderer.validate(parsedQuestions, state);
                 syncErrors(questionRefs, validation.errors);
             }
+            showStep(currentStep);
         });
 
         form.addEventListener('submit', async event => {
@@ -296,6 +404,7 @@
                 attemptedSubmit = false;
                 state.errors = {};
                 syncErrors(questionRefs, {});
+                showStep(0);
             } catch (error) {
                 console.error(error);
                 statusMessage.textContent = 'There was a problem submitting your response.';
@@ -306,6 +415,7 @@
 
         app.appendChild(form);
         updateVisibility(questionRefs, state, sectionRefs);
+        showStep(0);
     }
 
     loadDefinition()

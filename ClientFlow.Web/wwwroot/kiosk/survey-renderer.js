@@ -33,6 +33,10 @@
             const wrapper = document.createElement('div');
             const input = document.createElement('input');
             input.type = inputType;
+            if (inputType === 'tel') {
+                input.inputMode = 'tel';
+                input.autocomplete = 'tel';
+            }
             if (q.settings && typeof q.settings.placeholder === 'string') {
                 input.placeholder = q.settings.placeholder;
             }
@@ -561,6 +565,7 @@
     register('textarea', createTextareaRenderer());
     register('number', createInputRenderer('number'));
     register('phone', createInputRenderer('tel'));
+    register('boolean', yesNoRenderer);
     register('email', createInputRenderer('email'));
     register('date', createInputRenderer('date'));
     register('time', createInputRenderer('time'));
