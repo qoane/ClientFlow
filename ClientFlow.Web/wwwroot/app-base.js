@@ -66,6 +66,63 @@
         return fetch(url, options);
     };
 
+    function safeGetLocalStorage(key) {
+        try {
+            if (typeof window === 'undefined' || !window.localStorage) {
+                return null;
+            }
+            return window.localStorage.getItem(key);
+        } catch (err) {
+            return null;
+        }
+    }
+
+    function getCurrentRole() {
+        return safeGetLocalStorage('userRole');
+    }
+
+    function hasRequiredRole(requiredRoles) {
+        var role = getCurrentRole();
+        if (!role) return false;
+        if (!requiredRoles || requiredRoles.length === 0) return true;
+        for (var i = 0; i < requiredRoles.length; i++) {
+            if (requiredRoles[i] === role) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    window.appCurrentUserRole = function () {
+        return getCurrentRole();
+    };
+
+    window.appRequireRole = function (requiredRoleOrRoles, options) {
+        var roles = [];
+        if (Array.isArray(requiredRoleOrRoles)) {
+            roles = requiredRoleOrRoles.filter(function (r) { return typeof r === 'string' && r.length > 0; });
+        } else if (typeof requiredRoleOrRoles === 'string' && requiredRoleOrRoles.length > 0) {
+            roles = [requiredRoleOrRoles];
+        }
+
+        var token = safeGetLocalStorage('authToken');
+        if (!token) {
+            window.location.href = appBuildUrl('login.html');
+            return false;
+        }
+
+        if (hasRequiredRole(roles)) {
+            return true;
+        }
+
+        var redirectTo = options && options.redirectTo;
+        if (!redirectTo) {
+            redirectTo = 'admin/dashboard.html';
+        }
+        window.location.href = appBuildUrl(redirectTo);
+        return false;
+    };
+
     if (typeof window !== 'undefined' && typeof window.fetch === 'function' && !window.__appFetchWrapped) {
         window.__appFetchWrapped = true;
         var originalFetch = window.fetch.bind(window);
@@ -111,5 +168,14 @@
         adjustAttr('link[href^="/"]', 'href');
         adjustAttr('script[src^="/"]', 'src');
         adjustAttr('form[action^="/"]', 'action');
+
+        var role = getCurrentRole();
+        document.querySelectorAll('[data-require-role]').forEach(function (el) {
+            var attr = el.getAttribute('data-require-role') || '';
+            var required = attr.split(',').map(function (r) { return r.trim(); }).filter(function (r) { return r.length > 0; });
+            if (!hasRequiredRole(required)) {
+                el.remove();
+            }
+        });
     });
 })();

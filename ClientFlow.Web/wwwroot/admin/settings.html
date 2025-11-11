@@ -655,6 +655,27 @@
 
         <script src="../app-base.js"></script>
 <script>
+(function () {
+  if (typeof window.appRequireRole === 'function') {
+    if (!window.appRequireRole('SuperAdmin')) {
+      return;
+    }
+  } else {
+    var roleOk = false;
+    try {
+      roleOk = window.localStorage && window.localStorage.getItem('userRole') === 'SuperAdmin';
+    } catch (err) {
+      roleOk = false;
+    }
+    if (!roleOk) {
+      var target = typeof window.appBuildUrl === 'function'
+        ? window.appBuildUrl('admin/dashboard.html')
+        : '../admin/dashboard.html';
+      window.location.href = target;
+      return;
+    }
+  }
+
   // --- Persist helpers ---
   const storeKey='cf_settings_v1';
   const S=()=>JSON.parse(localStorage.getItem(storeKey)||'{}');
@@ -1036,6 +1057,7 @@
     bind.audit();
   }
   refreshAll();
+})();
     </script>
 </body>
 </html>
