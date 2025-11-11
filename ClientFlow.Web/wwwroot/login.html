@@ -83,11 +83,35 @@
     </div>
     <script src="app-base.js"></script>
     <script>
+        const buildUrl = typeof window.appBuildUrl === 'function'
+            ? window.appBuildUrl
+            : (path) => path || '';
+
+        const apiFetch = typeof window.appApiFetch === 'function'
+            ? window.appApiFetch
+            : (path, options) => fetch(path, options);
+
+        const withSpinner = typeof window.appWithSpinner === 'function'
+            ? window.appWithSpinner
+            : (input) => {
+                let promise;
+                if (typeof input === 'function') {
+                    try {
+                        promise = Promise.resolve().then(input);
+                    } catch (err) {
+                        return Promise.reject(err);
+                    }
+                } else {
+                    promise = Promise.resolve(input);
+                }
+                return promise;
+            };
+
         // Redirect authenticated users to the dashboard
         if (localStorage.getItem('authToken')) {
             const mustChange = localStorage.getItem('mustChangePassword') === '1';
             const target = mustChange ? 'admin/change-password.html' : 'admin/dashboard.html';
-            window.location.href = appBuildUrl(target);
+            window.location.href = buildUrl(target);
         }
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -96,7 +120,7 @@
             const errorDiv = document.getElementById('error');
             errorDiv.style.display = 'none';
             try {
-                const res = await appWithSpinner(() => appApiFetch('api/users/login', {
+                const res = await withSpinner(() => apiFetch('api/users/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password })
@@ -122,7 +146,7 @@
                 }
                 // redirect based on password requirements
                 const target = data.mustChangePassword ? 'admin/change-password.html' : 'admin/dashboard.html';
-                window.location.href = appBuildUrl(target);
+                window.location.href = buildUrl(target);
             } catch (err) {
                 errorDiv.textContent = err.message;
                 errorDiv.style.display = '';
