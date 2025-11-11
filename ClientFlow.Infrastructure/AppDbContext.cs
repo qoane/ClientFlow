@@ -345,6 +345,24 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000602"), QuestionId = qFollowUpId, Value = "no", Label = "No", Order = 2 }
         );
 
+        // ---- Staff mapping ----
+        b.Entity<ClientFlow.Domain.Feedback.Staff>(e =>
+        {
+            e.ToTable("Staff");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).ValueGeneratedOnAdd();
+            e.Property(x => x.Name).IsRequired();
+            e.HasIndex(x => x.BranchId);
+        });
+
+        b.Entity<ClientFlow.Domain.Feedback.KioskFeedback>(e =>
+        {
+            e.ToTable("KioskFeedback");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).ValueGeneratedOnAdd();
+            e.Property(x => x.CreatedUtc).IsRequired();
+        });
+
         // ---- Seed sample staff ----
         // Staff entries are seeded with a default branch assignment.  When adding additional branches you can
         // update the BranchId column via subsequent migrations or within the application itself.  The IDs for
