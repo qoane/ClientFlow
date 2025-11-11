@@ -11,6 +11,7 @@ using ClientFlow.Application.Services;
 using ClientFlow.Domain.Feedback;
 using ClientFlow.Domain.Surveys;
 using ClientFlow.Infrastructure;
+using ClientFlow.Web.Analytics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Net.Http.Headers;
@@ -190,6 +191,47 @@ public class SurveysController(
         {
             // Ignore kiosk mapping failures to avoid interrupting the main survey submission flow.
         }
+    }
+
+    [HttpGet("{code}/analytics")]
+    public async Task<IActionResult> Analytics(
+        string code,
+        DateTimeOffset? from = null,
+        DateTimeOffset? to = null,
+        CancellationToken ct = default)
+    {
+        var survey = await surveys.GetByCodeWithSectionsAndQuestionsAsync(code, ct);
+        if (survey is null)
+        {
+            return NotFound();
+        }
+
+        var questionIds = survey.Questions.Select(q => q.Id).ToList();
+
+        var responsesQuery = db.Responses
+            .AsNoTracking()
+            .Include(r => r.Answers)
+            .Where(r => r.SurveyId == survey.Id);
+
+        if (from is not null)
+        {
+            responsesQuery = responsesQuery.Where(r => r.CreatedUtc >= from);
+        }
+
+        if (to is not null)
+        {
+            responsesQuery = responsesQuery.Where(r => r.CreatedUtc <= to);
+        }
+
+        var responses = await responsesQuery.ToListAsync(ct);
+
+        var options = await db.Options
+            .AsNoTracking()
+            .Where(o => questionIds.Contains(o.QuestionId))
+            .ToListAsync(ct);
+
+        var analytics = SurveyAnalyticsBuilder.Build(survey, options, responses);
+        return Ok(analytics);
     }
 
     private async Task<Staff?> ResolveStaffAsync(IReadOnlyDictionary<string, string?> answers, CancellationToken ct)
