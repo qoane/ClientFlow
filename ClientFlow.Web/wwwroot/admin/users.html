@@ -178,7 +178,10 @@
             listDiv.querySelectorAll('.delete').forEach(btn => {
                 btn.addEventListener('click', async (e) => {
                     const id = e.target.closest('tr').dataset.id;
-                    if (await appConfirm('Delete this user?')) {
+                    const confirmDelete = typeof window.appConfirm === 'function'
+                        ? await window.appConfirm('Delete this user?')
+                        : window.confirm('Delete this user?');
+                    if (confirmDelete) {
                         try {
                             await appWithSpinner(() => api('api/users/' + id, { method:'DELETE' }), 'Deleting user...');
                             loadUsers();
