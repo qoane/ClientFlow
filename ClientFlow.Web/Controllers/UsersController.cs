@@ -45,11 +45,23 @@ public class UsersController : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> Login([FromBody] LoginRequest req, CancellationToken ct)
     {
-        var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == req.Email, ct);
-        if (user == null || !_auth.VerifyPassword(req.Password, user.PasswordHash))
+        var record = await _db.Users
+            .AsNoTracking()
+            .Where(u => u.Email == req.Email)
+            .Select(u => new { u.Id, u.Email, u.PasswordHash, u.Role, u.BranchId })
+            .FirstOrDefaultAsync(ct);
+        if (record == null || !_auth.VerifyPassword(req.Password, record.PasswordHash))
         {
             return Unauthorized();
         }
+        var user = new User
+        {
+            Id = record.Id,
+            Email = record.Email,
+            PasswordHash = record.PasswordHash,
+            Role = record.Role,
+            BranchId = record.BranchId
+        };
         var token = _auth.GenerateJwtToken(user);
         return Ok(new { token, role = user.Role.ToString(), userId = user.Id, branchId = user.BranchId });
     }
