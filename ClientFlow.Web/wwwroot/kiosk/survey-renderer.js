@@ -515,25 +515,87 @@
 
     function videoRenderer(q) {
         const settings = q.settings || {};
-        const video = document.createElement('video');
-        video.controls = true;
-        if (settings.autoplay) video.autoplay = true;
-        if (settings.loop) video.loop = true;
-        if (settings.poster) video.poster = settings.poster;
-        if (settings.url) {
-            const source = document.createElement('source');
-            source.src = settings.url;
-            video.appendChild(source);
+        const wrapper = document.createElement('div');
+        const url = typeof settings.url === 'string' ? settings.url.trim() : '';
+
+        if (!url) {
+            const placeholder = document.createElement('div');
+            placeholder.textContent = 'Video not available.';
+            wrapper.appendChild(placeholder);
+            if (settings.caption) {
+                const caption = document.createElement('div');
+                caption.textContent = settings.caption;
+                wrapper.appendChild(caption);
+            }
+            return wrapper;
         }
+
+        const looksLikeHtml = url.startsWith('<');
+        const looksLikeVideoFile = /\.(mp4|webm|ogg)(\?.*)?$/i.test(url) || url.startsWith('blob:') || url.startsWith('data:video');
+        let mediaElement = null;
+
+        if (looksLikeHtml) {
+            const template = document.createElement('template');
+            template.innerHTML = url;
+            const iframe = template.content.querySelector('iframe');
+            if (iframe) {
+                iframe.setAttribute('frameborder', '0');
+                iframe.setAttribute('allowfullscreen', '');
+                iframe.setAttribute('loading', 'lazy');
+                if (!iframe.hasAttribute('allow')) {
+                    iframe.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share');
+                }
+                if (!iframe.style.width) iframe.style.width = '100%';
+                if (!iframe.style.height) iframe.style.height = '360px';
+                mediaElement = iframe;
+            }
+        }
+
+        if (!mediaElement && url && !looksLikeHtml && !looksLikeVideoFile) {
+            const iframe = document.createElement('iframe');
+            iframe.src = url;
+            iframe.setAttribute('frameborder', '0');
+            iframe.setAttribute('allowfullscreen', '');
+            iframe.setAttribute('loading', 'lazy');
+            iframe.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share');
+            mediaElement = iframe;
+        }
+
+        if (!mediaElement) {
+            const video = document.createElement('video');
+            video.controls = true;
+            video.playsInline = true;
+            video.preload = 'metadata';
+            if (settings.autoplay) {
+                video.autoplay = true;
+                video.muted = true;
+                video.setAttribute('muted', '');
+            }
+            if (settings.loop) video.loop = true;
+            if (settings.poster) video.poster = settings.poster;
+
+            if (looksLikeHtml) {
+                video.innerHTML = url;
+            } else if (url) {
+                const source = document.createElement('source');
+                source.src = url;
+                video.appendChild(source);
+            }
+
+            mediaElement = video;
+        }
+
+        if (mediaElement) {
+            wrapper.appendChild(mediaElement);
+        }
+
         if (settings.caption) {
             const caption = document.createElement('div');
             caption.textContent = settings.caption;
-            const wrapper = document.createElement('div');
-            wrapper.appendChild(video);
             wrapper.appendChild(caption);
-            return wrapper;
         }
-        return video;
+
+        return wrapper.childNodes.length > 0 ? wrapper : document.createDocumentFragment();
     }
 
     function dividerRenderer(q) {
