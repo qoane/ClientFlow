@@ -1,6 +1,34 @@
 (function () {
+    if (typeof window === 'undefined') return;
     if (window.__appBaseLoaded) return;
     window.__appBaseLoaded = true;
+
+    // Ensure a stable object exists so other scripts can read configuration such as
+    // an API base URL without throwing ReferenceError.  A page may provide
+    // `window.appSettings.apiBaseUrl` before this script loads (for example when the
+    // UI is hosted separately from the API).  If nothing is supplied we fall back to
+    // the current origin.
+    if (typeof window.appSettings !== 'object' || window.appSettings === null) {
+        window.appSettings = {};
+    }
+
+    function normaliseApiBase(raw) {
+        if (typeof raw !== 'string') return '';
+        var trimmed = raw.trim();
+        if (!trimmed) return '';
+        if (!/^https?:/i.test(trimmed)) return '';
+        if (!trimmed.endsWith('/')) {
+            trimmed += '/';
+        }
+        return trimmed;
+    }
+
+    function resolveApiBase() {
+        if (!window || typeof window !== 'object') return '';
+        var config = window.appSettings || {};
+        var raw = config.apiBaseUrl || config.apiBase;
+        return normaliseApiBase(raw);
+    }
 
     function detectBasePath() {
         var path = window.location.pathname || '/';
@@ -51,9 +79,16 @@
     };
 
     window.appApiUrl = function (path) {
-        if (!path) return normalise('api/');
+        var apiBaseOverride = resolveApiBase();
+        if (!path) return apiBaseOverride || normalise('api/');
+        if (/^https?:/i.test(path)) {
+            return path;
+        }
         if (path.startsWith('/')) {
             path = path.slice(1);
+        }
+        if (apiBaseOverride) {
+            return apiBaseOverride + path;
         }
         return normalise(path);
     };
