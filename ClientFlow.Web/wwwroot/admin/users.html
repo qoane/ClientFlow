@@ -83,6 +83,17 @@
         const listDiv = document.getElementById('userList');
         const createDiv = document.getElementById('createForm');
         const addBtn = document.getElementById('addBtn');
+        const notify = (message, options) => {
+            if (typeof window.appNotify === 'function') {
+                return window.appNotify(message, options);
+            }
+            if (options && options.type === 'danger') {
+                console.error(message);
+            }
+            if (typeof window.alert === 'function') {
+                window.alert(message);
+            }
+        };
         if (role !== 'SuperAdmin') {
             // Only SuperAdmins can create users
             addBtn.style.display = 'none';
@@ -130,7 +141,7 @@
                     createDiv.style.display = 'none';
                     loadUsers();
                 } catch (err) {
-                    appNotify('Error creating user: ' + err.message, { type: 'danger' });
+                    notify('Error creating user: ' + err.message, { type: 'danger' });
                 }
             });
         }
@@ -164,14 +175,14 @@
                     const tempPassword = await appPrompt('Enter a temporary password (minimum 8 characters):', { confirmText: 'Set Password' });
                     if (!tempPassword) return;
                     if (tempPassword.length < 8) {
-                        appNotify('Temporary password must be at least 8 characters.', { type: 'warning' });
+                        notify('Temporary password must be at least 8 characters.', { type: 'warning' });
                         return;
                     }
                     try {
                         await appWithSpinner(() => api(`api/users/${id}/reset-password`, { method:'POST', body: JSON.stringify({ temporaryPassword: tempPassword }) }), 'Resetting password...');
-                        appNotify('Password reset. Share the temporary password securely with the user.', { type: 'success' });
+                        notify('Password reset. Share the temporary password securely with the user.', { type: 'success' });
                     } catch (err) {
-                        appNotify('Error resetting password: ' + err.message, { type: 'danger' });
+                        notify('Error resetting password: ' + err.message, { type: 'danger' });
                     }
                 });
             });
@@ -186,7 +197,7 @@
                             await appWithSpinner(() => api('api/users/' + id, { method:'DELETE' }), 'Deleting user...');
                             loadUsers();
                         } catch (err) {
-                            appNotify('Error deleting: ' + err.message, { type: 'danger' });
+                            notify('Error deleting: ' + err.message, { type: 'danger' });
                         }
                     }
                 });
