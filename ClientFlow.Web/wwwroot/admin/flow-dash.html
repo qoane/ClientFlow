@@ -419,8 +419,8 @@ function getCss(v){ return getComputedStyle(document.documentElement).getPropert
 function esc(s){ return (s||'').replace(/[&<>"]/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c])) }
 
 document.getElementById('range').onchange = render;
-document.getElementById('btnClear').onclick = ()=>{
-  if(!confirm('Clear local responses?')) return;
+document.getElementById('btnClear').onclick = async ()=>{
+  if(!(await appConfirm('Clear local responses?'))) return;
   localStorage.removeItem(LS_RESP);
   render(); toast('Cleared');
 };

@@ -444,13 +444,13 @@
                     removeBtn.style.fontSize = '0.75rem';
                     removeBtn.textContent = 'Remove';
                     removeBtn.addEventListener('click', async () => {
-                        if (!confirm('Remove ' + staff.name + '?')) return;
+                        if (!(await appConfirm('Remove ' + staff.name + '?'))) return;
                         // Remove from UI immediately
                         staffList = staffList.filter(s => s.id !== staff.id);
                         updateLocalRoster();
                         renderTable();
                         try {
-                            await api('/api/staff/' + staff.id, { method: 'DELETE' });
+                            await appWithSpinner(() => api('/api/staff/' + staff.id, { method: 'DELETE' }), 'Removing staff...');
                         } catch (ex) {
                             console.warn('Failed to delete staff', ex);
                         }
@@ -484,7 +484,7 @@
             document.getElementById('btnSave').addEventListener('click', async () => {
                 const name = inputName.value.trim();
                 const photoUrl = inputPhoto.value.trim();
-                if (!name) { alert('Name is required'); return; }
+                if (!name) { appNotify('Name is required', { type: 'danger' }); return; }
                 if (editId) {
                     // update existing
                     const staff = staffList.find(s => s.id === editId);
@@ -495,10 +495,10 @@
                     renderTable();
                     // call update API
                     try {
-                        await api('/api/staff/' + editId, {
+                        await appWithSpinner(() => api('/api/staff/' + editId, {
                             method: 'PUT',
                             body: JSON.stringify({ name, photoUrl })
-                        });
+                        }), 'Saving changes...');
                     } catch (ex) {
                         console.warn('Failed to update staff', ex);
                     }
@@ -506,10 +506,10 @@
                     // create new
                     const newStaff = { name, photoUrl, isActive: true };
                     try {
-                        const created = await api('/api/staff', {
+                        const created = await appWithSpinner(() => api('/api/staff', {
                             method: 'POST',
                             body: JSON.stringify(newStaff)
-                        });
+                        }), 'Saving staff...');
                         if (created) {
                             staffList.push({ id: created.id, name: created.name, photoUrl: created.photoUrl, isActive: created.isActive });
                             updateLocalRoster();
@@ -524,9 +524,9 @@
 
             // Reset roster to seeded defaults via API
             document.getElementById('resetRoster').addEventListener('click', async () => {
-                if (!confirm('This will restore the default staff list and clear any custom entries. Continue?')) return;
+                if (!(await appConfirm('This will restore the default staff list and clear any custom entries. Continue?'))) return;
                 try {
-                    const resetList = await api('/api/staff/reset', { method: 'POST' });
+                    const resetList = await appWithSpinner(() => api('/api/staff/reset', { method: 'POST' }), 'Restoring roster...');
                     if (resetList) {
                         staffList = resetList;
                         updateLocalRoster();
@@ -578,12 +578,12 @@
 
             // Clear all feedback data from server (with offline fallback)
             document.getElementById('clearData').addEventListener('click', async () => {
-                if (!confirm('This will permanently delete all collected feedback. Continue?')) return;
+                if (!(await appConfirm('This will permanently delete all collected feedback. Continue?'))) return;
                 let serverCleared = false;
                 try {
                     // BranchAdmin clears only their branch's feedback; others clear all
                     const endpoint = (userRole === 'BranchAdmin' && userBranchId) ? `/api/feedback?branchId=${encodeURIComponent(userBranchId)}` : '/api/feedback';
-                    const resp = await api(endpoint, { method: 'DELETE' });
+                    const resp = await appWithSpinner(() => api(endpoint, { method: 'DELETE' }), 'Clearing feedback...');
                     if (resp === null) serverCleared = true;
                 } catch (err) {
                     console.warn('Failed to clear data on server', err);
@@ -592,7 +592,7 @@
                     // clear local storage fallback
                     localStorage.removeItem('kiosk_responses');
                 }
-                alert('Feedback data cleared');
+                appNotify('Feedback data cleared', { type: 'success' });
             });
 
             if (kioskSurveySelect) {
@@ -608,7 +608,7 @@
                 launchKioskBtn.addEventListener('click', () => {
                     const code = kioskSurveySelect ? kioskSurveySelect.value : '';
                     if (!code) {
-                        alert('Select a survey to launch.');
+                        appNotify('Select a survey to launch.', { type: 'warning' });
                         return;
                     }
                     localStorage.setItem(kioskSurveyStorageKey, code);
@@ -678,11 +678,11 @@
             try {
                 if (role === 'BranchAdmin' && branchId) {
                     // Update branch-specific settings
-                    await window.kioskAdminApi('/api/branches/' + encodeURIComponent(branchId), {
+                    await appWithSpinner(() => window.kioskAdminApi('/api/branches/' + encodeURIComponent(branchId), {
                         method: 'PUT',
                         body: JSON.stringify({ name: branch, reportRecipients: recipients, reportTime: time })
-                    });
-                    alert('Branch settings saved');
+                    }), 'Saving settings...');
+                    appNotify('Branch settings saved', { type: 'success' });
                 } else {
                     // Global settings are stored in /api/settings
                     const items = [
@@ -690,20 +690,20 @@
                         { key: 'ReportRecipients', value: recipients },
                         { key: 'ReportTime', value: time }
                     ];
-                    const resp = await window.kioskAdminApi('/api/settings', {
+                    const resp = await appWithSpinner(() => window.kioskAdminApi('/api/settings', {
                         method: 'POST',
                         body: JSON.stringify(items)
-                    });
+                    }), 'Saving settings...');
                     if (resp === null || Array.isArray(resp)) {
                         if (branch) localStorage.setItem('kiosk_branch', branch);
-                        alert('Settings saved');
+                        appNotify('Settings saved', { type: 'success' });
                     } else {
-                        alert('Failed to save settings');
+                        appNotify('Failed to save settings', { type: 'danger' });
                     }
                 }
             } catch (err) {
                 console.error('Failed to save settings', err);
-                alert('Error saving settings');
+                appNotify('Error saving settings', { type: 'danger' });
             }
         }
     </script>

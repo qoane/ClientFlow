@@ -973,10 +973,10 @@ async function loadSurveyDef(){
 document.getElementById('btnZoomIn').onclick=()=>setZoom(Math.min(2, zoom+0.1));
 document.getElementById('btnZoomOut').onclick=()=>setZoom(Math.max(0.5, zoom-0.1));
 document.getElementById('btnAutoLayout').onclick=()=>autoLayout();
-document.getElementById('btnClear').onclick=()=>{ if(confirm('Clear canvas?')){ WF.nodes=[]; WF.links=[]; canvas.innerHTML=''; svg.innerHTML=''; save(); showProps(); } };
+document.getElementById('btnClear').onclick=async ()=>{ if(!(await appConfirm('Clear canvas?'))) return; WF.nodes=[]; WF.links=[]; canvas.innerHTML=''; svg.innerHTML=''; save(); showProps(); };
 document.getElementById('btnExport').onclick=()=>{ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify(WF,null,2)],{type:'application/json'})); a.download='workflow.json'; a.click(); };
 document.getElementById('btnImport').onclick=()=>{ const i=document.createElement('input'); i.type='file'; i.accept='application/json';
-  i.onchange=()=>{ const f=i.files?.[0]; if(!f) return; const r=new FileReader(); r.onload=()=>{ try{ WF=JSON.parse(r.result); renderAll(); save(); }catch{ alert('Invalid JSON'); } }; r.readAsText(f); }; i.click(); };
+  i.onchange=()=>{ const f=i.files?.[0]; if(!f) return; const r=new FileReader(); r.onload=()=>{ try{ WF=JSON.parse(r.result); renderAll(); save(); }catch{ appNotify('Invalid JSON', { type:'danger' }); } }; r.readAsText(f); }; i.click(); };
 document.getElementById('btnSave').onclick=()=>{ save(); toast('Saved ✓'); };
 document.getElementById('btnSim').onclick=()=>simulate();
 
@@ -986,7 +986,7 @@ function simulate(){
   function push(m){ log.push(m); }
   // find start
   const start = WF.nodes.find(n=>n.type==='Start');
-  if(!start){ alert('Add a Start node.'); return; }
+  if(!start){ appNotify('Add a Start node.', { type:'warning' }); return; }
   let cur = start; let guard=0;
   // sample answers (for decision preview)
   const sample = {};
@@ -1018,7 +1018,7 @@ function simulate(){
     }
     if(cur?.type==='End'){ push('Reached End.'); break; }
   }
-  alert('Simulation:\n\n'+log.join('\n'));
+  appAlert('Simulation:\n\n'+log.join('\n'));
 }
 
 /* ========= Auto-layout (simple layered) ========= */

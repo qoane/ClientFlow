@@ -96,11 +96,11 @@
             const errorDiv = document.getElementById('error');
             errorDiv.style.display = 'none';
             try {
-                const res = await appApiFetch('api/users/login', {
+                const res = await appWithSpinner(() => appApiFetch('api/users/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password })
-                });
+                }), 'Signing in...');
                 if (!res.ok) {
                     throw new Error('Invalid email or password');
                 }
