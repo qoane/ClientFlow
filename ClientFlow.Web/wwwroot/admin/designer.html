@@ -757,6 +757,7 @@
                         card.addEventListener('dragend', () => { draggingQuestionId = null; });
                         card.onclick = (ev) => {
                             if (ev.target.closest('button')) return;
+                            ev.stopPropagation();
                             selectedQuestionId = question.id;
                             selectedSectionId = section.id;
                             renderProperties(store.getState());
