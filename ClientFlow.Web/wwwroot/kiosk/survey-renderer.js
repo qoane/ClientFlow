@@ -516,9 +516,20 @@
     function videoRenderer(q) {
         const settings = q.settings || {};
         const wrapper = document.createElement('div');
-        const url = typeof settings.url === 'string' ? settings.url.trim() : '';
+        const pickFirstNonEmpty = (...values) => {
+            for (const value of values) {
+                if (typeof value === 'string') {
+                    const trimmed = value.trim();
+                    if (trimmed) {
+                        return trimmed;
+                    }
+                }
+            }
+            return '';
+        };
+        const mediaSource = pickFirstNonEmpty(settings.url, settings.html, settings.embedHtml);
 
-        if (!url) {
+        if (!mediaSource) {
             const placeholder = document.createElement('div');
             placeholder.textContent = 'Video not available.';
             wrapper.appendChild(placeholder);
@@ -530,13 +541,13 @@
             return wrapper;
         }
 
-        const looksLikeHtml = url.startsWith('<');
-        const looksLikeVideoFile = /\.(mp4|webm|ogg)(\?.*)?$/i.test(url) || url.startsWith('blob:') || url.startsWith('data:video');
+        const looksLikeHtml = mediaSource.startsWith('<');
+        const looksLikeVideoFile = /\.(mp4|webm|ogg)(\?.*)?$/i.test(mediaSource) || mediaSource.startsWith('blob:') || mediaSource.startsWith('data:video');
         let mediaElement = null;
 
         if (looksLikeHtml) {
             const template = document.createElement('template');
-            template.innerHTML = url;
+            template.innerHTML = mediaSource;
             const iframe = template.content.querySelector('iframe');
             if (iframe) {
                 iframe.setAttribute('frameborder', '0');
@@ -548,12 +559,37 @@
                 if (!iframe.style.width) iframe.style.width = '100%';
                 if (!iframe.style.height) iframe.style.height = '360px';
                 mediaElement = iframe;
+            } else {
+                const inlineVideo = template.content.querySelector('video');
+                if (inlineVideo) {
+                    inlineVideo.playsInline = true;
+                    if (!inlineVideo.hasAttribute('controls')) {
+                        inlineVideo.controls = true;
+                    }
+                    if (settings.autoplay && !inlineVideo.autoplay) {
+                        inlineVideo.autoplay = true;
+                        inlineVideo.muted = true;
+                        inlineVideo.setAttribute('muted', '');
+                    }
+                    if (settings.loop && !inlineVideo.loop) {
+                        inlineVideo.loop = true;
+                    }
+                    if (settings.poster && !inlineVideo.poster) {
+                        inlineVideo.poster = settings.poster;
+                    }
+                    mediaElement = inlineVideo;
+                } else {
+                    const first = template.content.firstElementChild;
+                    if (first) {
+                        mediaElement = first;
+                    }
+                }
             }
         }
 
-        if (!mediaElement && url && !looksLikeHtml && !looksLikeVideoFile) {
+        if (!mediaElement && mediaSource && !looksLikeHtml && !looksLikeVideoFile) {
             const iframe = document.createElement('iframe');
-            iframe.src = url;
+            iframe.src = mediaSource;
             iframe.setAttribute('frameborder', '0');
             iframe.setAttribute('allowfullscreen', '');
             iframe.setAttribute('loading', 'lazy');
@@ -575,11 +611,13 @@
             if (settings.poster) video.poster = settings.poster;
 
             if (looksLikeHtml) {
-                video.innerHTML = url;
-            } else if (url) {
-                const source = document.createElement('source');
-                source.src = url;
-                video.appendChild(source);
+                const template = document.createElement('template');
+                template.innerHTML = mediaSource;
+                video.append(...template.content.childNodes);
+            } else if (mediaSource) {
+                const sourceEl = document.createElement('source');
+                sourceEl.src = mediaSource;
+                video.appendChild(sourceEl);
             }
 
             mediaElement = video;
