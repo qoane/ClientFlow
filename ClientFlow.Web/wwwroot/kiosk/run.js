@@ -6,6 +6,7 @@
     }
     if (typeof window.SurveyRenderer === 'undefined') {
         console.error('SurveyRenderer is not available.');
+        app.classList.remove('loading');
         app.textContent = 'Survey renderer is not available.';
         return;
     }
@@ -19,6 +20,7 @@
 
     const surveyCode = resolveSurveyCode();
     if (!surveyCode) {
+        app.classList.remove('loading');
         app.textContent = 'Survey code is missing.';
         return;
     }
@@ -161,6 +163,7 @@
     }
 
     function renderSurvey(definition) {
+        app.classList.remove('loading');
         app.innerHTML = '';
         const state = createState();
         const parsedQuestions = (definition.questions ?? [])
@@ -309,6 +312,7 @@
         .then(renderSurvey)
         .catch(error => {
             console.error(error);
+            app.classList.remove('loading');
             app.textContent = 'Unable to load the survey.';
         });
 })();

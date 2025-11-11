@@ -112,6 +112,11 @@
             flex-wrap: wrap
         }
 
+        .actions .launch-select {
+            width: auto;
+            min-width: 220px;
+        }
+
         .grid {
             display: grid;
             grid-template-columns: 2fr 2fr 2fr;
@@ -170,6 +175,9 @@
                 <button class="btn" id="clearFilters">Clear</button>
                 <button class="btn" id="exportCsv">Export CSV</button>
                 <button class="btn" id="exportPdf">Export PDF</button>
+                <select id="kioskSurveyPicker" class="launch-select">
+                    <option value="">Select survey…</option>
+                </select>
                 <button class="btn" id="openKiosk">Launch Kiosk</button>
                 <button class="btn" id="openAdmin">Admin</button>
             </div>
@@ -229,7 +237,8 @@
             label: document.getElementById('activeFilterLabel'),
             tot: document.getElementById('totResp'), t: document.getElementById('avgTime'),
             r: document.getElementById('avgRespect'), o: document.getElementById('avgOverall'),
-            d: document.getElementById('avgDuration')
+            d: document.getElementById('avgDuration'),
+            kioskSurvey: document.getElementById('kioskSurveyPicker')
         };
         flatpickr(els.from, { dateFormat: "Y-m-d" });
         flatpickr(els.to, { dateFormat: "Y-m-d" });
@@ -240,6 +249,9 @@
         let summary = null;
         let table; // Tabulator instance
         let charts = {};
+        const openKioskBtn = document.getElementById('openKiosk');
+        const kioskSurveyStorageKey = 'kiosk_selected_survey';
+        let kioskSurveyList = [];
 
         // Store the last total number of feedback responses so we can play a
         // sound when new feedback is received in the live dashboard.  This
@@ -262,6 +274,13 @@
             } catch (e) {
                 // Fallback: no sound if AudioContext fails (e.g. autoplay restrictions)
                 console.debug('Beep suppressed', e);
+            }
+        }
+
+        function updateLaunchAvailability() {
+            if (openKioskBtn) {
+                const hasSelection = !!(els.kioskSurvey && els.kioskSurvey.value);
+                openKioskBtn.disabled = !hasSelection;
             }
         }
 
@@ -339,6 +358,58 @@
                 const unique = [...new Set(fb.map(x => x.branch || 'Unknown'))];
                 els.branch.innerHTML = '<option value="">All branches</option>' +
                     unique.map(b => `<option>${b}</option>`).join('');
+            }
+
+            if (els.kioskSurvey) {
+                const select = els.kioskSurvey;
+                select.innerHTML = '';
+                const placeholder = document.createElement('option');
+                placeholder.value = '';
+                placeholder.textContent = 'Select survey…';
+                select.appendChild(placeholder);
+                try {
+                    const surveys = await fetchJson('/api/admin/surveys');
+                    if (Array.isArray(surveys)) {
+                        kioskSurveyList = surveys.filter(s => s && typeof s.code === 'string');
+                        const sorted = kioskSurveyList.slice().sort((a, b) => {
+                            const left = (a.title || a.code || '').toString().toLowerCase();
+                            const right = (b.title || b.code || '').toString().toLowerCase();
+                            return left.localeCompare(right);
+                        });
+                        sorted.forEach(meta => {
+                            const opt = document.createElement('option');
+                            opt.value = meta.code;
+                            let text = (meta.title || '').trim();
+                            text = text ? `${text} — ${meta.code}` : meta.code;
+                            if (meta.isActive === false) {
+                                text += ' (inactive)';
+                            }
+                            opt.textContent = text;
+                            select.appendChild(opt);
+                        });
+                        const storedCode = localStorage.getItem(kioskSurveyStorageKey);
+                        let preferred = storedCode ? sorted.find(s => s.code === storedCode) : null;
+                        if (!preferred) {
+                            preferred = sorted.find(s => s.isActive) || sorted[0] || null;
+                        }
+                        if (preferred) {
+                            select.value = preferred.code;
+                            localStorage.setItem(kioskSurveyStorageKey, preferred.code);
+                        }
+                    } else {
+                        kioskSurveyList = [];
+                    }
+                } catch (err) {
+                    console.warn('Failed to load surveys', err);
+                    kioskSurveyList = [];
+                }
+
+                if (select.options.length === 1) {
+                    placeholder.textContent = 'No surveys available';
+                    placeholder.disabled = true;
+                }
+
+                updateLaunchAvailability();
             }
         }
 
@@ -598,7 +669,27 @@
             exportCsvClient(norm);
         });
         document.getElementById('exportPdf').addEventListener('click', exportPdfClient);
-        document.getElementById('openKiosk').addEventListener('click', () => appRedirect('kiosk.html'));
+        if (els.kioskSurvey) {
+            els.kioskSurvey.addEventListener('change', () => {
+                if (els.kioskSurvey.value) {
+                    localStorage.setItem(kioskSurveyStorageKey, els.kioskSurvey.value);
+                }
+                updateLaunchAvailability();
+            });
+        }
+        if (openKioskBtn) {
+            openKioskBtn.addEventListener('click', () => {
+                const code = els.kioskSurvey ? els.kioskSurvey.value : '';
+                if (!code) {
+                    alert('Select a survey to launch.');
+                    return;
+                }
+                localStorage.setItem(kioskSurveyStorageKey, code);
+                const target = appBuildUrl(`kiosk/runner.html?code=${encodeURIComponent(code)}`);
+                window.open(target, '_blank', 'noopener');
+            });
+        }
+        updateLaunchAvailability();
         document.getElementById('openAdmin').addEventListener('click', () => appRedirect('kiosk-admin.html'));
 
         // Init

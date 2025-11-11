@@ -522,7 +522,9 @@
                 if ((type === 'static-html' || type === 'static_html') && settings.html) {
                     note.innerHTML = settings.html;
                 } else {
-                    note.textContent = q.prompt;
+                    const textSetting = typeof settings.text === 'string' ? settings.text.trim() : '';
+                    const message = textSetting || q.prompt || '';
+                    note.textContent = message;
                 }
                 field.appendChild(note);
                 container.appendChild(field);

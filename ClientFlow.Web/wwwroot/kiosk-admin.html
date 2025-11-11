@@ -106,7 +106,21 @@
         }
         .actions {
             margin-top: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
         }
+
+        .actions select {
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--panel2);
+            color: var(--text);
+            min-width: 220px;
+        }
+
         .btn {
             padding: 10px 16px;
             border-radius: 8px;
@@ -213,7 +227,10 @@
         <div class="panel">
             <h2>Quick Links</h2>
             <div class="actions">
-                <a href="kiosk.html" class="btn accent" style="text-decoration:none">Launch Kiosk</a>
+                <select id="kioskSurveySelect">
+                    <option value="">Select survey…</option>
+                </select>
+                <button class="btn accent" id="launchKioskBtn">Launch Kiosk</button>
                 <a href="kiosk-dashboard.html" class="btn accent" style="text-decoration:none">Open Dashboard</a>
             </div>
         </div>
@@ -254,6 +271,9 @@
             const inputName = document.getElementById('inputName');
             const inputPhoto = document.getElementById('inputPhoto');
             let editId = null;
+            const kioskSurveySelect = document.getElementById('kioskSurveySelect');
+            const launchKioskBtn = document.getElementById('launchKioskBtn');
+            const kioskSurveyStorageKey = 'kiosk_selected_survey';
 
             // Utility to update the kiosk roster in localStorage
             function updateLocalRoster() {
@@ -310,6 +330,61 @@
                     staffList = [];
                     renderTable();
                 }
+            }
+
+            function updateLaunchButtonState() {
+                if (launchKioskBtn) {
+                    launchKioskBtn.disabled = !(kioskSurveySelect && kioskSurveySelect.value);
+                }
+            }
+
+            async function loadSurveyOptions() {
+                if (!kioskSurveySelect) {
+                    return;
+                }
+                kioskSurveySelect.innerHTML = '';
+                const placeholder = document.createElement('option');
+                placeholder.value = '';
+                placeholder.textContent = 'Select survey…';
+                kioskSurveySelect.appendChild(placeholder);
+                try {
+                    const list = await api('/api/admin/surveys');
+                    if (Array.isArray(list)) {
+                        const filtered = list.filter(item => item && typeof item.code === 'string');
+                        const sorted = filtered.slice().sort((a, b) => {
+                            const left = (a.title || a.code || '').toString().toLowerCase();
+                            const right = (b.title || b.code || '').toString().toLowerCase();
+                            return left.localeCompare(right);
+                        });
+                        sorted.forEach(meta => {
+                            const opt = document.createElement('option');
+                            opt.value = meta.code;
+                            let text = (meta.title || '').trim();
+                            text = text ? `${text} — ${meta.code}` : meta.code;
+                            if (meta.isActive === false) {
+                                text += ' (inactive)';
+                            }
+                            opt.textContent = text;
+                            kioskSurveySelect.appendChild(opt);
+                        });
+                        const storedCode = localStorage.getItem(kioskSurveyStorageKey);
+                        let preferred = storedCode ? sorted.find(s => s.code === storedCode) : null;
+                        if (!preferred) {
+                            preferred = sorted.find(s => s.isActive) || sorted[0] || null;
+                        }
+                        if (preferred) {
+                            kioskSurveySelect.value = preferred.code;
+                            localStorage.setItem(kioskSurveyStorageKey, preferred.code);
+                        }
+                    }
+                } catch (err) {
+                    console.warn('Failed to load survey list', err);
+                }
+                if (kioskSurveySelect.options.length === 1) {
+                    placeholder.textContent = 'No surveys available';
+                    placeholder.disabled = true;
+                }
+                updateLaunchButtonState();
             }
 
             // Render staff table
@@ -520,9 +595,33 @@
                 alert('Feedback data cleared');
             });
 
+            if (kioskSurveySelect) {
+                kioskSurveySelect.addEventListener('change', () => {
+                    if (kioskSurveySelect.value) {
+                        localStorage.setItem(kioskSurveyStorageKey, kioskSurveySelect.value);
+                    }
+                    updateLaunchButtonState();
+                });
+            }
+
+            if (launchKioskBtn) {
+                launchKioskBtn.addEventListener('click', () => {
+                    const code = kioskSurveySelect ? kioskSurveySelect.value : '';
+                    if (!code) {
+                        alert('Select a survey to launch.');
+                        return;
+                    }
+                    localStorage.setItem(kioskSurveyStorageKey, code);
+                    const target = appBuildUrl(`kiosk/runner.html?code=${encodeURIComponent(code)}`);
+                    window.open(target, '_blank', 'noopener');
+                });
+            }
+
             // On page load
             loadStaff();
             loadSettings();
+            updateLaunchButtonState();
+            loadSurveyOptions();
             // Bind settings save button
             document.getElementById('saveSettings').addEventListener('click', saveSettings);
         })();
