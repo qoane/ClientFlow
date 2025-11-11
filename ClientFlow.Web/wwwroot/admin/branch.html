@@ -291,10 +291,10 @@
                     return;
                 }
                 try {
-                    await api('api/staff', {
+                    await appWithSpinner(() => api('api/staff', {
                         method: 'POST',
                         body: JSON.stringify(payload)
-                    });
+                    }), 'Saving staff...');
                     staffFormDiv.innerHTML = '';
                     await loadStaff();
                 } catch (err) {
@@ -322,10 +322,10 @@
                     return;
                 }
                 try {
-                        await api(`api/staff/${staff.id}`, {
+                    await appWithSpinner(() => api(`api/staff/${staff.id}`, {
                         method: 'PUT',
                         body: JSON.stringify(payload)
-                    });
+                    }), 'Saving staff...');
                     staffFormDiv.innerHTML = '';
                     await loadStaff();
                 } catch (err) {
@@ -338,27 +338,27 @@
 
         async function toggleStaffDuty(staff) {
             try {
-                await api(`api/staff/${staff.id}`, {
+                await appWithSpinner(() => api(`api/staff/${staff.id}`, {
                     method: 'PUT',
                     body: JSON.stringify({ isActive: !staff.isActive })
-                });
+                }), 'Updating status...');
                 await loadStaff();
             } catch (err) {
-                alert('Unable to update staff status: ' + err.message);
+                appNotify('Unable to update staff status: ' + err.message, { type: 'danger' });
             }
         }
 
         async function deleteStaff(staff) {
-            if (!confirm(`Delete ${staff.name}?`)) {
+            if (!(await appConfirm(`Delete ${staff.name}?`))) {
                 return;
             }
             try {
-                await api(`api/staff/${staff.id}`, {
+                await appWithSpinner(() => api(`api/staff/${staff.id}`, {
                     method: 'DELETE'
-                });
+                }), 'Deleting staff...');
                 await loadStaff();
             } catch (err) {
-                alert('Unable to delete staff member: ' + err.message);
+                appNotify('Unable to delete staff member: ' + err.message, { type: 'danger' });
             }
         }
 

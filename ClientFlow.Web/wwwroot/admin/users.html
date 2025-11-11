@@ -126,11 +126,11 @@
                 const roleSel = document.getElementById('newRole').value;
                 const bId = document.getElementById('newBranch').value || null;
                 try {
-                    await api('api/users', { method:'POST', body: JSON.stringify({ email, password, role: roleSel, branchId: bId || null }) });
+                    await appWithSpinner(() => api('api/users', { method:'POST', body: JSON.stringify({ email, password, role: roleSel, branchId: bId || null }) }), 'Creating user...');
                     createDiv.style.display = 'none';
                     loadUsers();
                 } catch (err) {
-                    alert('Error creating user: ' + err.message);
+                    appNotify('Error creating user: ' + err.message, { type: 'danger' });
                 }
             });
         }
@@ -161,29 +161,29 @@
                     const row = e.target.closest('tr');
                     const id = row.dataset.id;
                     const targetRole = row.dataset.role;
-                    const tempPassword = prompt('Enter a temporary password (minimum 8 characters):');
+                    const tempPassword = await appPrompt('Enter a temporary password (minimum 8 characters):', { confirmText: 'Set Password' });
                     if (!tempPassword) return;
                     if (tempPassword.length < 8) {
-                        alert('Temporary password must be at least 8 characters.');
+                        appNotify('Temporary password must be at least 8 characters.', { type: 'warning' });
                         return;
                     }
                     try {
-                        await api(`api/users/${id}/reset-password`, { method:'POST', body: JSON.stringify({ temporaryPassword: tempPassword }) });
-                        alert('Password reset. Share the temporary password securely with the user.');
+                        await appWithSpinner(() => api(`api/users/${id}/reset-password`, { method:'POST', body: JSON.stringify({ temporaryPassword: tempPassword }) }), 'Resetting password...');
+                        appNotify('Password reset. Share the temporary password securely with the user.', { type: 'success' });
                     } catch (err) {
-                        alert('Error resetting password: ' + err.message);
+                        appNotify('Error resetting password: ' + err.message, { type: 'danger' });
                     }
                 });
             });
             listDiv.querySelectorAll('.delete').forEach(btn => {
                 btn.addEventListener('click', async (e) => {
                     const id = e.target.closest('tr').dataset.id;
-                    if (confirm('Delete this user?')) {
+                    if (await appConfirm('Delete this user?')) {
                         try {
-                            await api('api/users/' + id, { method:'DELETE' });
+                            await appWithSpinner(() => api('api/users/' + id, { method:'DELETE' }), 'Deleting user...');
                             loadUsers();
                         } catch (err) {
-                            alert('Error deleting: ' + err.message);
+                            appNotify('Error deleting: ' + err.message, { type: 'danger' });
                         }
                     }
                 });

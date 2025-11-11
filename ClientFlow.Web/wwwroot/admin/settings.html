@@ -949,7 +949,7 @@
     const i=document.createElement('input'); i.type='file'; i.accept='application/json';
     i.onchange=()=>{ const f=i.files?.[0]; if(!f) return; const r=new FileReader(); r.onload=()=>{
       try{ const obj=JSON.parse(r.result); W(obj); refreshAll(); addAudit('Import','Settings imported from JSON'); bind.audit(); toast('Imported ✓'); }
-      catch{ alert('Invalid JSON'); }
+      catch{ appNotify('Invalid JSON', { type:'danger' }); }
     }; r.readAsText(f); }; i.click();
   };
   elm('btnRefreshSurveys').onclick=()=>loadSurveys();
@@ -991,23 +991,24 @@
       user.email=elm('uEmail').value.trim();
       user.role=elm('uRole').value;
       user.active=elm('uActive').checked;
-      if(!user.name||!user.email){ alert('Name & Email required'); return; }
+      if(!user.name||!user.email){ appNotify('Name & Email required', { type:'warning' }); return; }
       const i=st.users.findIndex(x=>x.id===user.id);
       if(i===-1){ st.users.push(user); addAudit('User Added',user.email); }
       else { st.users[i]=user; addAudit('User Updated',user.email); }
       W(st); bind.users(); renderUserModal(); closeModal('editUserModal'); toast('User saved ✓');
     };
   }
-  function delUser(id){
+  async function delUser(id){
     const st=S(); const u=st.users.find(x=>x.id===id); if(!u) return;
-    if(!confirm('Delete user '+u.email+'?')) return;
+    if(!(await appConfirm('Delete user '+u.email+'?'))) return;
     st.users = st.users.filter(x=>x.id!==id); W(st); bind.users(); renderUserModal(); addAudit('User Deleted',u.email);
   }
 
   // Roles
-  elm('btnAddRole').onclick=()=>{
-    const name=prompt('New user type (role) name?'); if(!name) return;
-    const st=S(); if(st.roles.includes(name)){ alert('Role exists'); return; }
+  elm('btnAddRole').onclick=async()=>{
+    const nameRaw=await appPrompt('New user type (role) name?', { confirmText: 'Add Role' });
+    const name=(nameRaw||'').trim(); if(!name) return;
+    const st=S(); if(st.roles.includes(name)){ appNotify('Role exists', { type:'warning' }); return; }
     st.roles.push(name); W(st); bind.roles(); toast('Role added ✓');
   };
 
@@ -1030,7 +1031,7 @@
   elm('btnSaveKiosk').onclick=()=>{
     const st=S(); const ks=st.kiosks;
     const code=elm('kCode').value.trim(); const name=elm('kName').value.trim(); const addr=elm('kAddr').value.trim(); const active=elm('kActive').checked;
-    if(!code||!name){ alert('Code & Name required'); return; }
+    if(!code||!name){ appNotify('Code & Name required', { type:'warning' }); return; }
     const ex=ks.findIndex(k=>k.code===code);
     const row={code,name,addr,active,last:now()};
     if(ex===-1){ ks.push(row); addAudit('Kiosk Added',code); } else { ks[ex]=row; addAudit('Kiosk Updated',code); }
@@ -1038,7 +1039,7 @@
   };
 
   // Audit clear
-  elm('btnClearAudit').onclick=()=>{ if(!confirm('Clear audit log?')) return; const st=S(); st.audit=[]; W(st); bind.audit(); toast('Audit cleared'); };
+  elm('btnClearAudit').onclick=async()=>{ if(!(await appConfirm('Clear audit log?'))) return; const st=S(); st.audit=[]; W(st); bind.audit(); toast('Audit cleared'); };
 
   // Add audit entry
   function addAudit(action,detail){ const st=S(); st.audit = st.audit || []; st.audit.push({at:now(),actor:'SuperAdmin',action,detail}); W(st); }

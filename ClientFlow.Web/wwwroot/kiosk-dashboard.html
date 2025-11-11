@@ -556,7 +556,7 @@
 
         async function exportCsv() {
             if (!analytics) {
-                alert('Load a survey before exporting.');
+                appNotify('Load a survey before exporting.', { type: 'warning' });
                 return;
             }
             const headers = ['Timestamp'].concat(analytics.questions.map(q => q.prompt));
@@ -581,7 +581,7 @@
 
         async function exportPdf() {
             if (!analytics) {
-                alert('Load a survey before exporting.');
+                appNotify('Load a survey before exporting.', { type: 'warning' });
                 return;
             }
             const { jsPDF } = window.jspdf;
@@ -673,7 +673,7 @@
             openKioskBtn.addEventListener('click', () => {
                 const code = els.kioskSurvey ? els.kioskSurvey.value : '';
                 if (!code) {
-                    alert('Select a survey to launch.');
+                    appNotify('Select a survey to launch.', { type: 'warning' });
                     return;
                 }
                 localStorage.setItem(kioskSurveyStorageKey, code);

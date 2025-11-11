@@ -133,11 +133,11 @@
                 const recipients = document.getElementById('newRecipients').value.trim();
                 const time = document.getElementById('newTime').value.trim();
                 try {
-                    await api('api/branches', { method:'POST', body: JSON.stringify({ name, reportRecipients: recipients, reportTime: time }) });
+                    await appWithSpinner(() => api('api/branches', { method:'POST', body: JSON.stringify({ name, reportRecipients: recipients, reportTime: time }) }), 'Creating branch...');
                     createDiv.style.display = 'none';
                     loadBranches();
                 } catch (err) {
-                    alert('Error creating branch: ' + err.message);
+                    appNotify('Error creating branch: ' + err.message, { type: 'danger' });
                 }
             });
         }
@@ -172,12 +172,12 @@
             listDiv.querySelectorAll('.delete').forEach(btn => {
                 btn.addEventListener('click', async (e) => {
                     const id = e.target.closest('tr').dataset.id;
-                    if (confirm('Delete this branch?')) {
+                    if (await appConfirm('Delete this branch?')) {
                         try {
-                            await api('api/branches/' + id, { method:'DELETE' });
+                            await appWithSpinner(() => api('api/branches/' + id, { method:'DELETE' }), 'Deleting branch...');
                             loadBranches();
                         } catch (err) {
-                            alert('Error deleting: ' + err.message);
+                            appNotify('Error deleting: ' + err.message, { type: 'danger' });
                         }
                     }
                 });
@@ -206,11 +206,11 @@
                 const recipients = document.getElementById('editRecipients').value.trim();
                 const time = document.getElementById('editTime').value.trim();
                 try {
-                    await api('api/branches/' + b.id, { method:'PUT', body: JSON.stringify({ name, reportRecipients: recipients, reportTime: time }) });
+                    await appWithSpinner(() => api('api/branches/' + b.id, { method:'PUT', body: JSON.stringify({ name, reportRecipients: recipients, reportTime: time }) }), 'Updating branch...');
                     createDiv.style.display = 'none';
                     loadBranches();
                 } catch (err) {
-                    alert('Error updating branch: ' + err.message);
+                    appNotify('Error updating branch: ' + err.message, { type: 'danger' });
                 }
             });
         }

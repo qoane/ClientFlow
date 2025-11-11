@@ -1007,8 +1007,8 @@
         };
 
         /* ---------- Reset data ---------- */
-        document.getElementById('btnReset').onclick = () => {
-            if (!confirm('Clear all local responses?')) return;
+        document.getElementById('btnReset').onclick = async () => {
+            if (!(await appConfirm('Clear all local responses?'))) return;
             localStorage.removeItem(LS_RESP);
             toast('Cleared responses');
         };
