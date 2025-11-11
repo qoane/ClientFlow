@@ -20,6 +20,10 @@ namespace ClientFlow.Infrastructure.Migrations
                 .HasAnnotation("ProductVersion", "9.0.8")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
+            var utcDateTimeConverter = new ValueConverter<DateTimeOffset, DateTime>(
+                v => v.UtcDateTime,
+                v => new DateTimeOffset(DateTime.SpecifyKind(v, DateTimeKind.Utc), TimeSpan.Zero));
+
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
             modelBuilder.Entity("ClientFlow.Domain.Branches.Branch", b =>
@@ -69,7 +73,9 @@ namespace ClientFlow.Infrastructure.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTimeOffset>("CreatedUtc")
-                        .HasColumnType("datetimeoffset");
+                        .HasColumnType("datetime2")
+                        .HasConversion(utcDateTimeConverter)
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
 
                     b.Property<int>("DurationSeconds")
                         .HasColumnType("int");
@@ -78,7 +84,8 @@ namespace ClientFlow.Infrastructure.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("Phone")
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
 
                     b.Property<int>("RespectRating")
                         .HasColumnType("int");
@@ -87,7 +94,8 @@ namespace ClientFlow.Infrastructure.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTimeOffset>("StartedUtc")
-                        .HasColumnType("datetimeoffset");
+                        .HasColumnType("datetime2")
+                        .HasConversion(utcDateTimeConverter);
 
                     b.Property<int>("TimeRating")
                         .HasColumnType("int");
