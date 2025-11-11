@@ -6,6 +6,7 @@ using ClientFlow.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using System.IO;
 using System.Text;
@@ -95,6 +96,13 @@ builder.Services
     .SetApplicationName("ClientFlow");
 
 var app = builder.Build();
+
+// Ensure the database schema is up to date before handling requests.
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.Migrate();
+}
 
 app.UseSwagger();
 app.UseSwaggerUI();
