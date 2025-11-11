@@ -105,6 +105,23 @@
         };
     }
 
+    const staticQuestionTypes = new Set([
+        'static_text',
+        'static_html',
+        'image',
+        'video',
+        'divider',
+        'spacer',
+        'message',
+        'note',
+        'info'
+    ]);
+
+    function isStaticType(type) {
+        if (typeof type !== 'string') return false;
+        return staticQuestionTypes.has(type.trim().toLowerCase());
+    }
+
     function createQuestionElement(question, state) {
         const container = document.createElement('div');
         container.className = 'survey-question';
@@ -114,7 +131,10 @@
         }
 
         const result = { question, container, error: null };
-        const isStatic = ['static_text', 'static_html', 'image', 'video', 'divider', 'spacer'].includes(question.type);
+        const isStatic = isStaticType(question.type);
+        if (isStatic) {
+            container.classList.add('survey-question-static');
+        }
         if (!isStatic) {
             const prompt = document.createElement('label');
             prompt.className = 'survey-prompt';
@@ -184,7 +204,7 @@
                 } else {
                     state.answers[question.key] = {};
                 }
-            } else if (!['static_text', 'static_html', 'image', 'video', 'divider', 'spacer'].includes(question.type)) {
+            } else if (!isStaticType(question.type)) {
                 if (question.settings && Object.prototype.hasOwnProperty.call(question.settings, 'defaultValue')) {
                     state.answers[question.key] = question.settings.defaultValue;
                 } else {
@@ -381,7 +401,7 @@
                 statusMessage.textContent = 'Thank you for your response!';
                 form.reset();
                 parsedQuestions.forEach(question => {
-                    if (['static_text', 'static_html', 'image', 'video', 'divider', 'spacer'].includes(question.type)) {
+                    if (isStaticType(question.type)) {
                         return;
                     }
                     if (question.type === 'multi') {
