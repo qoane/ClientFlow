@@ -105,6 +105,7 @@ using (var scope = app.Services.CreateScope())
     db.Database.Migrate();
     DatabaseSchemaFixer.EnsureMustChangePasswordColumn(db);
     DatabaseSchemaFixer.EnsureCreatedByUserIdColumn(db);
+    DatabaseSchemaFixer.EnsurePasswordResetTokensTable(db);
 }
 
 app.UseSwagger();

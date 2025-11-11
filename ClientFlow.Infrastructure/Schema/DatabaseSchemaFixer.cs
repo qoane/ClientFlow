@@ -62,4 +62,40 @@ END";
 
         db.Database.ExecuteSqlRaw(sql);
     }
+
+    /// <summary>
+    /// Ensures the <c>PasswordResetTokens</c> table exists with the expected schema.
+    /// Several legacy environments were provisioned before password reset support was
+    /// introduced, leaving them without the new table.  Because those databases also
+    /// have empty migration histories, relying solely on EF migrations is not
+    /// sufficient.  Executing this remediation on startup guarantees that password
+    /// reset flows function even when the migration history is incomplete.
+    /// </summary>
+    /// <param name="db">The application database context.</param>
+    public static void EnsurePasswordResetTokensTable(AppDbContext db)
+    {
+        const string sql = @"IF OBJECT_ID(N'dbo.PasswordResetTokens', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.PasswordResetTokens
+    (
+        Id UNIQUEIDENTIFIER NOT NULL CONSTRAINT DF_PasswordResetTokens_Id DEFAULT NEWID(),
+        UserId UNIQUEIDENTIFIER NOT NULL,
+        CodeHash NVARCHAR(256) NOT NULL,
+        CreatedUtc DATETIME2 NOT NULL,
+        ExpiresUtc DATETIME2 NOT NULL,
+        IsUsed BIT NOT NULL CONSTRAINT DF_PasswordResetTokens_IsUsed DEFAULT(0),
+        Purpose INT NOT NULL,
+        CONSTRAINT PK_PasswordResetTokens PRIMARY KEY (Id)
+    );
+
+    CREATE INDEX IX_PasswordResetTokens_UserId ON dbo.PasswordResetTokens(UserId);
+
+    ALTER TABLE dbo.PasswordResetTokens WITH CHECK
+        ADD CONSTRAINT FK_PasswordResetTokens_Users_UserId
+        FOREIGN KEY(UserId) REFERENCES dbo.Users(Id)
+        ON DELETE CASCADE;
+END";
+
+        db.Database.ExecuteSqlRaw(sql);
+    }
 }
