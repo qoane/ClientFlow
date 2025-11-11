@@ -359,6 +359,14 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 .WithMany()
                 .HasForeignKey(x => x.BranchId)
                 .OnDelete(DeleteBehavior.SetNull);
+
+            // Maintain the self-referencing admin relationship used for audit trails.
+            // When a user who invited others is deleted we prevent cascading deletes so
+            // history is preserved.  This mirrors the FK configured in migrations.
+            e.HasOne(x => x.CreatedByUser)
+                .WithMany(x => x.CreatedUsers)
+                .HasForeignKey(x => x.CreatedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         // Staff belong to a branch (nullable); when branch is deleted the staff remain with null BranchId
