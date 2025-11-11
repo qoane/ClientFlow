@@ -15,15 +15,11 @@ namespace ClientFlow.Infrastructure.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DeleteData(
-                table: "Questions",
-                keyColumn: "Id",
-                keyValue: new Guid("cccccccc-cccc-cccc-cccc-cccccccccccc"));
-
-            migrationBuilder.DeleteData(
-                table: "Questions",
-                keyColumn: "Id",
-                keyValue: new Guid("dddddddd-dddd-dddd-dddd-dddddddddddd"));
+            migrationBuilder.Sql(
+                """
+                DELETE FROM [Questions]
+                WHERE [Id] IN ('cccccccc-cccc-cccc-cccc-cccccccccccc', 'dddddddd-dddd-dddd-dddd-dddddddddddd');
+                """);
 
             migrationBuilder.DeleteData(
                 table: "Sections",
@@ -42,22 +38,21 @@ namespace ClientFlow.Infrastructure.Migrations
                     { new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbf"), 1, 5, new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"), "End Screen" }
                 });
 
-            migrationBuilder.InsertData(
-                table: "Questions",
-                columns: new[] { "Id", "Key", "Order", "Prompt", "Required", "SectionId", "SettingsJson", "SurveyId", "Type" },
-                values: new object[,]
-                {
-                    { new Guid("10000000-0000-0000-0000-000000000001"), "phone", 1, "Please enter your phone number.", true, new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"), null, new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"), "phone" },
-                    { new Guid("10000000-0000-0000-0000-000000000002"), "staff", 2, "I was assisted by…", true, new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbc"), null, new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"), "radio" },
-                    { new Guid("10000000-0000-0000-0000-000000000003"), "service", 3, "Which Liberty service were you assisted with today?", true, new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbc"), null, new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"), "radio" },
-                    { new Guid("10000000-0000-0000-0000-000000000004"), "satisfaction", 4, "How satisfied are you with your recent interaction with Liberty?", true, new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbd"), null, new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"), "radio" },
-                    { new Guid("10000000-0000-0000-0000-000000000005"), "timeliness", 5, "Was your query handled within a reasonable time?", true, new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbd"), null, new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"), "radio" },
-                    { new Guid("10000000-0000-0000-0000-000000000006"), "professionalism", 6, "Did our staff treat you professionally and with respect?", true, new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbd"), null, new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"), "radio" },
-                    { new Guid("10000000-0000-0000-0000-000000000007"), "recommend", 7, "How likely are you to recommend Liberty to a friend or family member?", true, new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbd"), null, new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"), "radio" },
-                    { new Guid("10000000-0000-0000-0000-000000000008"), "follow_up", 8, "Would you like someone to contact you about your experience?", true, new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbe"), null, new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"), "radio" },
-                    { new Guid("10000000-0000-0000-0000-000000000009"), "improvement", 9, "Please tell us briefly what we could do better.", false, new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbe"), "{\"placeholder\":\"Your feedback helps us improve.\"}", new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"), "text" },
-                    { new Guid("10000000-0000-0000-0000-00000000000a"), "end", 10, "Thank you for your feedback! Your input helps us improve our service.", false, new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbf"), null, new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"), "message" }
-                });
+            migrationBuilder.Sql(
+                """
+                INSERT INTO [Questions] ([Id], [Key], [Order], [Prompt], [Required], [SectionId], [SettingsJson], [SurveyId], [Type])
+                VALUES
+                    ('10000000-0000-0000-0000-000000000001', 'phone', 1, N'Please enter your phone number.', 1, 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', NULL, 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'phone'),
+                    ('10000000-0000-0000-0000-000000000002', 'staff', 2, N'I was assisted by…', 1, 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbc', NULL, 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'radio'),
+                    ('10000000-0000-0000-0000-000000000003', 'service', 3, N'Which Liberty service were you assisted with today?', 1, 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbc', NULL, 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'radio'),
+                    ('10000000-0000-0000-0000-000000000004', 'satisfaction', 4, N'How satisfied are you with your recent interaction with Liberty?', 1, 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbd', NULL, 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'radio'),
+                    ('10000000-0000-0000-0000-000000000005', 'timeliness', 5, N'Was your query handled within a reasonable time?', 1, 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbd', NULL, 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'radio'),
+                    ('10000000-0000-0000-0000-000000000006', 'professionalism', 6, N'Did our staff treat you professionally and with respect?', 1, 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbd', NULL, 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'radio'),
+                    ('10000000-0000-0000-0000-000000000007', 'recommend', 7, N'How likely are you to recommend Liberty to a friend or family member?', 1, 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbd', NULL, 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'radio'),
+                    ('10000000-0000-0000-0000-000000000008', 'follow_up', 8, N'Would you like someone to contact you about your experience?', 1, 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbe', NULL, 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'radio'),
+                    ('10000000-0000-0000-0000-000000000009', 'improvement', 9, N'Please tell us briefly what we could do better.', 0, 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbe', N'{"placeholder":"Your feedback helps us improve."}', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'text'),
+                    ('10000000-0000-0000-0000-00000000000A', 'end', 10, N'Thank you for your feedback! Your input helps us improve our service.', 0, 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbf', NULL, 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'message');
+                """);
 
             migrationBuilder.InsertData(
                 table: "Options",
@@ -304,55 +299,22 @@ namespace ClientFlow.Infrastructure.Migrations
                 keyColumn: "Id",
                 keyValue: new Guid("20000000-0000-0000-0000-000000000602"));
 
-            migrationBuilder.DeleteData(
-                table: "Questions",
-                keyColumn: "Id",
-                keyValue: new Guid("10000000-0000-0000-0000-000000000001"));
-
-            migrationBuilder.DeleteData(
-                table: "Questions",
-                keyColumn: "Id",
-                keyValue: new Guid("10000000-0000-0000-0000-000000000002"));
-
-            migrationBuilder.DeleteData(
-                table: "Questions",
-                keyColumn: "Id",
-                keyValue: new Guid("10000000-0000-0000-0000-000000000003"));
-
-            migrationBuilder.DeleteData(
-                table: "Questions",
-                keyColumn: "Id",
-                keyValue: new Guid("10000000-0000-0000-0000-000000000004"));
-
-            migrationBuilder.DeleteData(
-                table: "Questions",
-                keyColumn: "Id",
-                keyValue: new Guid("10000000-0000-0000-0000-000000000005"));
-
-            migrationBuilder.DeleteData(
-                table: "Questions",
-                keyColumn: "Id",
-                keyValue: new Guid("10000000-0000-0000-0000-000000000006"));
-
-            migrationBuilder.DeleteData(
-                table: "Questions",
-                keyColumn: "Id",
-                keyValue: new Guid("10000000-0000-0000-0000-000000000007"));
-
-            migrationBuilder.DeleteData(
-                table: "Questions",
-                keyColumn: "Id",
-                keyValue: new Guid("10000000-0000-0000-0000-000000000008"));
-
-            migrationBuilder.DeleteData(
-                table: "Questions",
-                keyColumn: "Id",
-                keyValue: new Guid("10000000-0000-0000-0000-000000000009"));
-
-            migrationBuilder.DeleteData(
-                table: "Questions",
-                keyColumn: "Id",
-                keyValue: new Guid("10000000-0000-0000-0000-00000000000a"));
+            migrationBuilder.Sql(
+                """
+                DELETE FROM [Questions]
+                WHERE [Id] IN (
+                    '10000000-0000-0000-0000-000000000001',
+                    '10000000-0000-0000-0000-000000000002',
+                    '10000000-0000-0000-0000-000000000003',
+                    '10000000-0000-0000-0000-000000000004',
+                    '10000000-0000-0000-0000-000000000005',
+                    '10000000-0000-0000-0000-000000000006',
+                    '10000000-0000-0000-0000-000000000007',
+                    '10000000-0000-0000-0000-000000000008',
+                    '10000000-0000-0000-0000-000000000009',
+                    '10000000-0000-0000-0000-00000000000A'
+                );
+                """);
 
             migrationBuilder.DeleteData(
                 table: "Sections",
@@ -384,14 +346,13 @@ namespace ClientFlow.Infrastructure.Migrations
                 columns: new[] { "Id", "Columns", "Order", "SurveyId", "Title" },
                 values: new object[] { new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"), 1, 1, new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"), "Main" });
 
-            migrationBuilder.InsertData(
-                table: "Questions",
-                columns: new[] { "Id", "Key", "Order", "Prompt", "Required", "SectionId", "SettingsJson", "SurveyId", "Type" },
-                values: new object[,]
-                {
-                    { new Guid("cccccccc-cccc-cccc-cccc-cccccccccccc"), "nps", 1, "How likely are you to recommend Liberty to a friend or colleague?", true, new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"), null, new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"), "nps_0_10" },
-                    { new Guid("dddddddd-dddd-dddd-dddd-dddddddddddd"), "reason", 2, "What is the primary reason for your score?", false, new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"), "{\"placeholder\":\"Tell us more…\"}", new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"), "text" }
-                });
+            migrationBuilder.Sql(
+                """
+                INSERT INTO [Questions] ([Id], [Key], [Order], [Prompt], [Required], [SectionId], [SettingsJson], [SurveyId], [Type])
+                VALUES
+                    ('cccccccc-cccc-cccc-cccc-cccccccccccc', 'nps', 1, N'How likely are you to recommend Liberty to a friend or colleague?', 1, 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', NULL, 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'nps_0_10'),
+                    ('dddddddd-dddd-dddd-dddd-dddddddddddd', 'reason', 2, N'What is the primary reason for your score?', 0, 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', N'{"placeholder":"Tell us more…"}', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'text');
+                """);
         }
     }
 }
