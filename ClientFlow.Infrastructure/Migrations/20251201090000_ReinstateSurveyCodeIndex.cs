@@ -10,6 +10,10 @@ namespace ClientFlow.Infrastructure.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropIndex(
+                name: "IX_Surveys_Code",
+                table: "Surveys");
+
             migrationBuilder.AlterColumn<string>(
                 name: "Code",
                 table: "Surveys",
@@ -36,11 +40,18 @@ namespace ClientFlow.Infrastructure.Migrations
             migrationBuilder.AlterColumn<string>(
                 name: "Code",
                 table: "Surveys",
-                type: "nvarchar(max)",
+                type: "nvarchar(450)",
+                maxLength: 450,
                 nullable: false,
                 oldClrType: typeof(string),
                 oldType: "nvarchar(128)",
                 oldMaxLength: 128);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Surveys_Code",
+                table: "Surveys",
+                column: "Code",
+                unique: true);
         }
     }
 }
