@@ -516,10 +516,10 @@
             const field = document.createElement('div');
             field.className = 'field';
 
-            if (type === 'message' || type === 'static_text' || type === 'static-html') {
+            if (type === 'message' || type === 'static_text' || type === 'static-html' || type === 'static_html') {
                 const note = document.createElement('div');
                 note.className = 'message-card';
-                if (type === 'static-html' && settings.html) {
+                if ((type === 'static-html' || type === 'static_html') && settings.html) {
                     note.innerHTML = settings.html;
                 } else {
                     note.textContent = q.prompt;
@@ -782,7 +782,7 @@
             const payload = Object.create(null);
             for (const q of questions) {
                 const type = (q.type || '').trim().toLowerCase();
-                if (type === 'message' || type === 'static_text' || type === 'static-html') {
+                if (type === 'message' || type === 'static_text' || type === 'static-html' || type === 'static_html') {
                     continue;
                 }
                 const raw = answers[q.key];
