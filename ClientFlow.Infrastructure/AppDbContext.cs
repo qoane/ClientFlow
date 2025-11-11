@@ -120,6 +120,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .Property(a => a.ValueNumber)
             .HasPrecision(10, 2);
 
+        b.Entity<ResponseSession>(e =>
+        {
+            e.ToTable("tblSessions");
+            e.HasKey(x => x.Id);
+        });
+
         b.Entity<SurveyVersion>(e =>
         {
             e.ToTable("SurveyVersions");
