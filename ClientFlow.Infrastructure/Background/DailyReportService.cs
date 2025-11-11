@@ -22,13 +22,13 @@ namespace ClientFlow.Infrastructure.Background;
 /// </summary>
 public class DailyReportService : IHostedService, IDisposable
 {
-    private readonly IServiceProvider _provider;
+    private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<DailyReportService> _logger;
     private Timer? _timer;
-    public DailyReportService(IServiceProvider provider, ILogger<DailyReportService> logger)
+    public DailyReportService(IServiceScopeFactory scopeFactory, ILogger<DailyReportService> logger)
     {
-        _provider = provider;
-        _logger = logger;
+        _scopeFactory = scopeFactory ?? throw new ArgumentNullException(nameof(scopeFactory));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     public Task StartAsync(CancellationToken cancellationToken)
@@ -47,7 +47,7 @@ public class DailyReportService : IHostedService, IDisposable
 
         try
         {
-            using var scope = _provider.CreateScope();
+            using var scope = _scopeFactory.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
             // Determine the earliest next run time across all branches. Each branch can specify
@@ -118,7 +118,7 @@ public class DailyReportService : IHostedService, IDisposable
 
     private async Task SendReportAsync()
     {
-        using var scope = _provider.CreateScope();
+        using var scope = _scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var emailService = scope.ServiceProvider.GetRequiredService<EmailService>();
         // Loop through each branch and send its own report if recipients are defined.  If no
