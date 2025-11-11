@@ -528,6 +528,11 @@
         import { SurveyDesignerStore } from './survey-designer-store.js';
 
         const store = new SurveyDesignerStore();
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+            window.location.href = appBuildUrl('login.html');
+        }
+        const authHeaders = token ? { 'Authorization': 'Bearer ' + token } : {};
         const toolbox = document.getElementById('toolbox');
         const canvasSections = document.getElementById('canvasSections');
         const sectionCount = document.getElementById('sectionCount');
@@ -1683,7 +1688,9 @@
             const code = surveyCodeInput.value.trim();
             if (!code) { toast('Enter a survey code to import', true); return; }
             try {
-                const res = await fetch(`/api/admin/surveys/${encodeURIComponent(code)}/definition`);
+                const res = await appApiFetch(`/api/admin/surveys/${encodeURIComponent(code)}/definition`, {
+                    headers: authHeaders
+                });
                 if (!res.ok) throw new Error('Failed');
                 const def = await res.json();
                 loadDefinition(def);
@@ -1700,9 +1707,9 @@
             payload.code = code;
             payload.title = store.getState().title || payload.title || code;
             try {
-                const res = await fetch(`/api/admin/surveys/${encodeURIComponent(code)}/definition`, {
+                const res = await appApiFetch(`/api/admin/surveys/${encodeURIComponent(code)}/definition`, {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders),
                     body: JSON.stringify(payload)
                 });
                 if (!res.ok) throw new Error('Failed');
