@@ -42,7 +42,7 @@ public class AdminController(
     // POST /api/admin/surveys
     public record CreateSurveyReq(string Code, string Title, string? Description);
 
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
     [HttpPost("surveys")]
     public async Task<IActionResult> Create([FromBody] CreateSurveyReq req, CancellationToken ct)
     {
@@ -71,7 +71,7 @@ public class AdminController(
     // PUT /api/admin/surveys/{code}/active
     public record SetActiveReq(bool IsActive);
 
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
     [HttpPut("surveys/{code}/active")]
     public async Task<IActionResult> SetActive(string code, [FromBody] SetActiveReq req, CancellationToken ct)
     {
@@ -87,7 +87,7 @@ public class AdminController(
     // PUT /api/admin/surveys/{code}
     public record UpdateSurveyReq(string? Title, string? Description);
 
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
     [HttpPut("surveys/{code}")]
     public async Task<IActionResult> UpdateMeta(string code, [FromBody] UpdateSurveyReq req, CancellationToken ct)
     {
@@ -102,7 +102,7 @@ public class AdminController(
 
     // ---------- (kept) your existing toggle by Id ----------
     // POST /api/admin/surveys/{id}/toggle?active=true
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
     [HttpPost("surveys/{id:guid}/toggle")]
     public async Task<IActionResult> Toggle(Guid id, [FromQuery] bool active, CancellationToken ct)
     {
@@ -122,7 +122,7 @@ public class AdminController(
         return Ok(def ?? (object)new { });   // cast makes both sides 'object'
     }
 
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
     [HttpPost("surveys/{code}/publish")]
     public async Task<IActionResult> Publish(string code, CancellationToken ct)
     {
@@ -139,7 +139,7 @@ public class AdminController(
         return Ok(versions);
     }
 
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
     [HttpPost("surveys/{code}/rollback")]
     public async Task<IActionResult> Rollback(string code, [FromQuery] int version, CancellationToken ct)
     {
@@ -177,7 +177,7 @@ public class AdminController(
         List<DesignerOptionDto>? Options,
         List<DesignerRuleDto>? Rules);
 
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
     [HttpPut("surveys/{code}/definition")]
     public async Task<IActionResult> SaveDefinition(
         string code,
@@ -420,7 +420,7 @@ public class AdminController(
     public record AddSectionReq(string Title, int Order = 0, int Columns = 1);
     public record UpdateSectionOrderReq(int Order);
 
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
     [HttpPost("surveys/{code}/sections")]
     public async Task<IActionResult> AddSection(
         string code,
@@ -445,7 +445,7 @@ public class AdminController(
         return NoContent();
     }
 
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
     [HttpPut("sections/{id:guid}/order")]
     public async Task<IActionResult> UpdateSectionOrder(
         Guid id,
@@ -499,7 +499,7 @@ public class AdminController(
 
     // POST /api/admin/surveys/{code}/questions
     // POST /api/admin/surveys/{code}/questions
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
     [HttpPost("surveys/{code}/questions")]
     public async Task<IActionResult> AddQuestion(
         string code,
@@ -556,7 +556,7 @@ public class AdminController(
         return NoContent();
     }
 
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
     [HttpPut("questions/{id:guid}/order")]
     public async Task<IActionResult> UpdateQuestionOrder(
         Guid id,
@@ -588,7 +588,7 @@ public class AdminController(
         return NoContent();
     }
 
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
     [HttpPut("questions/{id:guid}/move")]
     public async Task<IActionResult> MoveQuestion(
         Guid id,
@@ -660,7 +660,7 @@ public class AdminController(
         return NoContent();
     }
 
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
     [HttpPut("questions/{id:guid}")]
     public async Task<IActionResult> UpdateQuestion(
         Guid id,
@@ -728,7 +728,7 @@ public class AdminController(
         return NoContent();
     }
 
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
     [HttpDelete("questions/{id:guid}")]
     public async Task<IActionResult> DeleteQuestion(
         Guid id,
@@ -758,7 +758,7 @@ public class AdminController(
     public record ReplaceOptionReq(string Value, string Label, int Order = 0);
 
     // POST /api/admin/surveys/{code}/options
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
     [HttpPost("surveys/{code}/options")]
     public async Task<IActionResult> AddOption(string code, [FromBody] AddOptionReq req, CancellationToken ct)
     {
@@ -779,7 +779,7 @@ public class AdminController(
     }
 
     // PUT /api/admin/questions/{id}/options
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
     [HttpPut("questions/{id:guid}/options")]
     public async Task<IActionResult> ReplaceOptions(
         Guid id,
@@ -814,7 +814,7 @@ public class AdminController(
     }
 
     // DELETE /api/admin/options/{id}
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
     [HttpDelete("options/{id:guid}")]
     public async Task<IActionResult> DeleteOption(Guid id, CancellationToken ct)
     {
@@ -828,7 +828,7 @@ public class AdminController(
 
     public record UpdateStyleReq(string? Accent, string? Panel, string? Css, string? CssBase64);
 
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
     [HttpPut("surveys/{code}/style")]
     public async Task<IActionResult> UpdateStyle(string code, [FromBody] UpdateStyleReq req, CancellationToken ct)
     {
