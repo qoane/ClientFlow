@@ -54,7 +54,7 @@ public class SurveysController(
     public async Task<IActionResult> SubmitSurvey(string code, [FromBody] SubmitSurveyRequest req, CancellationToken ct)
     {
         var survey = await surveys.GetByCodeWithSectionsAndQuestionsAsync(code, ct);
-        if (survey is null || !survey.IsActive)
+        if (survey is null)
         {
             return NotFound(new { message = "Survey not found or inactive." });
         }
