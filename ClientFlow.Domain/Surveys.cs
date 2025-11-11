@@ -5,6 +5,7 @@ namespace ClientFlow.Domain.Surveys;
 public class Survey
 {
     public Guid Id { get; set; }
+    [MaxLength(128)]
     public string Code { get; set; } = default!;
     public string Title { get; set; } = default!;
     public string? Description { get; set; }
