@@ -1707,11 +1707,32 @@
             payload.code = code;
             payload.title = store.getState().title || payload.title || code;
             try {
-                const res = await appApiFetch(`/api/admin/surveys/${encodeURIComponent(code)}/definition`, {
+                const saveDefinition = () => appApiFetch(`/api/admin/surveys/${encodeURIComponent(code)}/definition`, {
                     method: 'PUT',
                     headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders),
                     body: JSON.stringify(payload)
                 });
+
+                let res = await saveDefinition();
+
+                if (res.status === 404) {
+                    const createRes = await appApiFetch('/api/admin/surveys', {
+                        method: 'POST',
+                        headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders),
+                        body: JSON.stringify({
+                            code,
+                            title: payload.title,
+                            description: payload.description ?? null
+                        })
+                    });
+
+                    if (!createRes.ok) {
+                        throw new Error('Failed to create survey');
+                    }
+
+                    res = await saveDefinition();
+                }
+
                 if (!res.ok) throw new Error('Failed');
                 toast('Survey saved to API ✓');
             } catch {
