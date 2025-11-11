@@ -1,5 +1,6 @@
 ﻿using ClientFlow.Domain.Surveys;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace ClientFlow.Infrastructure;
 
@@ -345,6 +346,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000602"), QuestionId = qFollowUpId, Value = "no", Label = "No", Order = 2 }
         );
 
+        var utcDateTimeConverter = new ValueConverter<DateTimeOffset, DateTime>(
+            v => v.UtcDateTime,
+            v => new DateTimeOffset(DateTime.SpecifyKind(v, DateTimeKind.Utc), TimeSpan.Zero));
+
         // ---- Staff mapping ----
         b.Entity<ClientFlow.Domain.Feedback.Staff>(e =>
         {
@@ -360,7 +365,16 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.ToTable("KioskFeedback");
             e.HasKey(x => x.Id);
             e.Property(x => x.Id).ValueGeneratedOnAdd();
-            e.Property(x => x.CreatedUtc).IsRequired();
+            e.Property(x => x.CreatedUtc)
+                .IsRequired()
+                .HasConversion(utcDateTimeConverter)
+                .HasColumnType("datetime2")
+                .HasDefaultValueSql("SYSUTCDATETIME()");
+            e.Property(x => x.StartedUtc)
+                .HasConversion(utcDateTimeConverter)
+                .HasColumnType("datetime2");
+            e.Property(x => x.Phone)
+                .HasMaxLength(64);
         });
 
         // ---- Seed sample staff ----
