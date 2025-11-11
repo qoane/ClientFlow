@@ -8,177 +8,323 @@
   <meta name="theme-color" content="#0b1020" />
   <style>
     :root {
-      --bg-light: #f1f3f7;
-      --primary: #0d1a4a;
-      --secondary: #e3e6ee;
-      --highlight: #1e2d6d;
-      --text-dark: #0d1a4a;
-      --text-light: #fff;
+      --bg-outer: #020716;
+      --bg-inner: #05133b;
+      --panel-bg: rgba(5, 19, 59, 0.72);
+      --panel-border: rgba(80, 140, 255, 0.35);
+      --card-bg: rgba(9, 23, 71, 0.65);
+      --card-selected: rgba(63, 183, 255, 0.2);
+      --text-light: #f5f7ff;
+      --text-muted: rgba(245, 247, 255, 0.7);
       --accent: #3fb7ff;
+      --accent-strong: #60d7ff;
     }
-    * { box-sizing: border-box }
-    html, body { height: 100%; margin: 0; font-family: system-ui,-apple-system,Segoe UI,Roboto,sans-serif }
-    body { background: var(--bg-light); color: var(--text-dark) }
-    .wrapper { position: relative; height: 100%; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden }
-    .logo { position: absolute; top: 24px; right: 24px; width: 140px; height: auto; z-index: 20 }
-    body.final-active .logo { filter: invert(1) brightness(2) }
-    .page { display: none; width: 90%; max-width: 860px; margin: 0 auto; text-align: left; opacity: 0; transition: opacity .35s ease }
-    .page.active { display: block; opacity: 1 }
-    h1 { margin-top: 0; font-size: 2.2rem; font-weight: 700; line-height: 1.2 }
-    #page-idle { display: none; position: absolute; inset: 0; background: var(--primary); color: var(--text-light) }
-    #page-idle.active { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center }
-    .idle-title { font-size: 3rem; margin-bottom: 10px; animation: pulse 2s infinite }
-    .idle-subtitle { font-size: 1.2rem; margin-bottom: 20px; color: #b7c1ec; animation: fadein 3s ease-in-out infinite }
-    .idle-animation { width: 80px; height: 80px; border: 6px solid var(--accent); border-top-color: transparent; border-radius: 50%; animation: spin 2s linear infinite; margin-top: 20px }
-    @keyframes spin { to { transform: rotate(360deg) } }
-    @keyframes pulse { 0%,100% { transform: scale(1); opacity: 1 } 50% { transform: scale(1.06); opacity: .9 } }
-    @keyframes fadein { 0%,100% { opacity: 1 } 50% { opacity: .55 } }
-    #phoneInput { width: 100%; padding: 16px 20px; font-size: 1.2rem; border: 2px solid var(--primary); border-radius: 12px; background: var(--secondary); color: var(--primary) }
-    #phoneInput::placeholder { color: #6e7aa3 }
-    .btn { display: inline-block; padding: 14px 36px; margin-top: 28px; font-size: 1.1rem; font-weight: 600; border: 0; border-radius: 12px; cursor: pointer; background: var(--primary); color: var(--text-light); transition: opacity .15s ease,transform .05s ease }
-    .btn:active { transform: translateY(1px) }
-    .btn:disabled { opacity: .4; cursor: default }
-    .staff-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(160px,1fr)); gap: 20px; margin-top: 32px }
-    .staff-card { background: var(--secondary); border: 2px solid var(--primary); border-radius: 16px; padding: 20px 12px; text-align: center; cursor: pointer; transition: transform .12s ease,background-color .12s ease,box-shadow .12s ease }
-    .staff-card:hover { transform: translateY(-3px) }
-    .staff-card.selected { background: #d6daec; border-color: var(--highlight); box-shadow: 0 6px 16px rgba(13,26,74,.16) }
-    .staff-card img { width: 80px; height: 80px; border-radius: 12px; object-fit: cover; background: #c6cbe3; margin-bottom: 12px }
-    .staff-card .name { font-size: 1rem; font-weight: 600; color: var(--primary) }
-    .option-list { display: grid; grid-template-columns: repeat(auto-fit,minmax(200px,1fr)); gap: 20px; margin-top: 32px }
-    .option-item { background: var(--secondary); border: 2px solid var(--primary); border-radius: 16px; padding: 20px; font-size: 1.05rem; font-weight: 600; color: var(--primary); cursor: pointer; text-align: center; transition: transform .12s ease,box-shadow .12s ease,background-color .12s ease }
-    .option-item:hover { transform: translateY(-3px) }
-    .option-item.selected { background: #d6daec; border-color: var(--highlight); box-shadow: 0 6px 16px rgba(13,26,74,.16) }
-    .option-list.contact { grid-template-columns: repeat(auto-fit,minmax(160px,1fr)) }
-    .rating-options { display: grid; grid-template-columns: repeat(auto-fit,minmax(120px,1fr)); gap: 20px; margin-top: 32px }
-    .rating-option { background: var(--secondary); border: 2px solid var(--primary); border-radius: 16px; padding: 20px 12px; text-align: center; cursor: pointer; transition: transform .12s ease,filter .12s ease }
-    .rating-option:hover { transform: translateY(-3px) }
-    .rating-option.selected { filter: brightness(1.15) }
-    .rating-option img { width: 60px; height: 60px; margin-bottom: 12px }
-    .rating-option .label { font-size: .9rem; font-weight: 600; color: var(--primary) }
-    .recommend-options { display: grid; grid-template-columns: repeat(auto-fit,minmax(140px,1fr)); gap: 20px; margin-top: 32px }
-    .recommend-option { background: var(--secondary); border: 2px solid var(--primary); border-radius: 16px; padding: 24px 16px; text-align: center; cursor: pointer; transition: transform .12s ease,filter .12s ease }
-    .recommend-option:hover { transform: translateY(-3px) }
-    .recommend-option.selected { filter: brightness(1.15) }
-    .recommend-option .emoji { font-size: 2rem; margin-bottom: 12px; display: block }
-    .recommend-option .label { font-size: .95rem; font-weight: 600; color: var(--primary) }
-    .recommend-note { margin-top: 12px; font-size: .9rem; color: rgba(255,255,255,.8) }
-    #commentInput { width: 100%; padding: 16px 20px; font-size: 1.1rem; border: 2px solid var(--primary); border-radius: 12px; background: var(--secondary); color: var(--primary); resize: vertical; margin-top: 20px; min-height: 160px }
-    .back-btn { margin-top: 36px; padding: 12px 24px; font-size: 1rem; border: 0; border-radius: 10px; background: var(--primary); color: var(--text-light); cursor: pointer }
-    .progress { position: absolute; bottom: 32px; right: 36px; display: none; gap: 10px }
-    .progress .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--primary); opacity: .3 }
-    .progress .dot.active { opacity: 1 }
-    .final-page { position: absolute; inset: 0; background: var(--primary); color: var(--text-light); text-align: center; display: none; z-index: 10 }
-    .final-page.active { display: flex; flex-direction: column; align-items: center; justify-content: center }
-    .final-page h1 { font-size: 3rem; margin-bottom: 20px }
-    .final-page p { margin-top: 50px; font-size: .9rem; color: #b7c1ec }
-    .progress-container { width: 80%; max-width: 420px; margin-top: 40px }
-    .progress-track { background: rgba(255,255,255,.15); border-radius: 6px; width: 100%; height: 10px; overflow: hidden }
-    .progress-fill { height: 100%; width: 0%; background: var(--accent); border-radius: 6px; transition: width 4s linear }
-
-      #wrapper {
-          position: relative;
-          height: 100%;
-          width: 100%;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          overflow: hidden;
-          margin: 0;
-          padding: 0;
-      }
-
-      #page-idle {
-          display: none;
-          position: fixed; /* instead of absolute */
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          width: 100%;
-          height: 100%;
-          background: var(--primary);
-          color: var(--text-light);
-      }
-
-      @keyframes gradientShift {
-          0% {
-              background-position: 0% 50%;
-          }
-
-          50% {
-              background-position: 100% 50%;
-          }
-
-          100% {
-              background-position: 0% 50%;
-          }
-      }
-
-      #page-idle.active {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          text-align: center;
-      }
-
-      #page-idle .logo {
-          width: 200px;
-          margin-bottom: 40px;
-      }
-
-      .idle-title {
-          font-size: 2.5rem;
-          margin-bottom: 20px;
-          text-shadow: 0 0 12px rgba(255,255,255,0.6);
-          animation: pulse 3s infinite;
-      }
-
-      .idle-subtitle {
-          font-size: 1.3rem;
-          margin-bottom: 40px;
-          color: #e0e7ff;
-          animation: fadein 4s ease-in-out infinite;
-      }
-
-      .start-btn {
-          padding: 20px 60px;
-          font-size: 1.5rem;
-          font-weight: 700;
-          border: none;
-          border-radius: 50px;
-          background: #3fb7ff;
-          color: #0b1020;
-          cursor: pointer;
-          box-shadow: 0 0 25px rgba(63,183,255,0.8);
-          transition: transform 0.2s ease, box-shadow 0.2s ease;
-      }
-
-          .start-btn:hover {
-              transform: scale(1.05);
-              box-shadow: 0 0 40px rgba(63,183,255,1);
-          }
-
-      .logo-center {
-          width: 180px;
-          margin-bottom: 40px;
-      }
-
-      #phoneInput {
-          margin-bottom: 20px;
-      }
-
-      #bgAnimation {
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          z-index: -1; /* sits behind everything */
-          background: linear-gradient(135deg, #0d1a4a, #0b1020);
-      }
-
+    * { box-sizing: border-box; }
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: "Segoe UI", "Roboto", sans-serif;
+    }
+    body {
+      position: relative;
+      background: radial-gradient(circle at 20% 20%, rgba(63,183,255,0.25), transparent 55%), linear-gradient(135deg, var(--bg-inner) 0%, var(--bg-outer) 100%);
+      color: var(--text-light);
+      overflow: hidden;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(120deg, rgba(96, 215, 255, 0.08) 0%, transparent 38%, transparent 62%, rgba(96, 215, 255, 0.04) 100%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .wrapper {
+      position: relative;
+      z-index: 1;
+      height: 100%;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 20px;
+      gap: 32px;
+    }
+    .logo {
+      position: absolute;
+      top: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 160px;
+      height: auto;
+      z-index: 2;
+    }
+    body.final-active .logo { filter: drop-shadow(0 0 12px rgba(96,215,255,0.6)); }
+    .page {
+      display: none;
+      width: min(90%, 820px);
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 32px;
+      padding: 56px 48px;
+      text-align: center;
+      backdrop-filter: blur(28px);
+      box-shadow: 0 24px 60px rgba(3, 9, 25, 0.55);
+      opacity: 0;
+      transition: opacity .35s ease;
+    }
+    .page.active {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      opacity: 1;
+    }
+    h1 {
+      margin-top: 0;
+      font-size: 2.4rem;
+      font-weight: 700;
+      line-height: 1.2;
+      color: var(--text-light);
+      text-shadow: 0 4px 30px rgba(0,0,0,0.35);
+    }
+    p { color: var(--text-muted); font-size: 1.05rem; }
+    .text-optional { color: var(--text-muted); opacity: 0.85; font-size: 0.95rem; }
+    #page-idle {
+      position: fixed;
+      inset: 0;
+      display: none;
+      background: linear-gradient(135deg, rgba(5, 19, 59, 0.9) 0%, rgba(3, 9, 28, 0.9) 100%);
+      border-radius: 0;
+      border: 0;
+      box-shadow: none;
+      padding: 0;
+    }
+    #page-idle.active {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 32px;
+    }
+    #page-idle .idle-content { max-width: 480px; }
+    #page-idle .logo {
+      position: static;
+      transform: none;
+      width: 220px;
+      margin-bottom: 16px;
+      filter: drop-shadow(0 0 18px rgba(96,215,255,0.75));
+    }
+    .idle-title {
+      font-size: 3.1rem;
+      margin-bottom: 16px;
+      text-shadow: 0 0 22px rgba(63,183,255,0.6);
+      animation: pulse 3s infinite;
+    }
+    .idle-subtitle {
+      font-size: 1.3rem;
+      margin-bottom: 24px;
+      color: rgba(224, 235, 255, 0.85);
+      animation: fadein 4s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%,100% { transform: scale(1); opacity: 1 } 50% { transform: scale(1.04); opacity: .92 } }
+    @keyframes fadein { 0%,100% { opacity: 1 } 50% { opacity: .6 } }
+    .start-btn,
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 18px 64px;
+      font-size: 1.25rem;
+      font-weight: 700;
+      border: none;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-strong) 100%);
+      color: #071a3d;
+      cursor: pointer;
+      box-shadow: 0 14px 45px rgba(63, 183, 255, 0.55);
+      transition: transform .2s ease, box-shadow .2s ease, filter .2s ease;
+    }
+    .start-btn { font-size: 1.5rem; padding: 20px 72px; }
+    .btn { padding: 16px 44px; font-size: 1.15rem; }
+    .start-btn:hover,
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 24px 60px rgba(63, 183, 255, 0.65);
+    }
+    .start-btn:active,
+    .btn:active { transform: translateY(1px); box-shadow: 0 12px 36px rgba(63,183,255,0.45); }
+    .btn:disabled {
+      cursor: not-allowed;
+      opacity: 0.5;
+      box-shadow: none;
+      transform: none;
+    }
+    .btn + .back-btn { margin-top: 20px; }
+    .back-btn {
+      margin-top: 28px;
+      padding: 14px 30px;
+      font-size: 1.05rem;
+      border-radius: 999px;
+      border: 1px solid rgba(96, 215, 255, 0.4);
+      background: rgba(6, 22, 58, 0.6);
+      color: var(--text-light);
+      cursor: pointer;
+      transition: background .2s ease, border-color .2s ease, transform .2s ease;
+    }
+    .back-btn:hover {
+      background: rgba(9, 30, 74, 0.8);
+      border-color: rgba(96, 215, 255, 0.7);
+      transform: translateY(-1px);
+    }
+    .back-btn:active { transform: translateY(0); }
+    #phoneInput,
+    #commentInput {
+      width: 100%;
+      padding: 18px 22px;
+      font-size: 1.15rem;
+      border-radius: 20px;
+      border: 1px solid var(--panel-border);
+      background: var(--card-bg);
+      color: var(--text-light);
+      box-shadow: inset 0 1px 18px rgba(2, 9, 30, 0.75);
+    }
+    #phoneInput::placeholder,
+    #commentInput::placeholder { color: var(--text-muted); }
+    .staff-grid,
+    .option-list,
+    .rating-options,
+    .recommend-options {
+      display: grid;
+      width: 100%;
+      margin-top: 36px;
+      gap: 20px;
+    }
+    .staff-grid { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+    .option-list { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+    .option-list.contact { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+    .rating-options { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+    .recommend-options { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+    .staff-card,
+    .option-item,
+    .rating-option,
+    .recommend-option {
+      background: var(--card-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 22px;
+      padding: 26px 20px;
+      text-align: center;
+      color: var(--text-light);
+      cursor: pointer;
+      transition: transform .15s ease, box-shadow .2s ease, border-color .2s ease, background .2s ease;
+      box-shadow: 0 18px 40px rgba(2, 6, 22, 0.45);
+    }
+    .staff-card:hover,
+    .option-item:hover,
+    .rating-option:hover,
+    .recommend-option:hover {
+      transform: translateY(-4px);
+      border-color: rgba(96, 215, 255, 0.7);
+      box-shadow: 0 26px 55px rgba(2, 6, 22, 0.55);
+    }
+    .staff-card.selected,
+    .option-item.selected,
+    .rating-option.selected,
+    .recommend-option.selected {
+      background: var(--card-selected);
+      border-color: var(--accent);
+      box-shadow: 0 28px 60px rgba(63, 183, 255, 0.45);
+      transform: translateY(-4px);
+    }
+    .staff-card img {
+      width: 84px;
+      height: 84px;
+      border-radius: 18px;
+      object-fit: cover;
+      margin-bottom: 16px;
+      background: rgba(63, 183, 255, 0.15);
+    }
+    .staff-card .name { font-weight: 600; }
+    .rating-option img { width: 68px; height: 68px; margin-bottom: 16px; }
+    .rating-option .label,
+    .recommend-option .label {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-light);
+    }
+    .recommend-option .emoji {
+      font-size: 2.2rem;
+      display: block;
+      margin-bottom: 12px;
+    }
+    .recommend-note { margin-top: 16px; font-size: .95rem; color: var(--text-muted); }
+    .progress {
+      position: fixed;
+      bottom: 40px;
+      right: 48px;
+      display: none;
+      gap: 12px;
+      z-index: 2;
+    }
+    .progress .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.25);
+      box-shadow: 0 0 12px rgba(63, 183, 255, 0.4);
+    }
+    .progress .dot.active {
+      background: var(--accent);
+      box-shadow: 0 0 16px rgba(96, 215, 255, 0.8);
+    }
+    .final-page {
+      position: fixed;
+      inset: 0;
+      border-radius: 0;
+      border: 0;
+      background: linear-gradient(135deg, rgba(5, 19, 59, 0.92) 0%, rgba(6, 22, 72, 0.92) 100%);
+      box-shadow: none;
+    }
+    .final-page h1 { font-size: 3.2rem; }
+    .final-page p { margin-top: 32px; }
+    .progress-container { width: min(80%, 420px); margin-top: 48px; }
+    .progress-track {
+      background: rgba(255,255,255,0.15);
+      border-radius: 8px;
+      height: 12px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-strong) 100%);
+      border-radius: 8px;
+      transition: width 4s linear;
+    }
+    #bgAnimation {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      opacity: 0.35;
+      background: transparent;
+    }
+    @media (max-width: 768px) {
+      .page { width: calc(100% - 32px); padding: 48px 24px; }
+      .start-btn,
+      .btn,
+      .back-btn { width: 100%; }
+      .progress { right: 24px; bottom: 28px; }
+      .logo { top: 24px; width: 140px; }
+    }
+    @media (max-width: 480px) {
+      h1 { font-size: 1.9rem; }
+      .idle-title { font-size: 2.4rem; }
+      .idle-subtitle { font-size: 1.1rem; }
+    }
   </style>
 </head>
 <body>
@@ -186,7 +332,7 @@
     <div class="wrapper" id="wrapper">
         <!-- Idle -->
         <div class="page" id="page-idle">
-            <img src="assets/liberty.png" alt="Liberty" class="logo" style="position:relative;" />
+            <img src="assets/liberty.png" alt="Liberty" class="logo" />
             <div class="idle-content">
                 <h1 class="idle-title">Please give us feedback</h1>
                 <p class="idle-subtitle">Tell us about your customer experience</p>
@@ -197,65 +343,65 @@
         <!-- Logo -->
         <!-- Phone -->
         <div class="page" id="page-phone">
-            <h1 style="color:white;">Please enter your phone number</h1>
+            <h1>Please enter your phone number</h1>
             <input type="tel" id="phoneInput" placeholder="5xx xxxx" autocomplete="tel" inputmode="tel" />
             <button class="btn" id="btnProceed" disabled>Proceed</button>
         </div>
         <!-- Staff -->
         <div class="page" id="page-staff">
-            <h1 style="color:white;">I was assisted by…</h1>
+            <h1>I was assisted by…</h1>
             <div class="staff-grid" id="staffGrid"></div>
             <button class="back-btn" id="backFromStaff">Back</button>
         </div>
         <!-- Service -->
         <div class="page" id="page-service">
-            <h1 style="color:white;">Which Liberty service were you assisted with today?</h1>
+            <h1>Which Liberty service were you assisted with today?</h1>
             <div class="option-list" id="serviceOptions"></div>
             <button class="back-btn" id="backFromService">Back</button>
         </div>
         <!-- Satisfaction -->
         <div class="page" id="page-satisfaction">
-            <h1 style="color:white;">How satisfied are you with your recent interaction with Liberty?</h1>
+            <h1>How satisfied are you with your recent interaction with Liberty?</h1>
             <div class="rating-options" id="optsSatisfaction"></div>
             <button class="back-btn" id="backFromSatisfaction">Back</button>
         </div>
         <!-- Time -->
         <div class="page" id="page-time">
-            <h1 style="color:white;">Was your query handled within a reasonable time?</h1>
+            <h1>Was your query handled within a reasonable time?</h1>
             <div class="rating-options" id="optsTime"></div>
             <button class="back-btn" id="backFromTime">Back</button>
         </div>
         <!-- Respect -->
         <div class="page" id="page-respect">
-            <h1 style="color:white;">Did our staff treat you professionally and with respect?</h1>
+            <h1>Did our staff treat you professionally and with respect?</h1>
             <div class="rating-options" id="optsRespect"></div>
             <button class="back-btn" id="backFromRespect">Back</button>
         </div>
         <!-- Recommend -->
         <div class="page" id="page-recommend">
-            <h1 style="color:white;">How likely are you to recommend Liberty to a friend or family member?</h1>
+            <h1>How likely are you to recommend Liberty to a friend or family member?</h1>
             <div class="recommend-options" id="optsRecommend"></div>
             <p class="recommend-note">(1 = Not at all likely &rarr; 5 = Extremely likely)</p>
             <button class="back-btn" id="backFromRecommend">Back</button>
         </div>
         <!-- Contact -->
         <div class="page" id="page-contact">
-            <h1 style="color:white;">Would you like someone to contact you about your experience?</h1>
+            <h1>Would you like someone to contact you about your experience?</h1>
             <div class="option-list contact" id="optsContact"></div>
             <button class="back-btn" id="backFromContact">Back</button>
         </div>
         <!-- Comment -->
         <div class="page" id="page-comment">
-            <h1 style="color:white;">Please tell us briefly what we could do better.</h1>
-            <p style="color:white; opacity:.8;">Optional</p>
+            <h1>Please tell us briefly what we could do better.</h1>
+            <p class="text-optional">Optional</p>
             <textarea id="commentInput" placeholder="Type your feedback here..." rows="5"></textarea>
             <button class="btn" id="btnSubmitComment">Submit Feedback</button>
             <button class="back-btn" id="backFromComment">Back</button>
         </div>
         <!-- Final -->
         <div class="page final-page" id="page-final">
-            <h1 style="color:white;">Thank you for your feedback!</h1>
-            <p style="color:white;">Your input helps us improve our service.</p>
+            <h1>Thank you for your feedback!</h1>
+            <p>Your input helps us improve our service.</p>
             <div class="progress-container">
                 <div class="progress-track"><div class="progress-fill" id="finalProgress"></div></div>
             </div>
