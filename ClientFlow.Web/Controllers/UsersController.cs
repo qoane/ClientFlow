@@ -40,7 +40,7 @@ public class UsersController : ControllerBase
     /// </summary>
     public record LoginRequest(string Email, string Password);
 
-    public record ChangePasswordRequest(string CurrentPassword, string NewPassword, string Code);
+    public record ChangePasswordRequest(string? CurrentPassword, string NewPassword, string? Code);
 
     public record AdminResetPasswordRequest(string TemporaryPassword);
 
@@ -256,9 +256,9 @@ public class UsersController : ControllerBase
         {
             return BadRequest("Request body is required.");
         }
-        if (string.IsNullOrWhiteSpace(req.CurrentPassword) || string.IsNullOrWhiteSpace(req.NewPassword))
+        if (string.IsNullOrWhiteSpace(req.NewPassword))
         {
-            return BadRequest("Current and new passwords are required.");
+            return BadRequest("New password is required.");
         }
         if (req.NewPassword.Length < 8)
         {
@@ -275,14 +275,10 @@ public class UsersController : ControllerBase
         {
             return Unauthorized();
         }
-        if (!_auth.VerifyPassword(req.CurrentPassword, user.PasswordHash))
-        {
-            return BadRequest("Current password is incorrect.");
-        }
-
         bool requiresCode = user.Role == UserRole.BranchAdmin || user.MustChangePassword;
         PasswordResetToken? token = null;
-        if (requiresCode)
+        bool hasValidCode = false;
+        if (requiresCode || !string.IsNullOrWhiteSpace(req.Code))
         {
             if (string.IsNullOrWhiteSpace(req.Code))
             {
@@ -296,6 +292,19 @@ public class UsersController : ControllerBase
             if (token is null || !_auth.VerifyPassword(req.Code, token.CodeHash))
             {
                 return BadRequest("Verification code is invalid or expired.");
+            }
+            hasValidCode = true;
+        }
+
+        if (!hasValidCode)
+        {
+            if (string.IsNullOrWhiteSpace(req.CurrentPassword))
+            {
+                return BadRequest("Current password is required.");
+            }
+            if (!_auth.VerifyPassword(req.CurrentPassword, user.PasswordHash))
+            {
+                return BadRequest("Current password is incorrect.");
             }
         }
 
