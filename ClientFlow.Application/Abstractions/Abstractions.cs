@@ -5,6 +5,7 @@ namespace ClientFlow.Application.Abstractions;
 public interface ISurveyRepository
 {
     Task<List<Survey>> ListAsync(CancellationToken ct);
+    Task<List<Survey>> ListForUpdateAsync(CancellationToken ct = default);
     Task AddAsync(Survey survey, CancellationToken ct);
     Task SaveChangesAsync(CancellationToken ct);
     Task<Survey?> GetByCodeAsync(string code, CancellationToken ct = default);

@@ -109,11 +109,11 @@ public class FeedbackController : ControllerBase
             RespectRating = dto.RespectRating!.Value,
             OverallRating = dto.OverallRating!.Value,
             Phone = string.IsNullOrWhiteSpace(dto.Phone) ? null : dto.Phone,
-            StartedUtc = dto.StartedUtc ?? DateTime.UtcNow,
+            StartedUtc = dto.StartedUtc ?? DateTimeOffset.UtcNow,
             DurationSeconds = dto.DurationSeconds ?? 0,
             BranchId = selectedBranchId,
             BranchName = branchNameVal,
-            CreatedUtc = DateTime.UtcNow
+            CreatedUtc = DateTimeOffset.UtcNow
         };
 
         _db.KioskFeedback.Add(entity);

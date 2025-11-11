@@ -59,7 +59,7 @@ public class AdminController(
             Code = code,
             Title = req.Title.Trim(),
             Description = req.Description,
-            IsActive = true
+            IsActive = false
         };
 
         await surveys.AddAsync(s, ct);
@@ -78,8 +78,7 @@ public class AdminController(
         var s = await surveys.GetByCodeAsync(code, ct);
         if (s is null) return NotFound();
 
-        s.IsActive = req.IsActive;
-        await uow.SaveChangesAsync(ct);
+        await SetExclusiveActiveAsync(s, req.IsActive, ct);
         return NoContent();
     }
 
@@ -106,13 +105,30 @@ public class AdminController(
     [HttpPost("surveys/{id:guid}/toggle")]
     public async Task<IActionResult> Toggle(Guid id, [FromQuery] bool active, CancellationToken ct)
     {
-        var all = await surveys.ListAsync(ct);
+        var all = await surveys.ListForUpdateAsync(ct);
         var s = all.FirstOrDefault(x => x.Id == id);
         if (s is null) return NotFound();
 
-        s.IsActive = active;
-        await surveys.SaveChangesAsync(ct); // if your UoW is required here, swap to uow.SaveChangesAsync(ct)
+        await SetExclusiveActiveAsync(s, active, ct, all);
         return Ok();
+    }
+
+    private async Task SetExclusiveActiveAsync(Survey survey, bool isActive, CancellationToken ct, List<Survey>? preloaded = null)
+    {
+        if (isActive)
+        {
+            var tracked = preloaded ?? await surveys.ListForUpdateAsync(ct);
+            foreach (var item in tracked)
+            {
+                item.IsActive = item.Id == survey.Id;
+            }
+        }
+        else
+        {
+            survey.IsActive = false;
+        }
+
+        await uow.SaveChangesAsync(ct);
     }
 
     [HttpGet("surveys/{code}/definition")]

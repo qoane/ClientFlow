@@ -7,11 +7,205 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <style>
         :root {
-            --brand: #de2b2b
+            --accent: #19cba0;
+            --accent-soft: rgba(25, 203, 160, 0.18);
+            --panel: #0f1530;
+            --panel-strong: rgba(13, 26, 74, 0.86);
+            --text: #eef1ff;
+            --muted: #9fb0ff;
+            --border: rgba(255, 255, 255, 0.12);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            height: 100%;
+        }
+
+        body {
+            margin: 0;
+            font: 16px/1.55 "Segoe UI", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            color: var(--text);
+            background: radial-gradient(1100px 700px at 80% -10%, rgba(33, 59, 118, 0.55), transparent 60%), #0b1020;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 32px 18px;
+        }
+
+        main.container {
+            width: 100%;
+            max-width: 980px;
+            padding: 0;
+        }
+
+        .survey-shell {
+            background: var(--panel-strong);
+            border: 1px solid var(--border);
+            border-radius: 26px;
+            padding: 40px;
+            box-shadow: 0 35px 80px rgba(8, 14, 34, 0.55);
+        }
+
+        h3#title {
+            font-size: 2.1rem;
+            margin-bottom: 0.35rem;
+        }
+
+        #desc {
+            color: var(--muted);
+            margin-bottom: 1.75rem;
+        }
+
+        .section-head {
+            font-size: 1.35rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: #cfe0ff;
+        }
+
+        .cf-form .row {
+            margin-bottom: 24px;
+        }
+
+        label.form-label {
+            display: block;
+            color: var(--text);
+            font-weight: 600;
+            margin-bottom: 10px;
+            font-size: 1.05rem;
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            display: block;
+            color: var(--text);
+            background: rgba(17, 26, 60, 0.72);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            border-radius: 14px;
+            padding: 12px 14px;
+            min-height: 50px;
+            transition: border-color .18s ease, box-shadow .18s ease;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            border-color: var(--accent);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(25, 203, 160, 0.22);
+        }
+
+        textarea {
+            min-height: 140px;
+        }
+
+        .btn {
+            border-radius: 14px;
+            border: none;
+            font-weight: 600;
+            letter-spacing: .015em;
+            padding: 14px 32px;
+            min-height: 52px;
+            transition: transform .12s ease, filter .12s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #19cba0, #5df5d1);
+            color: #05261f;
+        }
+
+        .btn-primary:hover {
+            filter: brightness(1.05);
+            transform: translateY(-1px);
+        }
+
+        #prev.btn {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.28);
+            color: var(--text);
+        }
+
+        #prev.btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .nps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(54px, 1fr));
+            gap: 10px;
         }
 
         .nps button {
-            min-width: 42px
+            border-radius: 14px;
+            min-width: auto;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            background: rgba(22, 32, 72, 0.7);
+            color: var(--text);
+            font-weight: 600;
+            padding: 14px 0;
+            transition: transform .12s ease, background .12s ease;
+        }
+
+        .nps button:hover,
+        .nps button.selected {
+            background: var(--accent);
+            color: #05261f;
+            transform: translateY(-2px);
+        }
+
+        .rating-stars {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+
+        .rating-stars button {
+            width: 66px;
+            height: 66px;
+            border-radius: 18px;
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            background: rgba(20, 30, 68, 0.7);
+            font-size: 1.9rem;
+            color: rgba(255, 255, 255, 0.45);
+            cursor: pointer;
+            transition: transform .12s ease, background .12s ease, color .12s ease;
+        }
+
+        .rating-stars button.selected {
+            background: var(--accent);
+            color: #031b15;
+            transform: translateY(-3px);
+        }
+
+        .rating-stars button:focus-visible {
+            outline: 3px solid rgba(255, 255, 255, 0.32);
+            outline-offset: 2px;
+        }
+
+        .survey-alert {
+            margin-top: 24px;
+        }
+
+        @media (max-width: 720px) {
+            body {
+                padding: 18px;
+            }
+
+            .survey-shell {
+                padding: 26px;
+                border-radius: 20px;
+            }
+
+            .rating-stars button {
+                width: 58px;
+                height: 58px;
+            }
         }
     </style>
 </head>
@@ -19,12 +213,12 @@
 
     <main class="container py-4">
         <div class="row justify-content-center">
-            <div class="col-lg-8">
-                <div class="p-4 bg-white border rounded">
+            <div class="col-lg-10">
+                <div class="survey-shell">
                     <h3 id="title" class="mb-2">Survey</h3>
                     <p id="desc" class="text-secondary"></p>
                     <form id="form"></form>
-                    <div id="alert" class="alert alert-success mt-3 d-none">Thanks for your feedback!</div>
+                    <div id="alert" class="alert alert-success survey-alert d-none">Thanks for your feedback!</div>
                 </div>
             </div>
         </div>
@@ -39,6 +233,8 @@
   const descEl = document.getElementById('desc');
   const form = document.getElementById('form');
   const alertEl = document.getElementById('alert');
+
+  let sessionStarted = Date.now();
 
   const parseSettings = (json) => {
     if(!json) return {};
@@ -80,7 +276,7 @@
       block.className = 'mb-4';
       if (section.title) {
         const head = document.createElement('h5');
-        head.className = 'mb-3 text-primary';
+        head.className = 'section-head';
         head.textContent = section.title;
         block.appendChild(head);
       }
@@ -128,6 +324,47 @@
           scale.className = 'd-flex justify-content-between small text-muted mt-1';
           scale.innerHTML = '<span>Not at all likely</span><span>Extremely likely</span>';
           wrap.appendChild(scale);
+        }
+        else if (q.type === 'rating_stars' || q.type === 'rating') {
+          const settings = parseSettings(q.settingsJson);
+          const maxStars = Number(settings.stars) > 0 ? Number(settings.stars) : 5;
+          const defaultValue = settings.defaultValue ? Number(settings.defaultValue) : null;
+          const hidden = document.createElement('input');
+          hidden.type = 'hidden';
+          hidden.name = q.key;
+          if (q.required) {
+            hidden.dataset.required = 'true';
+          }
+
+          const holder = document.createElement('div');
+          holder.className = 'rating-stars';
+          const update = (value) => {
+            Array.from(holder.children).forEach(btn => {
+              const v = Number(btn.dataset.value);
+              btn.classList.toggle('selected', v <= value);
+              btn.setAttribute('aria-pressed', v <= value ? 'true' : 'false');
+            });
+          };
+
+          for (let i = 1; i <= maxStars; i++) {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.dataset.value = String(i);
+            btn.textContent = '★';
+            btn.addEventListener('click', () => {
+              hidden.value = String(i);
+              update(i);
+            });
+            holder.appendChild(btn);
+          }
+
+          if (defaultValue) {
+            hidden.value = String(defaultValue);
+            update(defaultValue);
+          }
+
+          wrap.appendChild(holder);
+          wrap.appendChild(hidden);
         }
         else if (q.type === 'radio') {
           const opts = optionsMap.get(q.id) ?? [];
@@ -219,9 +456,28 @@
           data[q.key] = el.value ?? null;
         }
       }
+      data.__startedUtc = new Date(sessionStarted).toISOString();
+      data.__durationSeconds = String(Math.max(0, Math.round((Date.now() - sessionStarted) / 1000)));
+
+      for (const q of questionsForSubmit) {
+        if (q.required) {
+          const value = data[q.key];
+          if (value == null || (typeof value === 'string' && value.trim() === '')) {
+            alertEl.classList.remove('d-none');
+            alertEl.classList.remove('alert-success');
+            alertEl.classList.add('alert-danger');
+            alertEl.textContent = `Please complete "${q.prompt}" before continuing.`;
+            return;
+          }
+        }
+      }
       await API.submit(surveyCode, data);
+      alertEl.classList.remove('alert-danger');
+      alertEl.classList.add('alert-success');
       alertEl.classList.remove('d-none');
+      alertEl.textContent = 'Thanks for your feedback!';
       form.reset();
+      sessionStarted = Date.now();
     });
   } catch (err) {
     console.error(err);
