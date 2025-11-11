@@ -226,6 +226,41 @@
             font-size: 1rem;
         }
 
+        .media-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .media-wrapper img,
+        .media-wrapper video,
+        .media-wrapper iframe {
+            width: 100%;
+            max-width: 100%;
+            border-radius: 18px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(18, 30, 68, 0.45);
+        }
+
+        .media-wrapper iframe {
+            min-height: 260px;
+        }
+
+        .media-caption {
+            font-size: 0.9rem;
+            color: var(--muted);
+        }
+
+        .divider-rule {
+            border: none;
+            border-top: 1px solid rgba(255, 255, 255, 0.16);
+            margin: 12px 0;
+        }
+
+        .spacer-block {
+            width: 100%;
+        }
+
         .actions {
             margin-top: 32px;
             display: flex;
@@ -531,6 +566,139 @@
                 return;
             }
 
+            if (type === 'image') {
+                const url = (settings.url || '').trim();
+                if (!url) {
+                    const placeholder = document.createElement('div');
+                    placeholder.className = 'message-card';
+                    placeholder.textContent = 'Image not available.';
+                    field.appendChild(placeholder);
+                    container.appendChild(field);
+                    return;
+                }
+                const media = document.createElement('div');
+                media.className = 'media-wrapper';
+                const img = document.createElement('img');
+                img.src = url;
+                img.alt = settings.alt || q.prompt || '';
+                if (settings.width) img.style.width = settings.width;
+                if (settings.height) img.style.height = settings.height;
+                media.appendChild(img);
+                if (settings.caption) {
+                    const caption = document.createElement('div');
+                    caption.className = 'media-caption';
+                    caption.textContent = settings.caption;
+                    media.appendChild(caption);
+                }
+                field.appendChild(media);
+                container.appendChild(field);
+                return;
+            }
+
+            if (type === 'video') {
+                const url = (settings.url || '').trim();
+                if (!url) {
+                    const placeholder = document.createElement('div');
+                    placeholder.className = 'message-card';
+                    placeholder.textContent = 'Video not available.';
+                    field.appendChild(placeholder);
+                    container.appendChild(field);
+                    return;
+                }
+
+                const media = document.createElement('div');
+                media.className = 'media-wrapper';
+
+                const looksLikeHtml = url.startsWith('<');
+                const looksLikeVideoFile = /\.(mp4|webm|ogg)(\?.*)?$/i.test(url) || url.startsWith('blob:') || url.startsWith('data:video');
+                let mediaElement = null;
+
+                if (looksLikeHtml) {
+                    const template = document.createElement('template');
+                    template.innerHTML = url;
+                    const iframe = template.content.querySelector('iframe');
+                    if (iframe) {
+                        iframe.setAttribute('frameborder', '0');
+                        iframe.setAttribute('allowfullscreen', '');
+                        iframe.setAttribute('loading', 'lazy');
+                        if (!iframe.hasAttribute('allow')) {
+                            iframe.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share');
+                        }
+                        if (!iframe.style.width) iframe.style.width = '100%';
+                        if (!iframe.style.height) iframe.style.height = '360px';
+                        mediaElement = iframe;
+                    }
+                }
+
+                if (!mediaElement && !looksLikeHtml && !looksLikeVideoFile) {
+                    const iframe = document.createElement('iframe');
+                    iframe.src = url;
+                    iframe.setAttribute('frameborder', '0');
+                    iframe.setAttribute('allowfullscreen', '');
+                    iframe.setAttribute('loading', 'lazy');
+                    iframe.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share');
+                    mediaElement = iframe;
+                }
+
+                if (!mediaElement) {
+                    const video = document.createElement('video');
+                    video.controls = true;
+                    video.playsInline = true;
+                    video.preload = 'metadata';
+                    if (settings.autoplay) {
+                        video.autoplay = true;
+                        video.muted = true;
+                        video.setAttribute('muted', '');
+                    }
+                    if (settings.loop) video.loop = true;
+                    if (settings.poster) video.poster = settings.poster;
+                    if (looksLikeHtml) {
+                        video.innerHTML = url;
+                    } else {
+                        const source = document.createElement('source');
+                        source.src = url;
+                        video.appendChild(source);
+                    }
+                    mediaElement = video;
+                }
+
+                media.appendChild(mediaElement);
+                if (settings.caption) {
+                    const caption = document.createElement('div');
+                    caption.className = 'media-caption';
+                    caption.textContent = settings.caption;
+                    media.appendChild(caption);
+                }
+                field.appendChild(media);
+                container.appendChild(field);
+                return;
+            }
+
+            if (type === 'divider') {
+                const hr = document.createElement('hr');
+                hr.className = 'divider-rule';
+                if (settings.color) hr.style.borderTopColor = settings.color;
+                if (settings.thickness) hr.style.borderTopWidth = settings.thickness + 'px';
+                if (settings.style) hr.style.borderTopStyle = settings.style;
+                field.appendChild(hr);
+                container.appendChild(field);
+                return;
+            }
+
+            if (type === 'spacer') {
+                const spacer = document.createElement('div');
+                spacer.className = 'spacer-block';
+                const sizeMap = { sm: 16, md: 28, lg: 44 };
+                const customHeight = Number(settings.customHeight);
+                const height = Number.isFinite(customHeight) && customHeight > 0
+                    ? customHeight
+                    : sizeMap[settings.size] ?? 28;
+                spacer.style.height = `${height}px`;
+                field.appendChild(spacer);
+                container.appendChild(field);
+                return;
+            }
+
             const label = document.createElement('label');
             label.textContent = q.prompt + (q.required ? ' *' : '');
             field.appendChild(label);
@@ -784,7 +952,7 @@
             const payload = Object.create(null);
             for (const q of questions) {
                 const type = (q.type || '').trim().toLowerCase();
-                if (type === 'message' || type === 'static_text' || type === 'static-html' || type === 'static_html') {
+                if (type === 'message' || type === 'static_text' || type === 'static-html' || type === 'static_html' || type === 'image' || type === 'video' || type === 'divider' || type === 'spacer') {
                     continue;
                 }
                 const raw = answers[q.key];
