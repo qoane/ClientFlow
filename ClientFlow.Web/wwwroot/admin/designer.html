@@ -807,9 +807,9 @@
                 const removeBtn = document.createElement('button');
                 removeBtn.className = 'btn ghost';
                 removeBtn.textContent = 'Delete';
-                removeBtn.onclick = (ev) => {
+                removeBtn.onclick = async (ev) => {
                     ev.stopPropagation();
-                    if (!confirm('Delete this section? Questions will be removed.')) return;
+                    if (!(await appConfirm('Delete this section? Questions will be removed.'))) return;
                     store.deleteSection(section.id);
                 };
                 actions.appendChild(removeBtn);

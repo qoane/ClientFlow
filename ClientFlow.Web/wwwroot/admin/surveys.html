@@ -254,16 +254,18 @@
           }
           if (act === 'toggle') {
             const isActive = btn.textContent === 'Activate';
-            await api(`/api/admin/surveys/${encodeURIComponent(code)}/active`, {
+            await appWithSpinner(() => api(`/api/admin/surveys/${encodeURIComponent(code)}/active`, {
               method:'PUT', body: JSON.stringify({ isActive })
-            });
+            }), isActive ? 'Activating...' : 'Deactivating...');
             await load();
           }
           if (act === 'edit') {
-            const title = prompt('New title:'); if (!title) return;
-            await api(`/api/admin/surveys/${encodeURIComponent(code)}`, {
+            const currentTitleCell = row.querySelector('td:nth-child(2)');
+            const titleRaw = await appPrompt('New title:', { confirmText: 'Update Title', defaultValue: currentTitleCell ? currentTitleCell.textContent.trim() : '' });
+            const title = (titleRaw || '').trim(); if (!title) return;
+            await appWithSpinner(() => api(`/api/admin/surveys/${encodeURIComponent(code)}`, {
               method:'PUT', body: JSON.stringify({ title })
-            });
+            }), 'Updating survey...');
             await load();
           }
         });
@@ -279,7 +281,7 @@
       if (!code || !title) { msg.textContent = 'Code and Title are required.'; return; }
       msg.textContent = 'Creating…';
       try {
-        await api('/api/admin/surveys', { method:'POST', body: JSON.stringify({ code, title, description }) });
+        await appWithSpinner(() => api('/api/admin/surveys', { method:'POST', body: JSON.stringify({ code, title, description }) }), 'Creating survey...');
         $('#code').value = ''; $('#title').value = ''; $('#desc').value = '';
         msg.textContent = 'Created ✓';
         await load();
