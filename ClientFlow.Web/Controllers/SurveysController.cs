@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using ClientFlow.Application.Abstractions;
 using ClientFlow.Application.DTOs;
 using ClientFlow.Application.Services;
@@ -47,7 +48,7 @@ public class SurveysController(
     public async Task<IActionResult> Submit(string code, [FromBody] SubmitResponseDto dto, CancellationToken ct)
         => (await svc.SubmitAsync(code, dto, ct)) is { } id ? Ok(new { id }) : NotFound();
 
-    public record SubmitSurveyRequest(Dictionary<string, string?>? Answers);
+    public record SubmitSurveyRequest([property: JsonPropertyName("answers")] Dictionary<string, string?>? Answers);
 
     [HttpPost("{code}/submit")]
     public async Task<IActionResult> SubmitSurvey(string code, [FromBody] SubmitSurveyRequest req, CancellationToken ct)

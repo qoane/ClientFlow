@@ -527,7 +527,7 @@
             }
             return '';
         };
-        const mediaSource = pickFirstNonEmpty(settings.url, settings.html, settings.embedHtml);
+        const mediaSource = pickFirstNonEmpty(settings.embedHtml, settings.html, settings.url);
 
         if (!mediaSource) {
             const placeholder = document.createElement('div');
