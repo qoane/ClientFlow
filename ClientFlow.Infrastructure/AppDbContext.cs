@@ -46,6 +46,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         {
             e.ToTable("Surveys");
             e.HasKey(x => x.Id);
+            e.Property(x => x.Code)
+                .HasMaxLength(128)
+                .IsRequired();
             e.HasIndex(x => x.Code).IsUnique();
 
             e.HasMany(x => x.Sections)
