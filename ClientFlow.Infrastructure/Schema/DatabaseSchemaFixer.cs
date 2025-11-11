@@ -30,4 +30,36 @@ END";
         // that missed the original migration can heal automatically.
         db.Database.ExecuteSqlRaw(sql);
     }
+
+    /// <summary>
+    /// Ensures the <c>CreatedByUserId</c> column and its supporting constraints
+    /// exist on the <c>Users</c> table. This column was introduced after some
+    /// customer databases were provisioned, leaving them without the column even
+    /// though the application now depends on it. Running this remediation keeps
+    /// user creation resilient in those environments.
+    /// </summary>
+    /// <param name="db">The application database context.</param>
+    public static void EnsureCreatedByUserIdColumn(AppDbContext db)
+    {
+        const string sql = @"IF COL_LENGTH('dbo.Users','CreatedByUserId') IS NULL
+BEGIN
+    ALTER TABLE dbo.Users ADD CreatedByUserId UNIQUEIDENTIFIER NULL;
+END
+
+IF OBJECT_ID(N'dbo.Users', N'U') IS NOT NULL
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Users_CreatedByUserId' AND object_id = OBJECT_ID('dbo.Users'))
+        CREATE INDEX IX_Users_CreatedByUserId ON dbo.Users(CreatedByUserId);
+
+    IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = 'FK_Users_Users_CreatedByUserId')
+    BEGIN
+        ALTER TABLE dbo.Users  WITH CHECK
+        ADD CONSTRAINT FK_Users_Users_CreatedByUserId
+        FOREIGN KEY(CreatedByUserId) REFERENCES dbo.Users(Id)
+        ON DELETE NO ACTION;
+    END
+END";
+
+        db.Database.ExecuteSqlRaw(sql);
+    }
 }
