@@ -424,6 +424,21 @@ public class UsersController : ControllerBase
         var user = await _db.Users.FindAsync(new object?[] { id }, cancellationToken: ct);
         if (user == null)
             return NotFound();
+        // Users may have invited other administrators.  The CreatedByUserId
+        // relationship is configured with DeleteBehavior.Restrict so that the
+        // audit trail is preserved.  When deleting an account we clear that
+        // relationship from any dependent users to avoid a foreign key
+        // violation.
+        var createdUsers = await _db.Users
+            .Where(u => u.CreatedByUserId == id)
+            .ToListAsync(ct);
+        if (createdUsers.Count > 0)
+        {
+            foreach (var created in createdUsers)
+            {
+                created.CreatedByUserId = null;
+            }
+        }
         _db.Users.Remove(user);
         await _db.SaveChangesAsync(ct);
         return NoContent();
