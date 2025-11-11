@@ -1,6 +1,5 @@
 ﻿using ClientFlow.Domain.Surveys;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace ClientFlow.Infrastructure;
 
@@ -320,12 +319,18 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             }
         );
 
+        var staff1Id = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        var staff2Id = Guid.Parse("22222222-2222-2222-2222-222222222222");
+        var staff3Id = Guid.Parse("33333333-3333-3333-3333-333333333333");
+        var staff4Id = Guid.Parse("44444444-4444-4444-4444-444444444444");
+        var defaultBranchId = Guid.Parse("00000000-0000-0000-0000-000000000001");
+
         b.Entity<QuestionOption>().HasData(
             // Staff list
-            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000001"), QuestionId = qStaffId, Value = "neo-ramohabi", Label = "Neo Ramohabi", Order = 1 },
-            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000002"), QuestionId = qStaffId, Value = "baradi-boikanyo", Label = "Baradi Boikanyo", Order = 2 },
-            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000003"), QuestionId = qStaffId, Value = "tsepo-chefa", Label = "Tsepo Chefa", Order = 3 },
-            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000004"), QuestionId = qStaffId, Value = "mpho-phalafang", Label = "Mpho Phalafang", Order = 4 },
+            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000001"), QuestionId = qStaffId, Value = staff1Id.ToString(), Label = "Neo Ramohabi", Order = 1 },
+            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000002"), QuestionId = qStaffId, Value = staff2Id.ToString(), Label = "Baradi Boikanyo", Order = 2 },
+            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000003"), QuestionId = qStaffId, Value = staff3Id.ToString(), Label = "Tsepo Chefa", Order = 3 },
+            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000004"), QuestionId = qStaffId, Value = staff4Id.ToString(), Label = "Mpho Phalafang", Order = 4 },
 
             // Service type
             new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000101"), QuestionId = qServiceId, Value = "policy-enquiry", Label = "Policy enquiry", Order = 1 },
@@ -343,18 +348,18 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000205"), QuestionId = qSatisfactionId, Value = "5", Label = "😡 5 = Very Poor", Order = 5 },
 
             // Timeliness scale
-            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000301"), QuestionId = qTimelinessId, Value = "not-at-all", Label = "Not at all", Order = 1 },
-            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000302"), QuestionId = qTimelinessId, Value = "no", Label = "No", Order = 2 },
-            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000303"), QuestionId = qTimelinessId, Value = "neutral", Label = "Neutral", Order = 3 },
-            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000304"), QuestionId = qTimelinessId, Value = "yes-mostly", Label = "Yes, mostly", Order = 4 },
-            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000305"), QuestionId = qTimelinessId, Value = "absolutely", Label = "Absolutely", Order = 5 },
+            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000301"), QuestionId = qTimelinessId, Value = "1", Label = "Not at all", Order = 1 },
+            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000302"), QuestionId = qTimelinessId, Value = "2", Label = "No", Order = 2 },
+            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000303"), QuestionId = qTimelinessId, Value = "3", Label = "Neutral", Order = 3 },
+            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000304"), QuestionId = qTimelinessId, Value = "4", Label = "Yes, mostly", Order = 4 },
+            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000305"), QuestionId = qTimelinessId, Value = "5", Label = "Absolutely", Order = 5 },
 
             // Professionalism scale (same labels)
-            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000401"), QuestionId = qProfessionalismId, Value = "not-at-all", Label = "Not at all", Order = 1 },
-            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000402"), QuestionId = qProfessionalismId, Value = "no", Label = "No", Order = 2 },
-            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000403"), QuestionId = qProfessionalismId, Value = "neutral", Label = "Neutral", Order = 3 },
-            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000404"), QuestionId = qProfessionalismId, Value = "yes-mostly", Label = "Yes, mostly", Order = 4 },
-            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000405"), QuestionId = qProfessionalismId, Value = "absolutely", Label = "Absolutely", Order = 5 },
+            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000401"), QuestionId = qProfessionalismId, Value = "1", Label = "Not at all", Order = 1 },
+            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000402"), QuestionId = qProfessionalismId, Value = "2", Label = "No", Order = 2 },
+            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000403"), QuestionId = qProfessionalismId, Value = "3", Label = "Neutral", Order = 3 },
+            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000404"), QuestionId = qProfessionalismId, Value = "4", Label = "Yes, mostly", Order = 4 },
+            new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000405"), QuestionId = qProfessionalismId, Value = "5", Label = "Absolutely", Order = 5 },
 
             // Recommendation scale
             new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000501"), QuestionId = qRecommendId, Value = "1", Label = "😊 1 = Extremely likely", Order = 1 },
@@ -367,10 +372,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000601"), QuestionId = qFollowUpId, Value = "yes", Label = "Yes", Order = 1 },
             new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000602"), QuestionId = qFollowUpId, Value = "no", Label = "No", Order = 2 }
         );
-
-        var utcDateTimeConverter = new ValueConverter<DateTimeOffset, DateTime>(
-            v => v.UtcDateTime,
-            v => new DateTimeOffset(DateTime.SpecifyKind(v, DateTimeKind.Utc), TimeSpan.Zero));
 
         // ---- Staff mapping ----
         b.Entity<ClientFlow.Domain.Feedback.Staff>(e =>
@@ -389,31 +390,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(x => x.Id).ValueGeneratedOnAdd();
             e.Property(x => x.CreatedUtc)
                 .IsRequired()
-                .HasConversion(utcDateTimeConverter)
-                .HasColumnType("datetime2")
+                .HasColumnType("datetimeoffset")
                 .HasDefaultValueSql("SYSUTCDATETIME()");
             e.Property(x => x.StartedUtc)
-                .HasConversion(utcDateTimeConverter)
-                .HasColumnType("datetime2");
+                .HasColumnType("datetimeoffset");
             e.Property(x => x.Phone)
                 .HasMaxLength(64);
         });
-
-        // ---- Seed sample staff ----
-        // Staff entries are seeded with a default branch assignment.  When adding additional branches you can
-        // update the BranchId column via subsequent migrations or within the application itself.  The IDs for
-        // staff members are deterministic so that additional data (e.g. BranchId) can be updated without
-        // re‑seeding duplicate rows.  Each staff record is assigned to the default Head Office branch defined
-        // below.  PhotoUrl is left null because pictures are uploaded at runtime.
-        // Prepare deterministic GUIDs for the initial staff and the default branch.  The defaultBranchId
-        // constant is reused in both the branch seeding and the staff seeding to ensure they are linked.
-        var staff1Id = Guid.Parse("11111111-1111-1111-1111-111111111111");
-        var staff2Id = Guid.Parse("22222222-2222-2222-2222-222222222222");
-        var staff3Id = Guid.Parse("33333333-3333-3333-3333-333333333333");
-        var staff4Id = Guid.Parse("44444444-4444-4444-4444-444444444444");
-        // Define the default branch ID early so it can be referenced from the staff seeding.  This ID will
-        // also be used when seeding the Branch entity below.
-        var defaultBranchId = Guid.Parse("00000000-0000-0000-0000-000000000001");
 
         b.Entity<ClientFlow.Domain.Feedback.Staff>().HasData(
             new ClientFlow.Domain.Feedback.Staff { Id = staff1Id, Name = "Neo Ramohabi", PhotoUrl = null, IsActive = true, BranchId = defaultBranchId },

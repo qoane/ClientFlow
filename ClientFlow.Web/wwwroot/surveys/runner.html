@@ -1,145 +1,384 @@
-﻿<!doctype html>
-<html>
+<!doctype html>
+<html lang="en">
 <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>ClientFlow Survey</title>
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
     <style>
         :root {
+            --bg: #0b1020;
+            --panel: rgba(15, 21, 48, 0.94);
+            --border: rgba(255, 255, 255, 0.08);
             --accent: #19cba0;
-            --panel: #0f1530;
+            --accent-soft: rgba(25, 203, 160, 0.18);
+            --text: #eef1ff;
+            --muted: #9fb0ff;
+            --danger: #ff6b6b;
+            --success: #6cf0c2;
         }
 
-        body {
-            background: var(--panel);
-            color: #eef1ff;
-            font: 16px/1.45 system-ui,-apple-system,Segoe UI,Roboto;
-            margin: 0;
-        }
-
-        /* UNIQUE wrapper — no library collisions */
-        .cf-card.runner-form {
-            background: #121936;
-            border: 1px solid rgba(255,255,255,.08);
-            border-radius: 12px;
-            padding: 16px;
-            max-width: 800px;
-            margin: 20px auto;
-        }
-
-        /* Runner-only base */
-        .runner-form * {
+        * {
             box-sizing: border-box;
         }
 
-        /* Give this a touch more authority */
-        .runner-form .section-head {
-            margin: 16px 0 8px;
+        html, body {
+            height: 100%;
         }
 
-        .runner-form .row {
-            margin-bottom: 18px;
+        body {
+            margin: 0;
+            font: 16px/1.5 "Segoe UI", -apple-system, BlinkMacSystemFont, "Roboto", sans-serif;
+            color: var(--text);
+            background:
+                radial-gradient(1200px 800px at 70% -10%, rgba(30, 49, 118, 0.55), transparent 60%),
+                radial-gradient(900px 600px at 10% 10%, rgba(18, 95, 153, 0.25), transparent 65%),
+                var(--bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 32px 20px;
         }
 
-        .runner-form h2 {
-            margin: 0 0 8px;
+        main {
+            width: 100%;
+            max-width: 1080px;
+        }
+
+        .runner-shell {
+            background: var(--panel);
+            border-radius: 28px;
+            border: 1px solid var(--border);
+            box-shadow: 0 40px 90px rgba(4, 9, 28, 0.55);
+            padding: 38px 42px;
+            display: flex;
+            flex-direction: column;
+            min-height: 70vh;
+            backdrop-filter: blur(6px);
+        }
+
+        header.runner-head {
+            margin-bottom: 28px;
+        }
+
+        header.runner-head h1 {
+            margin: 0 0 4px;
+            font-size: 2.25rem;
             font-weight: 700;
         }
 
-        .progress {
-            height: 6px;
-            background: #0f1530;
-            border-radius: 6px;
-            overflow: hidden;
-            margin: 12px 0;
+        header.runner-head p {
+            margin: 0;
+            color: var(--muted);
+            max-width: 640px;
         }
 
-            .progress > div {
-                height: 100%;
-                width: 0%;
-                background: var(--accent);
-            }
+        .progress {
+            height: 10px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.08);
+            margin-top: 24px;
+            overflow: hidden;
+        }
+
+        .progress > div {
+            height: 100%;
+            width: 0%;
+            border-radius: inherit;
+            background: linear-gradient(135deg, var(--accent), #5df5d1);
+            transition: width 0.25s ease;
+        }
+
+        section.runner-section {
+            flex: 1;
+        }
+
+        .section-title {
+            font-size: 1.35rem;
+            font-weight: 700;
+            margin: 0 0 18px;
+            color: #cfe0ff;
+        }
+
+        .fields {
+            display: grid;
+            gap: 22px;
+        }
+
+        .field label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--text);
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="tel"],
+        input[type="number"],
+        input[type="date"],
+        select,
+        textarea {
+            width: 100%;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            background: rgba(24, 32, 72, 0.72);
+            color: var(--text);
+            padding: 14px 16px;
+            font-size: 1rem;
+            transition: border-color .18s ease, box-shadow .18s ease;
+        }
+
+        textarea {
+            min-height: 140px;
+            resize: vertical;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            border-color: var(--accent);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(25, 203, 160, 0.22);
+        }
+
+        .option-grid {
+            display: grid;
+            gap: 16px;
+        }
+
+        .option-tile {
+            border-radius: 18px;
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            background: rgba(18, 26, 58, 0.78);
+            color: var(--text);
+            padding: 18px 20px;
+            font-weight: 600;
+            text-align: left;
+            cursor: pointer;
+            transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
+        }
+
+        .option-tile:hover {
+            transform: translateY(-2px);
+            border-color: var(--accent);
+        }
+
+        .option-tile.selected {
+            background: rgba(25, 203, 160, 0.18);
+            border-color: var(--accent);
+            box-shadow: 0 18px 36px rgba(25, 203, 160, 0.18);
+            color: var(--accent);
+        }
+
+        .nps-scale {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(58px, 1fr));
+            gap: 10px;
+        }
+
+        .nps-scale button {
+            border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            background: rgba(20, 30, 68, 0.75);
+            color: var(--text);
+            font-weight: 600;
+            padding: 14px 0;
+            cursor: pointer;
+            transition: transform .12s ease, background .12s ease, color .12s ease;
+        }
+
+        .nps-scale button.selected {
+            background: var(--accent);
+            color: #031b15;
+            transform: translateY(-2px);
+        }
+
+        .rating-stars {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+
+        .rating-stars button {
+            width: 70px;
+            height: 70px;
+            border-radius: 18px;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            background: rgba(22, 30, 68, 0.7);
+            color: rgba(255, 255, 255, 0.45);
+            font-size: 2rem;
+            cursor: pointer;
+            transition: transform .12s ease, background .12s ease, color .12s ease;
+        }
+
+        .rating-stars button.selected {
+            background: var(--accent);
+            color: #031b15;
+            transform: translateY(-3px);
+        }
+
+        .message-card {
+            border-radius: 18px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: rgba(18, 30, 68, 0.6);
+            padding: 20px;
+            color: var(--muted);
+            font-size: 1rem;
+        }
+
+        .actions {
+            margin-top: 32px;
+            display: flex;
+            gap: 14px;
+            align-items: center;
+        }
+
+        .actions .spacer {
+            flex: 1;
+        }
+
+        .btn {
+            border-radius: 16px;
+            border: none;
+            padding: 14px 32px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform .12s ease, filter .12s ease;
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        .btn[disabled] {
+            opacity: 0.6;
+            cursor: default;
+            transform: none;
+        }
+
+        .btn.primary {
+            background: linear-gradient(135deg, var(--accent), #5df5d1);
+            color: #031b15;
+        }
+
+        .btn.ghost {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.24);
+            color: var(--text);
+        }
+
+        .alert {
+            margin-top: 18px;
+            padding: 14px 18px;
+            border-radius: 12px;
+            border: 1px solid transparent;
+        }
+
+        .alert.error {
+            background: rgba(255, 107, 107, 0.1);
+            border-color: rgba(255, 107, 107, 0.35);
+            color: #ffd7d7;
+        }
+
+        .alert.success {
+            background: rgba(108, 240, 194, 0.12);
+            border-color: rgba(108, 240, 194, 0.35);
+            color: var(--success);
+        }
 
         .hidden {
-            display: none;
+            display: none !important;
         }
 
-        /* Critical fixes: label visibility + inputs */
-        .runner-form label {
-            color: #cfe0ff !important; /* beat any lingering globals */
-            font-weight: 600;
-            display: block;
-            margin-bottom: 6px;
-            opacity: 1 !important; /* some kits lower opacity */
-            -webkit-text-fill-color: #cfe0ff; /* Safari edge case */
-        }
+        @media (max-width: 768px) {
+            body {
+                padding: 18px;
+            }
 
-        .runner-form input,
-        .runner-form select,
-        .runner-form textarea {
-            appearance: none;
-            -webkit-appearance: none;
-            width: 100%;
-            display: block;
-            color: #eef1ff;
-            background: #2c3140; /* slightly lighter than panel for contrast */
-            border: 1px solid rgba(255,255,255,.14);
-            border-radius: 12px;
-            padding: 10px 12px;
-            min-height: 44px;
-            line-height: 1.35;
-            outline: none;
-        }
+            .runner-shell {
+                padding: 26px 22px;
+                border-radius: 22px;
+            }
 
-        .runner-form select {
-            background-image: linear-gradient(45deg, transparent 50%, #9fb0ff 50%), linear-gradient(135deg, #9fb0ff 50%, transparent 50%);
-            background-position: calc(100% - 18px) calc(50% - 3px), calc(100% - 12px) calc(50% - 3px);
-            background-size: 6px 6px, 6px 6px;
-            background-repeat: no-repeat;
-            padding-right: 36px;
+            .rating-stars button {
+                width: 60px;
+                height: 60px;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="cf-card runner-form">
-        <h2 id="title">Survey</h2>
-        <div class="progress"><div id="bar"></div></div>
-        <div id="section" class="cf-form"></div>
-        <div class="row">
-            <button class="btn" id="prev">◀ Back</button>
-            <button class="btn" id="next" style="float:right">Next ▶</button>
-            <button class="btn hidden" id="submit" style="float:right;background:#19cba0;color:#031b15">Submit</button>
+    <main>
+        <div class="runner-shell">
+            <header class="runner-head">
+                <h1 id="title">Survey</h1>
+                <p id="desc" class="hidden"></p>
+                <div class="progress"><div id="bar"></div></div>
+            </header>
+            <section id="section" class="runner-section"></section>
+            <div id="msg" class="alert hidden"></div>
+            <footer class="actions">
+                <button id="prev" class="btn ghost">◀ Back</button>
+                <div class="spacer"></div>
+                <button id="next" class="btn primary">Next ▶</button>
+                <button id="submit" class="btn primary hidden">Submit</button>
+            </footer>
         </div>
-        <div id="msg" class="row"></div>
-    </div>
+    </main>
 
     <script src="../app-base.js"></script>
+    <script src="../api.js"></script>
     <script>
+    (function () {
         const qs = new URLSearchParams(location.search);
         const code = qs.get('code');
+        const titleEl = document.getElementById('title');
+        const descEl = document.getElementById('desc');
+        const barEl = document.getElementById('bar');
+        const sectionHost = document.getElementById('section');
+        const msgEl = document.getElementById('msg');
+        const prevBtn = document.getElementById('prev');
+        const nextBtn = document.getElementById('next');
+        const submitBtn = document.getElementById('submit');
+
+        const STYLE_SCOPE = '.runner-shell';
+
         if (!code) {
-            document.getElementById('msg').textContent = 'Missing ?code= in URL.';
-            throw new Error('Survey code is required');
+            showMessage('Survey code missing from the URL.', 'error');
+            disableControls();
+            return;
         }
 
-        let def, sections = [], questions = [], options = [], rules = [];
-        let pageIdx = 0;
-        const answers = {};
-        const el = id => document.getElementById(id);
-        const show = (e, v) => e.classList.toggle('hidden', !v);
+        let definition = null;
+        let sections = [];
+        let questions = [];
+        let rules = [];
+        let pageIndex = 0;
+        let sessionStarted = Date.now();
+        const answers = Object.create(null);
+
+        const parseSettings = (json) => {
+            if (!json) return {};
+            try { return JSON.parse(json); }
+            catch { return {}; }
+        };
 
         function scopeCss(css, scopeSel) {
             if (!css) return '';
             const parts = css.split('}');
             const out = [];
-            for (let part of parts) {
+            for (const part of parts) {
                 if (!part.trim()) continue;
-                const idx = part.indexOf('{'); if (idx === -1) continue;
+                const idx = part.indexOf('{');
+                if (idx === -1) continue;
                 const sel = part.slice(0, idx).trim();
                 const body = part.slice(idx + 1);
-                if (sel.startsWith('@media')) out.push(sel + '{' + scopeCss(body, scopeSel) + '}');
-                else if (sel.startsWith('@keyframes') || sel.startsWith('@font-face')) out.push(sel + '{' + body + '}');
-                else {
+                if (sel.startsWith('@media')) {
+                    out.push(sel + '{' + scopeCss(body, scopeSel) + '}');
+                } else if (sel.startsWith('@keyframes') || sel.startsWith('@font-face')) {
+                    out.push(sel + '{' + body + '}');
+                } else {
                     const scoped = sel.split(',').map(s => {
                         s = s.trim();
                         if (/^:root\b/.test(s) || /^html\b/.test(s) || /^body\b/.test(s)) return scopeSel;
@@ -151,176 +390,514 @@
             return out.join('\n');
         }
 
-        async function loadDefinition() {
-            const r = await fetch(`/api/surveys/${encodeURIComponent(code)}/definition`);
-            if (!r.ok) { el('msg').textContent = 'Survey not found.'; throw new Error('not found'); }
-            def = await r.json();
-
-            if (def.theme) {
-                if (def.theme.accent) document.documentElement.style.setProperty('--accent', def.theme.accent);
-                if (def.theme.panel) document.documentElement.style.setProperty('--panel', def.theme.panel);
+        function applyCustomCss(rawCss) {
+            if (!rawCss) return;
+            const scopedCss = scopeCss(rawCss, STYLE_SCOPE);
+            let tag = document.getElementById('runnerScopedStyle');
+            if (!tag) {
+                tag = document.createElement('style');
+                tag.id = 'runnerScopedStyle';
+                document.head.appendChild(tag);
             }
-
-            // inject scoped theme css from DB
-            const rawCss = def.style?.css || '';
-            const scoped = scopeCss(rawCss, '.runner-form');
-            let tag = document.getElementById('cfScopedStyle');
-            if (!tag) { tag = document.createElement('style'); tag.id = 'cfScopedStyle'; document.head.appendChild(tag); }
-            tag.textContent = scoped;
-
-            sections = def.sections.sort((a, b) => a.order - b.order);
-            questions = def.questions.sort((a, b) => a.order - b.order);
-            options = def.options;
-            rules = def.rules;
-            el('title').textContent = def.title;
+            tag.textContent = scopedCss;
         }
 
-        const qOptions = qid => options.filter(o => o.questionId === qid).sort((a, b) => a.order - b.order);
-        const sectionQuestions = sid => questions.filter(q => q.sectionId === sid);
+        function disableControls() {
+            prevBtn.disabled = true;
+            nextBtn.disabled = true;
+            submitBtn.disabled = true;
+        }
 
-        function evalCondition(expr) {
+        function showMessage(text, kind = 'error') {
+            msgEl.textContent = text;
+            msgEl.classList.remove('hidden', 'error', 'success');
+            msgEl.classList.add('alert', kind === 'success' ? 'success' : 'error');
+        }
+
+        function clearMessage() {
+            msgEl.textContent = '';
+            msgEl.classList.add('hidden');
+            msgEl.classList.remove('error', 'success');
+        }
+
+        function sectionQuestions(sectionId) {
+            return questions.filter(q => (q.sectionId ?? null) === (sectionId ?? null));
+        }
+
+        function evaluateCondition(expr) {
+            if (!expr) return true;
             const equals = (key, val) => (answers[key] ?? null) == val;
-            const inRange = (key, min, max) => { const v = +answers[key]; if (isNaN(v)) return false; return v >= min && v <= max; };
-            const selected = (key, val) => (answers[key] ?? null) == val;
-            try { return Function('equals', 'inRange', 'selected', 'answers', `return (${expr});`)(equals, inRange, selected, answers); }
-            catch { return false; }
+            const inRange = (key, min, max) => {
+                const v = Number(answers[key]);
+                if (Number.isNaN(v)) return false;
+                return v >= min && v <= max;
+            };
+            const selected = (key, val) => {
+                const current = answers[key];
+                if (Array.isArray(current)) return current.includes(val);
+                return current == val;
+            };
+            try {
+                return Function('equals', 'inRange', 'selected', 'answers', `return (${expr});`)(equals, inRange, selected, answers);
+            } catch {
+                return false;
+            }
         }
 
-        function nextSectionIndex(curIdx) {
-            const curSec = sections[curIdx];
-            const curQs = sectionQuestions(curSec.id).map(q => q.id);
-            const relevant = rules.filter(r => curQs.includes(r.sourceQuestionId));
-            for (const r of relevant) {
-                if (evalCondition(r.condition)) {
-                    const m = /skipTo\(section:'(.+)'\)/.exec(r.action);
-                    if (m) { const target = sections.findIndex(s => s.title === m[1]); if (target >= 0) return target; }
+        function questionVisible(q) {
+            if (!q.visibleIf) return true;
+            return evaluateCondition(q.visibleIf);
+        }
+
+        function questionOptions(q) {
+            const opts = Array.isArray(q.options) ? q.options.slice() : [];
+            return opts.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+        }
+
+        function ensureDefaults() {
+            for (const q of questions) {
+                const settings = parseSettings(q.settingsJson);
+                if (settings && settings.defaultValue != null && answers[q.key] == null) {
+                    answers[q.key] = String(settings.defaultValue);
                 }
             }
-            return curIdx + 1;
+        }
+
+        function updateProgress() {
+            const total = sections.length;
+            const pct = total === 0 ? 0 : ((pageIndex + 1) / total) * 100;
+            barEl.style.width = pct.toFixed(2) + '%';
         }
 
         function render() {
-            const total = sections.length;
-            el('bar').style.width = Math.min(100, (pageIdx / Math.max(1, total - 1)) * 100) + '%';
-            show(el('prev'), pageIdx > 0);
-
-            const sec = sections[pageIdx];
-            const host = el('section'); host.innerHTML = '';
-
-            const head = document.createElement('div');
-            head.className = 'section-head';
-            head.textContent = sec.title;
-            host.appendChild(head);
-
-            const wrap = document.createElement('div');
-            wrap.style.display = 'grid';
-            wrap.style.gap = '10px';
-            wrap.style.gridTemplateColumns = '1fr';
-            host.appendChild(wrap);
-
-            for (const q of sectionQuestions(sec.id)) {
-                const field = document.createElement('div');
-                const lab = document.createElement('label');
-                lab.textContent = q.prompt + (q.required ? ' *' : '');
-                field.appendChild(lab);
-
-                let input;
-                switch (q.type) {
-                    case 'message':
-                        lab.remove();
-                        input = document.createElement('div');
-                        input.className = 'alert alert-info';
-                        input.textContent = q.prompt;
-                        break;
-                    case 'nps':
-                    case 'number':
-                        input = document.createElement('input');
-                        input.type = 'number'; input.min = 0; input.max = 10;
-                        if (answers[q.key] != null) input.value = answers[q.key];
-                        input.oninput = () => answers[q.key] = input.value;
-                        break;
-                    case 'text':
-                    case 'email':
-                    case 'phone':
-                        input = document.createElement('input');
-                        input.type = (q.type === 'phone') ? 'tel' : q.type;
-                        if (answers[q.key] != null) input.value = answers[q.key];
-                        input.oninput = () => answers[q.key] = input.value;
-                        break;
-                    case 'textarea':
-                        input = document.createElement('textarea');
-                        if (answers[q.key] != null) input.value = answers[q.key];
-                        input.oninput = () => answers[q.key] = input.value;
-                        break;
-                    case 'single-select':
-                    case 'select':
-                        input = document.createElement('select');
-                        qOptions(q.id).forEach(o => {
-                            const opt = document.createElement('option');
-                            opt.value = o.value; opt.textContent = o.label;
-                            if (answers[q.key] === o.value) opt.selected = true;
-                            input.appendChild(opt);
-                        });
-                        input.onchange = () => answers[q.key] = input.value;
-                        break;
-                    case 'radio':
-                        input = document.createElement('div');
-                        qOptions(q.id).forEach(o => {
-                            const lbl = document.createElement('label'); lbl.style.marginRight = '10px';
-                            const r = document.createElement('input'); r.type = 'radio'; r.name = q.key; r.value = o.value;
-                            if (answers[q.key] === o.value) r.checked = true;
-                            r.onchange = () => answers[q.key] = o.value;
-                            lbl.appendChild(r); lbl.appendChild(document.createTextNode(' ' + o.label));
-                            input.appendChild(lbl);
-                        });
-                        break;
-                    case 'date':
-                        input = document.createElement('input'); input.type = 'date';
-                        if (answers[q.key] != null) input.value = answers[q.key];
-                        input.oninput = () => answers[q.key] = input.value;
-                        break;
-                    default:
-                        input = document.createElement('input'); input.type = 'text';
-                        input.oninput = () => answers[q.key] = input.value;
-                }
-
-                field.appendChild(input);
-                wrap.appendChild(field);
+            clearMessage();
+            if (!sections.length) {
+                sectionHost.innerHTML = '<div class="message-card">No sections available for this survey.</div>';
+                disableControls();
+                return;
             }
 
-            const last = pageIdx === sections.length - 1;
-            show(el('next'), !last);
-            show(el('submit'), last);
+            const section = sections[Math.max(0, Math.min(pageIndex, sections.length - 1))];
+            pageIndex = sections.indexOf(section);
+
+            sectionHost.innerHTML = '';
+            const header = document.createElement('div');
+            if (section.title) {
+                header.className = 'section-title';
+                header.textContent = section.title;
+                sectionHost.appendChild(header);
+            }
+
+            const fieldsWrap = document.createElement('div');
+            fieldsWrap.className = 'fields';
+            if (section.columns && section.columns > 1) {
+                fieldsWrap.style.gridTemplateColumns = `repeat(${Math.min(2, section.columns)}, minmax(0, 1fr))`;
+            }
+            sectionHost.appendChild(fieldsWrap);
+
+            const secQuestions = sectionQuestions(section.id).filter(questionVisible);
+            for (const q of secQuestions) {
+                renderQuestion(fieldsWrap, q);
+            }
+
+            updateProgress();
+            prevBtn.classList.toggle('hidden', pageIndex === 0);
+            const isLast = pageIndex === sections.length - 1;
+            nextBtn.classList.toggle('hidden', isLast);
+            submitBtn.classList.toggle('hidden', !isLast);
+            prevBtn.disabled = pageIndex === 0;
+            nextBtn.disabled = false;
+            submitBtn.disabled = false;
         }
 
-        el('prev').onclick = () => { pageIdx = Math.max(0, pageIdx - 1); render(); };
-        el('next').onclick = () => {
-            const sec = sections[pageIdx];
-            for (const q of sectionQuestions(sec.id)) {
-                if (q.required && (answers[q.key] == null || answers[q.key] === '')) {
-                    el('msg').textContent = 'Please answer required questions.';
-                    setTimeout(() => el('msg').textContent = '', 2000);
-                    return;
+        function renderQuestion(container, q) {
+            const type = (q.type || '').trim().toLowerCase();
+            const settings = parseSettings(q.settingsJson);
+            const field = document.createElement('div');
+            field.className = 'field';
+
+            if (type === 'message' || type === 'static_text' || type === 'static-html') {
+                const note = document.createElement('div');
+                note.className = 'message-card';
+                if (type === 'static-html' && settings.html) {
+                    note.innerHTML = settings.html;
+                } else {
+                    note.textContent = q.prompt;
+                }
+                field.appendChild(note);
+                container.appendChild(field);
+                return;
+            }
+
+            const label = document.createElement('label');
+            label.textContent = q.prompt + (q.required ? ' *' : '');
+            field.appendChild(label);
+
+            const currentValue = answers[q.key];
+            let control = null;
+
+            switch (type) {
+                case 'nps':
+                case 'nps_0_10':
+                case 'nps-0-10': {
+                    control = renderNpsControl(q, currentValue);
+                    break;
+                }
+                case 'rating':
+                case 'rating_stars':
+                case 'rating-stars': {
+                    const maxStars = Number(settings.stars) > 0 ? Number(settings.stars) : 5;
+                    control = renderRatingControl(q, currentValue, maxStars);
+                    break;
+                }
+                case 'yesno':
+                case 'single':
+                case 'single-select':
+                case 'singlechoice':
+                case 'radio': {
+                    control = renderOptionTiles(q, currentValue);
+                    break;
+                }
+                case 'dropdown':
+                case 'select': {
+                    control = document.createElement('select');
+                    for (const opt of questionOptions(q)) {
+                        const optionEl = document.createElement('option');
+                        optionEl.value = opt.value;
+                        optionEl.textContent = opt.label;
+                        if (currentValue === opt.value) optionEl.selected = true;
+                        control.appendChild(optionEl);
+                    }
+                    control.addEventListener('change', () => {
+                        answers[q.key] = control.value;
+                    });
+                    break;
+                }
+                case 'multi':
+                case 'multi-select':
+                case 'checkbox': {
+                    control = renderMultiSelect(q, currentValue);
+                    break;
+                }
+                case 'textarea': {
+                    control = document.createElement('textarea');
+                    if (settings.placeholder) control.placeholder = settings.placeholder;
+                    control.value = currentValue ?? '';
+                    control.addEventListener('input', () => {
+                        answers[q.key] = control.value;
+                    });
+                    break;
+                }
+                case 'number': {
+                    control = document.createElement('input');
+                    control.type = 'number';
+                    if (settings.min != null) control.min = settings.min;
+                    if (settings.max != null) control.max = settings.max;
+                    if (settings.step != null) control.step = settings.step;
+                    control.value = currentValue ?? '';
+                    control.addEventListener('input', () => {
+                        answers[q.key] = control.value;
+                    });
+                    break;
+                }
+                case 'date': {
+                    control = document.createElement('input');
+                    control.type = 'date';
+                    control.value = currentValue ?? '';
+                    if (settings.min) control.min = settings.min;
+                    if (settings.max) control.max = settings.max;
+                    control.addEventListener('input', () => {
+                        answers[q.key] = control.value;
+                    });
+                    break;
+                }
+                case 'phone':
+                case 'email':
+                case 'text':
+                default: {
+                    control = document.createElement('input');
+                    if (type === 'phone') control.type = 'tel';
+                    else if (type === 'email') control.type = 'email';
+                    else control.type = 'text';
+                    if (settings.placeholder) control.placeholder = settings.placeholder;
+                    control.value = currentValue ?? '';
+                    control.addEventListener('input', () => {
+                        answers[q.key] = control.value;
+                    });
+                    break;
                 }
             }
-            const nxt = nextSectionIndex(pageIdx);
-            pageIdx = Math.min(sections.length - 1, nxt);
+
+            if (control) {
+                if (q.required && ('value' in control || control instanceof HTMLTextAreaElement)) {
+                    control.required = true;
+                }
+                field.appendChild(control);
+            }
+
+            container.appendChild(field);
+        }
+
+        function renderOptionTiles(question, currentValue) {
+            const wrap = document.createElement('div');
+            wrap.className = 'option-grid';
+            const opts = questionOptions(question);
+            const columns = question.settingsJson ? parseSettings(question.settingsJson).columns : null;
+            if (columns && columns > 1) {
+                wrap.style.gridTemplateColumns = `repeat(${columns}, minmax(0, 1fr))`;
+            } else {
+                wrap.style.gridTemplateColumns = `repeat(auto-fit, minmax(180px, 1fr))`;
+            }
+            const updateSelection = () => {
+                wrap.querySelectorAll('.option-tile').forEach(tile => {
+                    tile.classList.toggle('selected', tile.dataset.value === String(answers[question.key] ?? ''));
+                });
+            };
+            for (const opt of opts) {
+                const tile = document.createElement('button');
+                tile.type = 'button';
+                tile.className = 'option-tile';
+                tile.dataset.value = opt.value;
+                tile.textContent = opt.label;
+                tile.addEventListener('click', () => {
+                    answers[question.key] = opt.value;
+                    updateSelection();
+                });
+                if (currentValue === opt.value) tile.classList.add('selected');
+                wrap.appendChild(tile);
+            }
+            updateSelection();
+            return wrap;
+        }
+
+        function renderMultiSelect(question, currentValue) {
+            const wrap = document.createElement('div');
+            wrap.className = 'option-grid';
+            wrap.style.gridTemplateColumns = 'repeat(auto-fit, minmax(180px, 1fr))';
+            const selected = Array.isArray(currentValue) ? currentValue.slice() : (typeof currentValue === 'string' && currentValue.length ? currentValue.split(',') : []);
+            const toggle = (value) => {
+                const idx = selected.indexOf(value);
+                if (idx >= 0) selected.splice(idx, 1); else selected.push(value);
+                answers[question.key] = selected.slice();
+            };
+            for (const opt of questionOptions(question)) {
+                const tile = document.createElement('button');
+                tile.type = 'button';
+                tile.className = 'option-tile';
+                tile.dataset.value = opt.value;
+                tile.textContent = opt.label;
+                if (selected.includes(opt.value)) tile.classList.add('selected');
+                tile.addEventListener('click', () => {
+                    toggle(opt.value);
+                    tile.classList.toggle('selected');
+                });
+                wrap.appendChild(tile);
+            }
+            return wrap;
+        }
+
+        function renderNpsControl(question, currentValue) {
+            const wrap = document.createElement('div');
+            wrap.className = 'nps-scale';
+            const update = () => {
+                wrap.querySelectorAll('button').forEach(btn => {
+                    btn.classList.toggle('selected', btn.dataset.value === String(answers[question.key] ?? ''));
+                });
+            };
+            for (let i = 0; i <= 10; i++) {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.dataset.value = String(i);
+                btn.textContent = String(i);
+                btn.addEventListener('click', () => {
+                    answers[question.key] = String(i);
+                    update();
+                });
+                if (String(currentValue) === String(i)) btn.classList.add('selected');
+                wrap.appendChild(btn);
+            }
+            update();
+            return wrap;
+        }
+
+        function renderRatingControl(question, currentValue, stars) {
+            const wrap = document.createElement('div');
+            wrap.className = 'rating-stars';
+            const update = (value) => {
+                wrap.querySelectorAll('button').forEach(btn => {
+                    const v = Number(btn.dataset.value);
+                    btn.classList.toggle('selected', v <= value);
+                });
+            };
+            const current = Number(currentValue ?? 0);
+            for (let i = 1; i <= stars; i++) {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.dataset.value = String(i);
+                btn.textContent = '★';
+                btn.addEventListener('click', () => {
+                    answers[question.key] = String(i);
+                    update(i);
+                });
+                if (i <= current) btn.classList.add('selected');
+                wrap.appendChild(btn);
+            }
+            if (current > 0) update(current);
+            return wrap;
+        }
+
+        function validateSection(section) {
+            const items = sectionQuestions(section.id).filter(questionVisible);
+            for (const q of items) {
+                if (!q.required) continue;
+                const value = answers[q.key];
+                if (Array.isArray(value) ? value.length === 0 : value == null || String(value).trim() === '') {
+                    showMessage(`Please complete "${q.prompt}" before continuing.`, 'error');
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        function nextSectionIndex(currentIdx) {
+            const current = sections[currentIdx];
+            if (!current) return currentIdx + 1;
+            const currentQuestionIds = new Set(sectionQuestions(current.id).map(q => q.id));
+            for (const rule of rules) {
+                if (!currentQuestionIds.has(rule.sourceQuestionId)) continue;
+                if (!rule.condition || !rule.action) continue;
+                if (!evaluateCondition(rule.condition)) continue;
+                const match = /skipTo\(section:'([^']+)'\)/i.exec(rule.action);
+                if (match) {
+                    const targetIndex = sections.findIndex(s => s.title === match[1]);
+                    if (targetIndex >= 0) {
+                        return targetIndex;
+                    }
+                }
+            }
+            return currentIdx + 1;
+        }
+
+        function collectPayload() {
+            const payload = Object.create(null);
+            for (const q of questions) {
+                const type = (q.type || '').trim().toLowerCase();
+                if (type === 'message' || type === 'static_text' || type === 'static-html') {
+                    continue;
+                }
+                const raw = answers[q.key];
+                if (Array.isArray(raw)) {
+                    payload[q.key] = raw.length ? raw.join(',') : null;
+                } else if (raw == null || String(raw).trim() === '') {
+                    payload[q.key] = null;
+                } else {
+                    payload[q.key] = String(raw);
+                }
+            }
+            payload.__startedUtc = new Date(sessionStarted).toISOString();
+            payload.__durationSeconds = String(Math.max(0, Math.round((Date.now() - sessionStarted) / 1000)));
+            return payload;
+        }
+
+        prevBtn.addEventListener('click', () => {
+            if (pageIndex > 0) {
+                pageIndex = Math.max(0, pageIndex - 1);
+                render();
+            }
+        });
+
+        nextBtn.addEventListener('click', () => {
+            const section = sections[pageIndex];
+            if (!section) return;
+            if (!validateSection(section)) return;
+            const nextIndex = Math.min(sections.length - 1, nextSectionIndex(pageIndex));
+            pageIndex = nextIndex;
             render();
-        };
+        });
 
-        el('submit').onclick = async () => {
-            const payload = { answers }; // key -> value map
-            const r = await fetch(`/api/Admin/${encodeURIComponent(code)}/submit`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ answers })
-            });
-            if (r.ok) { appRedirect('thank-you.html'); }
-            else { el('msg').textContent = 'Failed to submit.'; }
-        };
+        submitBtn.addEventListener('click', async () => {
+            const section = sections[pageIndex];
+            if (!section) return;
+            if (!validateSection(section)) return;
 
+            submitBtn.disabled = true;
+            nextBtn.disabled = true;
+            prevBtn.disabled = true;
+            clearMessage();
+            try {
+                const payload = collectPayload();
+                await API.submit(code, payload);
+                showMessage('Thanks for your feedback!', 'success');
+                setTimeout(() => appRedirect('thank-you.html'), 600);
+            } catch (err) {
+                console.error(err);
+                showMessage('Unable to submit the survey right now. Please try again.', 'error');
+                submitBtn.disabled = false;
+                nextBtn.disabled = false;
+                prevBtn.disabled = pageIndex === 0;
+            }
+        });
 
-        loadDefinition().then(render);
+        async function load() {
+            try {
+                const [surveyMeta, def] = await Promise.all([
+                    API.getSurvey(code).catch(() => null),
+                    API.getSurveyDefinition(code)
+                ]);
+
+                definition = def;
+                if (!definition || !Array.isArray(definition.questions)) {
+                    throw new Error('Survey definition not found.');
+                }
+
+                sections = Array.isArray(definition.sections)
+                    ? definition.sections.slice().sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+                    : [];
+                questions = definition.questions.slice().sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+                rules = Array.isArray(definition.rules) ? definition.rules.slice() : [];
+
+                if (!sections.length) {
+                    sections = [{ id: null, title: definition.title || 'Survey', order: 0, columns: 1 }];
+                }
+
+                // Remove empty sections to avoid blank pages
+                sections = sections.filter(sec => sectionQuestions(sec.id).length > 0);
+                if (!sections.length) {
+                    sections = [{ id: null, title: definition.title || 'Survey', order: 0, columns: 1 }];
+                }
+
+                ensureDefaults();
+
+                titleEl.textContent = definition.title || surveyMeta?.title || 'Survey';
+                const description = definition.description || surveyMeta?.description;
+                if (description) {
+                    descEl.textContent = description;
+                    descEl.classList.remove('hidden');
+                } else {
+                    descEl.classList.add('hidden');
+                }
+
+                if (definition.themeAccent) {
+                    document.documentElement.style.setProperty('--accent', definition.themeAccent);
+                }
+                if (definition.themePanel) {
+                    document.documentElement.style.setProperty('--panel', definition.themePanel);
+                }
+                if (definition.customCss) {
+                    applyCustomCss(definition.customCss);
+                }
+
+                sessionStarted = Date.now();
+                render();
+            } catch (err) {
+                console.error(err);
+                showMessage('Unable to load the survey right now.', 'error');
+                disableControls();
+            }
+        }
+
+        load();
+    })();
     </script>
 </body>
 </html>
