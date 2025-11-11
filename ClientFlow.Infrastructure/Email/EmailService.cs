@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Options;
 using System.Net;
 using System.Net.Mail;
+using System.Linq;
 
 namespace ClientFlow.Infrastructure.Email;
 
@@ -17,6 +18,19 @@ public class EmailService
     public async Task SendAsync(string[] recipients, string subject, string htmlBody, CancellationToken ct = default)
     {
         if (recipients.Length == 0) return;
+        if (!MailAddress.TryCreate(_settings.From, out var fromAddress))
+        {
+            return;
+        }
+        var validRecipients = recipients
+            .Where(static r => !string.IsNullOrWhiteSpace(r))
+            .Select(static r => r.Trim())
+            .Where(static r => MailAddress.TryCreate(r, out _))
+            .ToArray();
+        if (validRecipients.Length == 0)
+        {
+            return;
+        }
         using var client = new SmtpClient(_settings.Host, _settings.Port)
         {
             EnableSsl = true
@@ -27,14 +41,14 @@ public class EmailService
         }
         var mail = new MailMessage
         {
-            From = new MailAddress(_settings.From),
+            From = fromAddress,
             Subject = subject,
             Body = htmlBody,
             IsBodyHtml = true
         };
-        foreach (var rec in recipients)
+        foreach (var rec in validRecipients)
         {
-            if (!string.IsNullOrWhiteSpace(rec)) mail.To.Add(rec);
+            mail.To.Add(rec);
         }
         await client.SendMailAsync(mail, ct);
     }
