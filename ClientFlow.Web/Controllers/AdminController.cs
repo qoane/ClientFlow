@@ -208,14 +208,23 @@ public class AdminController(
 
         if (survey is null) return NotFound();
 
-        var existingQuestionIds = survey.Questions.Select(q => q.Id).ToList();
+        var existingSectionIds = survey.Sections.Select(s => s.Id).ToHashSet();
+        var existingQuestionIds = survey.Questions.Select(q => q.Id).ToHashSet();
+
+        var existingOptionIds = new HashSet<Guid>();
         if (existingQuestionIds.Count > 0)
         {
-            var existingOptions = await db.Options.Where(o => existingQuestionIds.Contains(o.QuestionId)).ToListAsync(ct);
+            var existingOptions = await db.Options
+                .Where(o => existingQuestionIds.Contains(o.QuestionId))
+                .ToListAsync(ct);
+            existingOptionIds = existingOptions.Select(o => o.Id).ToHashSet();
             db.Options.RemoveRange(existingOptions);
         }
 
-        var existingRules = await db.Rules.Where(r => r.SurveyId == survey.Id).ToListAsync(ct);
+        var existingRules = await db.Rules
+            .Where(r => r.SurveyId == survey.Id)
+            .ToListAsync(ct);
+        var existingRuleIds = existingRules.Select(r => r.Id).ToHashSet();
         db.Rules.RemoveRange(existingRules);
 
         db.Questions.RemoveRange(survey.Questions);
@@ -232,7 +241,20 @@ public class AdminController(
 
             foreach (var (sec, idx) in orderedSections)
             {
-                var id = sec.Id ?? Guid.NewGuid();
+                Guid id;
+                if (sec.Id is not null && existingSectionIds.Contains(sec.Id.Value))
+                {
+                    id = sec.Id.Value;
+                }
+                else
+                {
+                    id = Guid.NewGuid();
+                }
+
+                if (sec.Id is not null)
+                {
+                    sectionMap[sec.Id.Value] = id;
+                }
                 sectionMap[id] = id;
                 sectionEntities.Add(new SurveySection
                 {
@@ -256,7 +278,20 @@ public class AdminController(
 
             foreach (var (q, idx) in orderedQuestions)
             {
-                var qId = q.Id ?? Guid.NewGuid();
+                Guid qId;
+                if (q.Id is not null && existingQuestionIds.Contains(q.Id.Value))
+                {
+                    qId = q.Id.Value;
+                }
+                else
+                {
+                    qId = Guid.NewGuid();
+                }
+
+                if (q.Id is not null)
+                {
+                    questionMap[q.Id.Value] = qId;
+                }
                 questionMap[qId] = qId;
 
                 Guid? sectionId = null;
@@ -308,9 +343,18 @@ public class AdminController(
             foreach (var opt in req.Options.OrderBy(o => o.Order))
             {
                 var targetQuestionId = questionMap.TryGetValue(opt.QuestionId, out var mapped) ? mapped : opt.QuestionId;
+                Guid optionId;
+                if (opt.Id is not null && existingOptionIds.Contains(opt.Id.Value))
+                {
+                    optionId = opt.Id.Value;
+                }
+                else
+                {
+                    optionId = Guid.NewGuid();
+                }
                 optionEntities.Add(new QuestionOption
                 {
-                    Id = opt.Id ?? Guid.NewGuid(),
+                    Id = optionId,
                     QuestionId = targetQuestionId,
                     Value = opt.Value,
                     Label = opt.Label,
@@ -329,9 +373,18 @@ public class AdminController(
                         ? mapped
                         : (q.Id ?? Guid.Empty);
                     if (targetQuestionId == Guid.Empty) continue;
+                    Guid optionId;
+                    if (choice.Id is not null && existingOptionIds.Contains(choice.Id.Value))
+                    {
+                        optionId = choice.Id.Value;
+                    }
+                    else
+                    {
+                        optionId = Guid.NewGuid();
+                    }
                     optionEntities.Add(new QuestionOption
                     {
-                        Id = choice.Id ?? Guid.NewGuid(),
+                        Id = optionId,
                         QuestionId = targetQuestionId,
                         Value = choice.Value,
                         Label = choice.Label,
@@ -350,9 +403,18 @@ public class AdminController(
                 var sourceId = questionMap.TryGetValue(rule.SourceQuestionId, out var mapped)
                     ? mapped
                     : rule.SourceQuestionId;
+                Guid ruleId;
+                if (rule.Id is not null && existingRuleIds.Contains(rule.Id.Value))
+                {
+                    ruleId = rule.Id.Value;
+                }
+                else
+                {
+                    ruleId = Guid.NewGuid();
+                }
                 ruleEntities.Add(new QuestionRule
                 {
-                    Id = rule.Id ?? Guid.NewGuid(),
+                    Id = ruleId,
                     SurveyId = survey.Id,
                     SourceQuestionId = sourceId,
                     Condition = rule.Condition,
