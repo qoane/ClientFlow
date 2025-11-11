@@ -41,6 +41,49 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(x => x.Key).HasMaxLength(256).IsRequired();
         });
 
+        // ---- Surveys, sections & questions ----
+        b.Entity<Survey>(e =>
+        {
+            e.ToTable("Surveys");
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => x.Code).IsUnique();
+
+            e.HasMany(x => x.Sections)
+                .WithOne()
+                .HasForeignKey(x => x.SurveyId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasMany(x => x.Questions)
+                .WithOne()
+                .HasForeignKey(x => x.SurveyId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<SurveySection>(e =>
+        {
+            e.ToTable("Sections");
+            e.HasKey(x => x.Id);
+        });
+
+        b.Entity<Question>(e =>
+        {
+            e.ToTable("Questions");
+            e.HasKey(x => x.Id);
+        });
+
+        b.Entity<QuestionOption>(e =>
+        {
+            e.ToTable("Options");
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => new { x.QuestionId, x.Order }).IsUnique();
+        });
+
+        b.Entity<QuestionRule>(e =>
+        {
+            e.ToTable("Rules");
+            e.HasKey(x => x.Id);
+        });
+
         // ---- Answers & relationships ----
         b.Entity<Answer>()
             .HasOne(a => a.Response)
@@ -298,10 +341,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000601"), QuestionId = qFollowUpId, Value = "yes", Label = "Yes", Order = 1 },
             new QuestionOption { Id = Guid.Parse("20000000-0000-0000-0000-000000000602"), QuestionId = qFollowUpId, Value = "no", Label = "No", Order = 2 }
         );
-
-        b.Entity<QuestionOption>()
-            .HasIndex(x => new { x.QuestionId, x.Order })
-            .IsUnique();
 
         // ---- Seed sample staff ----
         // Staff entries are seeded with a default branch assignment.  When adding additional branches you can
