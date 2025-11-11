@@ -32,6 +32,22 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     {
         base.OnModelCreating(b);
 
+        // The application layer exposes various DTO/record types for API responses and
+        // JSON payloads (e.g. SurveyDefinitionDto, SectionDto, QuestionDto, etc.).
+        // When EF Core scans the assembly for entity configurations it can pick up
+        // these types if an `ApplyConfigurationsFromAssembly` call is used elsewhere
+        // during startup.  They are not meant to be part of the EF model and attempting
+        // to map them results in runtime errors such as:
+        //   "There is no entity type mapped to this keyless entity type 'SectionView'
+        //    used by entity type 'SectionDto'."
+        // Explicitly ignoring the DTOs ensures EF never tries to treat them as
+        // entities, regardless of the order in which configuration logic executes.
+        b.Ignore<ClientFlow.Application.Surveys.Definitions.SurveyDefinitionDto>();
+        b.Ignore<ClientFlow.Application.Surveys.Definitions.SectionDto>();
+        b.Ignore<ClientFlow.Application.Surveys.Definitions.QuestionDto>();
+        b.Ignore<ClientFlow.Application.Surveys.Definitions.OptionDto>();
+        b.Ignore<ClientFlow.Application.Surveys.Definitions.RuleDto>();
+
         // ---- Settings mapping ----
         b.Entity<ClientFlow.Domain.Settings.Setting>(e =>
         {
