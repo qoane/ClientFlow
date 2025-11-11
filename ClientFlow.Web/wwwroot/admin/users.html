@@ -83,6 +83,18 @@
         const listDiv = document.getElementById('userList');
         const createDiv = document.getElementById('createForm');
         const addBtn = document.getElementById('addBtn');
+        const withSpinner = (typeof window.appWithSpinner === 'function')
+            ? window.appWithSpinner
+            : (input) => {
+                try {
+                    if (typeof input === 'function') {
+                        return Promise.resolve().then(input);
+                    }
+                    return Promise.resolve(input);
+                } catch (err) {
+                    return Promise.reject(err);
+                }
+            };
         const notify = (message, options) => {
             if (typeof window.appNotify === 'function') {
                 return window.appNotify(message, options);
@@ -137,7 +149,7 @@
                 const roleSel = document.getElementById('newRole').value;
                 const bId = document.getElementById('newBranch').value || null;
                 try {
-                    await appWithSpinner(() => api('api/users', { method:'POST', body: JSON.stringify({ email, password, role: roleSel, branchId: bId || null }) }), 'Creating user...');
+                    await withSpinner(() => api('api/users', { method:'POST', body: JSON.stringify({ email, password, role: roleSel, branchId: bId || null }) }), 'Creating user...');
                     createDiv.style.display = 'none';
                     loadUsers();
                 } catch (err) {
@@ -179,7 +191,7 @@
                         return;
                     }
                     try {
-                        await appWithSpinner(() => api(`api/users/${id}/reset-password`, { method:'POST', body: JSON.stringify({ temporaryPassword: tempPassword }) }), 'Resetting password...');
+                        await withSpinner(() => api(`api/users/${id}/reset-password`, { method:'POST', body: JSON.stringify({ temporaryPassword: tempPassword }) }), 'Resetting password...');
                         notify('Password reset. Share the temporary password securely with the user.', { type: 'success' });
                     } catch (err) {
                         notify('Error resetting password: ' + err.message, { type: 'danger' });
@@ -194,7 +206,7 @@
                         : window.confirm('Delete this user?');
                     if (confirmDelete) {
                         try {
-                            await appWithSpinner(() => api('api/users/' + id, { method:'DELETE' }), 'Deleting user...');
+                            await withSpinner(() => api('api/users/' + id, { method:'DELETE' }), 'Deleting user...');
                             loadUsers();
                         } catch (err) {
                             notify('Error deleting: ' + err.message, { type: 'danger' });
