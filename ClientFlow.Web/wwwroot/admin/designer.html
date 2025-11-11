@@ -903,7 +903,8 @@
             if (showChoices) {
                 const choicesArea = document.createElement('textarea');
                 choicesArea.placeholder = 'value|Label';
-                choicesArea.value = question.choices.map(choice => `${choice.value}|${choice.label}`).join('\n');
+                const choiceList = Array.isArray(question.choices) ? question.choices : [];
+                choicesArea.value = choiceList.map(choice => `${choice.value}|${choice.label}`).join('\n');
                 choicesArea.onchange = () => {
                     const latest = getLatestQuestion();
                     const lines = choicesArea.value.split('\n').map(x => x.trim()).filter(Boolean);
@@ -911,7 +912,8 @@
                         const [valuePart, labelPart] = line.includes('|') ? line.split('|') : [line, line];
                         const value = (valuePart || '').trim();
                         const label = (labelPart || valuePart || '').trim();
-                        const existing = latest?.choices?.[idx];
+                        const existingList = Array.isArray(latest?.choices) ? latest.choices : [];
+                        const existing = existingList[idx];
                         return {
                             id: existing?.id ?? createTempId(),
                             value: value || label || `choice_${idx + 1}`,
