@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kiosk Survey</title>
+    <link rel="manifest" href="../manifest.json" />
+    <meta name="theme-color" content="#0b1020" />
+    <style>
+        :root {
+            --bg: #0b1020;
+            --panel: rgba(15, 21, 48, 0.94);
+            --border: rgba(255, 255, 255, 0.12);
+            --accent: #19cba0;
+            --text: #eef1ff;
+            --muted: #9fb0ff;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font: 16px/1.5 "Segoe UI", -apple-system, BlinkMacSystemFont, "Roboto", sans-serif;
+            background: radial-gradient(1200px 800px at 70% -10%, rgba(30, 49, 118, 0.55), transparent 60%),
+                radial-gradient(900px 600px at 10% 10%, rgba(18, 95, 153, 0.25), transparent 65%),
+                var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 32px 18px;
+        }
+
+        .wrapper {
+            width: 100%;
+            max-width: 1080px;
+        }
+
+        #app {
+            min-height: 420px;
+            border-radius: 28px;
+            border: 1px solid var(--border);
+            background: var(--panel);
+            box-shadow: 0 40px 90px rgba(4, 9, 28, 0.55);
+            padding: 38px 42px;
+        }
+
+        #app.loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--muted);
+            font-size: 1.1rem;
+        }
+
+        @media (max-width: 720px) {
+            body {
+                padding: 16px;
+            }
+
+            #app {
+                padding: 24px 20px;
+                min-height: 320px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="wrapper">
+        <div id="app" class="loading">Loading survey…</div>
+    </main>
+    <script src="../app-base.js"></script>
+    <script src="survey-renderer.js"></script>
+    <script src="run.js"></script>
+</body>
+</html>
