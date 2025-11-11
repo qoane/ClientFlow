@@ -85,7 +85,9 @@
     <script>
         // Redirect authenticated users to the dashboard
         if (localStorage.getItem('authToken')) {
-            window.location.href = appBuildUrl('admin/dashboard.html');
+            const mustChange = localStorage.getItem('mustChangePassword') === '1';
+            const target = mustChange ? 'admin/change-password.html' : 'admin/dashboard.html';
+            window.location.href = appBuildUrl(target);
         }
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -113,8 +115,14 @@
                 }
                 // Store the email for display purposes
                 localStorage.setItem('userEmail', email);
-                // redirect to dashboard
-                window.location.href = appBuildUrl('admin/dashboard.html');
+                if (data.mustChangePassword) {
+                    localStorage.setItem('mustChangePassword', '1');
+                } else {
+                    localStorage.removeItem('mustChangePassword');
+                }
+                // redirect based on password requirements
+                const target = data.mustChangePassword ? 'admin/change-password.html' : 'admin/dashboard.html';
+                window.location.href = appBuildUrl(target);
             } catch (err) {
                 errorDiv.textContent = err.message;
                 errorDiv.style.display = '';

@@ -78,6 +78,7 @@
         if (userEmailSpan) userEmailSpan.textContent = localStorage.getItem('userEmail') || '';
         const role = localStorage.getItem('userRole');
         const branchId = localStorage.getItem('branchId');
+        const currentUserId = localStorage.getItem('userId');
         document.getElementById('signOut').addEventListener('click', () => { localStorage.clear(); window.location.href = appBuildUrl('login.html'); });
         const listDiv = document.getElementById('userList');
         const createDiv = document.getElementById('createForm');
@@ -136,14 +137,44 @@
         function showList(users) {
             let html = '<table><tr><th>Email</th><th>Role</th><th>Branch</th><th>Actions</th></tr>';
             users.forEach(u => {
-                html += `<tr data-id="${u.id}"><td>${u.email}</td><td>${u.role}</td><td>${u.branchId ?? ''}</td><td class="actions">`;
-                if (role === 'SuperAdmin') {
+                html += `<tr data-id="${u.id}" data-role="${u.role}"><td>${u.email}</td><td>${u.role}</td><td>${u.branchId ?? ''}</td><td class="actions">`;
+                if (u.id === currentUserId) {
+                    html += `<button class="changePass">Change Password</button>`;
+                }
+                if ((role === 'Admin' || role === 'SuperAdmin') && !(role === 'Admin' && u.role === 'SuperAdmin')) {
+                    html += `<button class="reset">Reset Password</button>`;
+                }
+                if (role === 'SuperAdmin' && u.id !== currentUserId) {
                     html += `<button class="delete">Delete</button>`;
                 }
                 html += '</td></tr>';
             });
             html += '</table>';
             listDiv.innerHTML = html;
+            listDiv.querySelectorAll('.changePass').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    window.location.href = appBuildUrl('admin/change-password.html');
+                });
+            });
+            listDiv.querySelectorAll('.reset').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const row = e.target.closest('tr');
+                    const id = row.dataset.id;
+                    const targetRole = row.dataset.role;
+                    const tempPassword = prompt('Enter a temporary password (minimum 8 characters):');
+                    if (!tempPassword) return;
+                    if (tempPassword.length < 8) {
+                        alert('Temporary password must be at least 8 characters.');
+                        return;
+                    }
+                    try {
+                        await api(`api/users/${id}/reset-password`, { method:'POST', body: JSON.stringify({ temporaryPassword: tempPassword }) });
+                        alert('Password reset. Share the temporary password securely with the user.');
+                    } catch (err) {
+                        alert('Error resetting password: ' + err.message);
+                    }
+                });
+            });
             listDiv.querySelectorAll('.delete').forEach(btn => {
                 btn.addEventListener('click', async (e) => {
                     const id = e.target.closest('tr').dataset.id;

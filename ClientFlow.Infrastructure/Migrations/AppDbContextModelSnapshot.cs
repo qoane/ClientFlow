@@ -920,6 +920,9 @@ namespace ClientFlow.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<bool>("MustChangePassword")
+                        .HasColumnType("bit");
+
                     b.Property<int>("Role")
                         .HasColumnType("int");
 
@@ -939,9 +942,45 @@ namespace ClientFlow.Infrastructure.Migrations
                         {
                             Id = new Guid("11111111-0000-0000-0000-000000000000"),
                             Email = "admin@example.com",
+                            MustChangePassword = false,
                             PasswordHash = "PrP+ZrMeO00Q+nC1ytSccRIpSvauTkdqHEBRVdRaoSE=",
                             Role = 2
                         });
+                });
+
+            modelBuilder.Entity("ClientFlow.Domain.Users.PasswordResetToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CodeHash")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("ExpiresUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsUsed")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<int>("Purpose")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("PasswordResetTokens", (string)null);
                 });
 
             modelBuilder.Entity("ClientFlow.Domain.Feedback.KioskFeedback", b =>
@@ -1025,6 +1064,17 @@ namespace ClientFlow.Infrastructure.Migrations
                     b.Navigation("Branch");
 
                     b.Navigation("CreatedByUser");
+                });
+
+            modelBuilder.Entity("ClientFlow.Domain.Users.PasswordResetToken", b =>
+                {
+                    b.HasOne("ClientFlow.Domain.Users.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("ClientFlow.Domain.Feedback.Staff", b =>

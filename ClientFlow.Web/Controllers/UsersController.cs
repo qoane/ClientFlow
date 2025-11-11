@@ -5,10 +5,12 @@ using System.Threading.Tasks;
 using ClientFlow.Application.Services;
 using ClientFlow.Domain.Users;
 using ClientFlow.Infrastructure;
+using ClientFlow.Infrastructure.Email;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using System.Security.Cryptography;
 
 namespace ClientFlow.Web.Controllers;
 
@@ -24,17 +26,23 @@ public class UsersController : ControllerBase
 {
     private readonly AppDbContext _db;
     private readonly AuthService _auth;
+    private readonly EmailService _email;
 
-    public UsersController(AppDbContext db, AuthService auth)
+    public UsersController(AppDbContext db, AuthService auth, EmailService email)
     {
         _db = db;
         _auth = auth;
+        _email = email;
     }
 
     /// <summary>
     /// Request body for the login endpoint.
     /// </summary>
     public record LoginRequest(string Email, string Password);
+
+    public record ChangePasswordRequest(string CurrentPassword, string NewPassword, string Code);
+
+    public record AdminResetPasswordRequest(string TemporaryPassword);
 
     /// <summary>
     /// Authenticates a user and returns a JWT on success.  The caller must provide a valid
@@ -48,7 +56,7 @@ public class UsersController : ControllerBase
         var record = await _db.Users
             .AsNoTracking()
             .Where(u => u.Email == req.Email)
-            .Select(u => new { u.Id, u.Email, u.PasswordHash, u.Role, u.BranchId })
+            .Select(u => new { u.Id, u.Email, u.PasswordHash, u.Role, u.BranchId, u.MustChangePassword })
             .FirstOrDefaultAsync(ct);
         if (record == null || !_auth.VerifyPassword(req.Password, record.PasswordHash))
         {
@@ -60,10 +68,49 @@ public class UsersController : ControllerBase
             Email = record.Email,
             PasswordHash = record.PasswordHash,
             Role = record.Role,
-            BranchId = record.BranchId
+            BranchId = record.BranchId,
+            MustChangePassword = record.MustChangePassword
         };
         var token = _auth.GenerateJwtToken(user);
-        return Ok(new { token, role = user.Role.ToString(), userId = user.Id, branchId = user.BranchId });
+        return Ok(new { token, role = user.Role.ToString(), userId = user.Id, branchId = user.BranchId, mustChangePassword = user.MustChangePassword });
+    }
+
+    [HttpPost("me/change-password/request")]
+    [Authorize]
+    public async Task<IActionResult> RequestPasswordChangeCode(CancellationToken ct)
+    {
+        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(userIdClaim, out var userId))
+        {
+            return Unauthorized();
+        }
+        var user = await _db.Users.FindAsync(new object?[] { userId }, cancellationToken: ct);
+        if (user is null)
+        {
+            return Unauthorized();
+        }
+
+        await InvalidateTokensAsync(user.Id, PasswordResetPurpose.ChangePasswordMfa, ct);
+
+        var code = GenerateVerificationCode();
+        var token = new PasswordResetToken
+        {
+            Id = Guid.NewGuid(),
+            UserId = user.Id,
+            CodeHash = _auth.HashPassword(code),
+            CreatedUtc = DateTime.UtcNow,
+            ExpiresUtc = DateTime.UtcNow.AddMinutes(10),
+            IsUsed = false,
+            Purpose = PasswordResetPurpose.ChangePasswordMfa
+        };
+        _db.PasswordResetTokens.Add(token);
+        await _db.SaveChangesAsync(ct);
+
+        var subject = "ClientFlow verification code";
+        var htmlBody = $"<p>Hello,</p><p>Your verification code is <strong>{code}</strong>. The code expires in 10 minutes.</p><p>If you did not request this code you can ignore this message.</p>";
+        await _email.SendAsync(new[] { user.Email }, subject, htmlBody, ct);
+
+        return NoContent();
     }
 
     /// <summary>
@@ -158,17 +205,152 @@ public class UsersController : ControllerBase
         {
             return BadRequest("Invalid BranchId");
         }
+        Guid? createdBy = null;
+        var callerId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (Guid.TryParse(callerId, out var creatorGuid))
+        {
+            createdBy = creatorGuid;
+        }
+
+        var mustChangePassword = role == UserRole.BranchAdmin;
+
         var user = new User
         {
             Id = Guid.NewGuid(),
             Email = email.Trim(),
             PasswordHash = _auth.HashPassword(password),
             Role = role,
-            BranchId = branchId
+            BranchId = branchId,
+            MustChangePassword = mustChangePassword,
+            CreatedByUserId = createdBy
         };
         _db.Users.Add(user);
         await _db.SaveChangesAsync(ct);
-        return Created($"/api/users/{user.Id}", new { user.Id, user.Email, role = user.Role.ToString(), user.BranchId });
+        if (role == UserRole.BranchAdmin)
+        {
+            string? branchName = null;
+            if (branchId.HasValue)
+            {
+                branchName = await _db.Branches
+                    .AsNoTracking()
+                    .Where(b => b.Id == branchId.Value)
+                    .Select(b => b.Name)
+                    .FirstOrDefaultAsync(ct);
+            }
+            var baseUrl = GetAppBaseUrl();
+            var loginUrl = string.IsNullOrWhiteSpace(baseUrl) ? "login.html" : $"{baseUrl}/login.html";
+            var changeUrl = string.IsNullOrWhiteSpace(baseUrl) ? "admin/change-password.html" : $"{baseUrl}/admin/change-password.html";
+            var subject = "ClientFlow branch manager account";
+            var branchLabel = string.IsNullOrWhiteSpace(branchName) ? string.Empty : $" for <strong>{System.Net.WebUtility.HtmlEncode(branchName)}</strong>";
+            var htmlBody = $"<p>Hello,</p><p>You have been added as a branch manager{branchLabel} in ClientFlow.</p><p>Sign in at <a href=\"{loginUrl}\">{loginUrl}</a> with the temporary password provided to you and then change it using the secure form at <a href=\"{changeUrl}\">{changeUrl}</a>.</p><p>If you did not expect this email please contact your administrator immediately.</p>";
+            await _email.SendAsync(new[] { user.Email }, subject, htmlBody, ct);
+        }
+        return Created($"/api/users/{user.Id}", new { user.Id, user.Email, role = user.Role.ToString(), user.BranchId, user.MustChangePassword });
+    }
+
+    [HttpPost("me/change-password")]
+    [Authorize]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest req, CancellationToken ct)
+    {
+        if (req is null)
+        {
+            return BadRequest("Request body is required.");
+        }
+        if (string.IsNullOrWhiteSpace(req.CurrentPassword) || string.IsNullOrWhiteSpace(req.NewPassword))
+        {
+            return BadRequest("Current and new passwords are required.");
+        }
+        if (req.NewPassword.Length < 8)
+        {
+            return BadRequest("New password must be at least 8 characters long.");
+        }
+
+        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(userIdClaim, out var userId))
+        {
+            return Unauthorized();
+        }
+        var user = await _db.Users.FindAsync(new object?[] { userId }, cancellationToken: ct);
+        if (user is null)
+        {
+            return Unauthorized();
+        }
+        if (!_auth.VerifyPassword(req.CurrentPassword, user.PasswordHash))
+        {
+            return BadRequest("Current password is incorrect.");
+        }
+
+        bool requiresCode = user.Role == UserRole.BranchAdmin || user.MustChangePassword;
+        PasswordResetToken? token = null;
+        if (requiresCode)
+        {
+            if (string.IsNullOrWhiteSpace(req.Code))
+            {
+                return BadRequest("A verification code is required.");
+            }
+            var now = DateTime.UtcNow;
+            token = await _db.PasswordResetTokens
+                .Where(x => x.UserId == user.Id && x.Purpose == PasswordResetPurpose.ChangePasswordMfa && !x.IsUsed && x.ExpiresUtc >= now)
+                .OrderByDescending(x => x.CreatedUtc)
+                .FirstOrDefaultAsync(ct);
+            if (token is null || !_auth.VerifyPassword(req.Code, token.CodeHash))
+            {
+                return BadRequest("Verification code is invalid or expired.");
+            }
+        }
+
+        user.PasswordHash = _auth.HashPassword(req.NewPassword);
+        user.MustChangePassword = false;
+        if (token is not null)
+        {
+            token.IsUsed = true;
+        }
+        await InvalidateTokensAsync(user.Id, PasswordResetPurpose.ChangePasswordMfa, ct);
+        await _db.SaveChangesAsync(ct);
+
+        var subject = "ClientFlow password changed";
+        var htmlBody = "<p>Hello,</p><p>The password for your ClientFlow account was changed successfully. If you did not perform this action please contact your administrator immediately.</p>";
+        await _email.SendAsync(new[] { user.Email }, subject, htmlBody, ct);
+
+        return NoContent();
+    }
+
+    [HttpPost("{id:guid}/reset-password")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
+    public async Task<IActionResult> ResetPassword(Guid id, [FromBody] AdminResetPasswordRequest req, CancellationToken ct)
+    {
+        if (req is null || string.IsNullOrWhiteSpace(req.TemporaryPassword))
+        {
+            return BadRequest("TemporaryPassword is required.");
+        }
+        if (req.TemporaryPassword.Length < 8)
+        {
+            return BadRequest("Temporary password must be at least 8 characters long.");
+        }
+
+        var callerRole = User.FindFirstValue(ClaimTypes.Role);
+        var user = await _db.Users.FindAsync(new object?[] { id }, cancellationToken: ct);
+        if (user is null)
+        {
+            return NotFound();
+        }
+        if (user.Role == UserRole.SuperAdmin && callerRole != UserRole.SuperAdmin.ToString())
+        {
+            return Forbid();
+        }
+
+        user.PasswordHash = _auth.HashPassword(req.TemporaryPassword);
+        user.MustChangePassword = true;
+        await InvalidateTokensAsync(user.Id, PasswordResetPurpose.ChangePasswordMfa, ct);
+        await _db.SaveChangesAsync(ct);
+
+        var baseUrl = GetAppBaseUrl();
+        var changeUrl = string.IsNullOrWhiteSpace(baseUrl) ? "admin/change-password.html" : $"{baseUrl}/admin/change-password.html";
+        var subject = "ClientFlow password reset";
+        var htmlBody = $"<p>Hello,</p><p>An administrator reset the password for your ClientFlow account. Use the new temporary password provided to you and change it promptly at <a href=\"{changeUrl}\">{changeUrl}</a>.</p><p>If you did not request this change contact your administrator.</p>";
+        await _email.SendAsync(new[] { user.Email }, subject, htmlBody, ct);
+
+        return NoContent();
     }
 
     /// <summary>
@@ -236,5 +418,36 @@ public class UsersController : ControllerBase
         _db.Users.Remove(user);
         await _db.SaveChangesAsync(ct);
         return NoContent();
+    }
+
+    private async Task InvalidateTokensAsync(Guid userId, PasswordResetPurpose purpose, CancellationToken ct)
+    {
+        var tokens = await _db.PasswordResetTokens
+            .Where(x => x.UserId == userId && x.Purpose == purpose && !x.IsUsed)
+            .ToListAsync(ct);
+        if (tokens.Count == 0) return;
+        foreach (var t in tokens)
+        {
+            t.IsUsed = true;
+        }
+    }
+
+    private static string GenerateVerificationCode()
+    {
+        var bytes = new byte[4];
+        RandomNumberGenerator.Fill(bytes);
+        var value = BitConverter.ToUInt32(bytes, 0) % 1_000_000U;
+        return value.ToString("D6");
+    }
+
+    private string GetAppBaseUrl()
+    {
+        var request = HttpContext?.Request;
+        if (request is null || !request.Host.HasValue)
+        {
+            return string.Empty;
+        }
+        var baseUrl = $"{request.Scheme}://{request.Host}{request.PathBase}";
+        return baseUrl.TrimEnd('/');
     }
 }

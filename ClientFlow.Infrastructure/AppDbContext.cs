@@ -23,6 +23,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     // Branch and user tables
     public DbSet<ClientFlow.Domain.Branches.Branch> Branches => Set<ClientFlow.Domain.Branches.Branch>();
     public DbSet<ClientFlow.Domain.Users.User> Users => Set<ClientFlow.Domain.Users.User>();
+    public DbSet<ClientFlow.Domain.Users.PasswordResetToken> PasswordResetTokens => Set<ClientFlow.Domain.Users.PasswordResetToken>();
 
     // Settings key/value storage
     public DbSet<ClientFlow.Domain.Settings.Setting> Settings => Set<ClientFlow.Domain.Settings.Setting>();
@@ -46,6 +47,26 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         b.Ignore<ClientFlow.Application.Surveys.Definitions.QuestionDto>();
         b.Ignore<ClientFlow.Application.Surveys.Definitions.OptionDto>();
         b.Ignore<ClientFlow.Application.Surveys.Definitions.RuleDto>();
+
+        b.Entity<ClientFlow.Domain.Users.PasswordResetToken>(e =>
+        {
+            e.ToTable("PasswordResetTokens");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.CodeHash)
+                .HasMaxLength(256)
+                .IsRequired();
+            e.Property(x => x.CreatedUtc).IsRequired();
+            e.Property(x => x.ExpiresUtc).IsRequired();
+            e.Property(x => x.IsUsed).HasDefaultValue(false);
+            e.Property(x => x.Purpose)
+                .HasConversion<int>()
+                .IsRequired();
+            e.HasIndex(x => x.UserId);
+            e.HasOne(x => x.User)
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
 
         // ---- Settings mapping ----
         b.Entity<ClientFlow.Domain.Settings.Setting>(e =>
