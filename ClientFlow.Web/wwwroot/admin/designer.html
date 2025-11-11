@@ -88,6 +88,21 @@
             color: var(--muted);
         }
 
+        .field .picker {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .field .picker select {
+            flex: 1 1 220px;
+        }
+
+        .btn.compact {
+            padding: 6px 10px;
+            font-size: 12px;
+        }
+
         input, textarea, select {
             background: var(--panel2);
             border: 1px solid var(--border);
@@ -467,6 +482,16 @@
                 <span class="tag">Drag &amp; Drop</span>
             </div>
             <div class="field">
+                <label for="surveyPicker">Existing Surveys</label>
+                <div class="picker">
+                    <select id="surveyPicker">
+                        <option value="">Select a survey…</option>
+                    </select>
+                    <button class="btn ghost compact" type="button" id="btnLoadSurvey">Load</button>
+                    <button class="btn ghost compact" type="button" id="btnNewSurvey">New</button>
+                </div>
+            </div>
+            <div class="field">
                 <label for="surveyCode">Survey Code</label>
                 <input id="surveyCode" placeholder="liberty-nps" spellcheck="false" />
             </div>
@@ -542,10 +567,15 @@
         const previewForm = document.getElementById('previewForm');
         const surveyCodeInput = document.getElementById('surveyCode');
         const surveyTitleInput = document.getElementById('surveyTitle');
+        const surveyPicker = document.getElementById('surveyPicker');
+        const loadSurveyButton = document.getElementById('btnLoadSurvey');
+        const newSurveyButton = document.getElementById('btnNewSurvey');
+        const surveySelectionStorageKey = 'cf_designer_selected_survey';
 
         let selectedSectionId = null;
         let selectedQuestionId = null;
         let draggingQuestionId = null;
+        let availableSurveys = [];
 
         const palette = [
             { type: 'nps', label: 'NPS 0–10', hint: 'Detractors to promoters scale' },
@@ -577,6 +607,85 @@
             node.textContent = message;
             document.body.appendChild(node);
             setTimeout(() => node.remove(), 2600);
+        }
+
+        function surveyOptionLabel(meta) {
+            const title = (meta.title || '').trim();
+            if (title && title.toLowerCase() !== (meta.code || '').toLowerCase()) {
+                return `${title} — ${meta.code}`;
+            }
+            return meta.code;
+        }
+
+        function updatePickerControls() {
+            if (loadSurveyButton) {
+                loadSurveyButton.disabled = !(surveyPicker && surveyPicker.value);
+            }
+        }
+
+        function renderSurveyPicker(selectedCode) {
+            if (!surveyPicker) return;
+            surveyPicker.innerHTML = '';
+            const placeholder = document.createElement('option');
+            placeholder.value = '';
+            placeholder.textContent = 'Select a survey…';
+            surveyPicker.appendChild(placeholder);
+
+            const sorted = availableSurveys.slice().sort((a, b) => {
+                const left = (a.title || a.code || '').toString().toLowerCase();
+                const right = (b.title || b.code || '').toString().toLowerCase();
+                return left.localeCompare(right);
+            });
+
+            sorted.forEach(meta => {
+                const opt = document.createElement('option');
+                opt.value = meta.code;
+                let text = surveyOptionLabel(meta);
+                if (meta.isActive === false) {
+                    text += ' (inactive)';
+                }
+                opt.textContent = text;
+                surveyPicker.appendChild(opt);
+            });
+
+            if (selectedCode && sorted.some(s => s.code === selectedCode)) {
+                surveyPicker.value = selectedCode;
+            } else {
+                surveyPicker.value = '';
+            }
+
+            updatePickerControls();
+        }
+
+        async function refreshSurveyList(preserveSelection = true) {
+            if (!surveyPicker) return;
+            try {
+                const res = await appApiFetch('/api/admin/surveys', { headers: authHeaders });
+                if (!res.ok) throw new Error('Failed');
+                const data = await res.json();
+                availableSurveys = Array.isArray(data)
+                    ? data.filter(item => item && typeof item.code === 'string')
+                    : [];
+            } catch (err) {
+                console.warn('Failed to load survey list', err);
+                availableSurveys = [];
+            }
+            const current = preserveSelection ? (store.getState().code || localStorage.getItem(surveySelectionStorageKey) || '') : '';
+            renderSurveyPicker(current);
+            if (current && availableSurveys.some(s => s.code === current)) {
+                localStorage.setItem(surveySelectionStorageKey, current);
+            }
+        }
+
+        function syncSurveySelection(code) {
+            if (!surveyPicker) return;
+            if (code && availableSurveys.some(s => s.code === code)) {
+                surveyPicker.value = code;
+                localStorage.setItem(surveySelectionStorageKey, code);
+            } else if (surveyPicker.value) {
+                surveyPicker.value = '';
+            }
+            updatePickerControls();
         }
 
         function createTempId() {
@@ -1654,6 +1763,7 @@
             ensureSelection(state);
             if (document.activeElement !== surveyTitleInput) surveyTitleInput.value = state.title ?? '';
             if (document.activeElement !== surveyCodeInput) surveyCodeInput.value = state.code ?? '';
+            syncSurveySelection(state.code ?? '');
             renderCanvas(state);
             renderProperties(state);
             renderPreview(state);
@@ -1665,6 +1775,37 @@
             const section = store.addSection(`Section ${store.getState().sections.length + 1}`);
             selectedSectionId = section.id;
         };
+
+        if (surveyPicker) {
+            surveyPicker.addEventListener('change', () => {
+                updatePickerControls();
+                if (surveyPicker.value) {
+                    localStorage.setItem(surveySelectionStorageKey, surveyPicker.value);
+                }
+            });
+        }
+
+        if (loadSurveyButton) {
+            loadSurveyButton.addEventListener('click', () => {
+                if (surveyPicker && surveyPicker.value) {
+                    importFromApi(surveyPicker.value);
+                } else {
+                    importFromApi();
+                }
+            });
+        }
+
+        if (newSurveyButton) {
+            newSurveyButton.addEventListener('click', () => {
+                selectedSectionId = null;
+                selectedQuestionId = null;
+                store.load({ code: '', title: '', description: '', sections: [], questions: [], rules: [], theme: undefined });
+                if (surveyPicker) surveyPicker.value = '';
+                localStorage.removeItem(surveySelectionStorageKey);
+                updatePickerControls();
+                surveyCodeInput.focus();
+            });
+        }
 
         document.getElementById('btnCopyJson').onclick = async () => {
             try {
@@ -1688,9 +1829,9 @@
         surveyTitleInput.addEventListener('input', () => store.setMeta({ title: surveyTitleInput.value }));
         surveyCodeInput.addEventListener('input', () => store.setMeta({ code: surveyCodeInput.value.trim() }));
 
-        async function importFromApi() {
-            const code = surveyCodeInput.value.trim();
-            if (!code) { toast('Enter a survey code to import', true); return; }
+        async function importFromApi(explicitCode) {
+            const code = (explicitCode ?? (surveyPicker ? surveyPicker.value : '') ?? surveyCodeInput.value ?? '').trim();
+            if (!code) { toast('Select or enter a survey code to import', true); return; }
             try {
                 const res = await appApiFetch(`/api/admin/surveys/${encodeURIComponent(code)}/definition`, {
                     headers: authHeaders
@@ -1698,6 +1839,7 @@
                 if (!res.ok) throw new Error('Failed');
                 const def = await res.json();
                 loadDefinition(def);
+                syncSurveySelection(code);
                 toast('Definition imported');
             } catch {
                 toast('Unable to fetch definition', true);
@@ -1739,13 +1881,17 @@
 
                 if (!res.ok) throw new Error('Failed');
                 toast('Survey saved to API ✓');
+                syncSurveySelection(code);
+                refreshSurveyList(true);
             } catch {
                 toast('Failed to save survey', true);
             }
         }
 
-        document.getElementById('btnImport').onclick = importFromApi;
+        document.getElementById('btnImport').onclick = () => importFromApi();
         document.getElementById('btnExport').onclick = exportToApi;
+
+        refreshSurveyList(false);
 
         function loadDefinition(definition) {
             const sectionsRaw = definition.sections ?? definition.Sections ?? [];
