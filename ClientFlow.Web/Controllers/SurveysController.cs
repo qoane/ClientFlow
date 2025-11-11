@@ -27,6 +27,17 @@ public class SurveysController(
 {
     private const string DefaultKioskSurveyCode = "liberty-nps";
     private static readonly JsonSerializerOptions DefinitionJsonOptions = new(JsonSerializerDefaults.Web);
+    private static readonly HashSet<string> DisplayOnlyQuestionTypes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "message",
+        "static_text",
+        "static_html",
+        "static-html",
+        "image",
+        "video",
+        "divider",
+        "spacer"
+    };
 
     [HttpGet("{code}")]
     public async Task<IActionResult> Get(string code, CancellationToken ct)
@@ -51,6 +62,7 @@ public class SurveysController(
 
         var missing = survey.Questions
             .Where(q => q.Required)
+            .Where(q => !DisplayOnlyQuestionTypes.Contains(q.Type ?? string.Empty))
             .Where(q => !answers.TryGetValue(q.Key, out var value) || string.IsNullOrWhiteSpace(value))
             .Select(q => q.Key)
             .ToArray();
@@ -73,6 +85,11 @@ public class SurveysController(
         foreach (var entry in answers)
         {
             if (!questionsByKey.TryGetValue(entry.Key, out var question))
+            {
+                continue;
+            }
+
+            if (DisplayOnlyQuestionTypes.Contains(question.Type ?? string.Empty))
             {
                 continue;
             }
