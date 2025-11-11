@@ -86,6 +86,18 @@
     }
 
     document.addEventListener('DOMContentLoaded', function () {
+        try {
+            var mustChange = window.localStorage && window.localStorage.getItem('mustChangePassword') === '1';
+            if (mustChange) {
+                var path = (window.location.pathname || '').toLowerCase();
+                if (path.indexOf('/admin/') !== -1 && path.indexOf('change-password.html') === -1) {
+                    window.location.href = appBuildUrl('admin/change-password.html');
+                    return;
+                }
+            }
+        } catch (err) {
+            // Access to localStorage may fail in some environments; ignore and continue.
+        }
         var adjustAttr = function (selector, attribute) {
             document.querySelectorAll(selector).forEach(function (el) {
                 var value = el.getAttribute(attribute);
