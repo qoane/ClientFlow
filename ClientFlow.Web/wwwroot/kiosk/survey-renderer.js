@@ -557,24 +557,40 @@
         return div;
     }
 
-    function register(type, renderer) {
-        renderers[type] = renderer;
+    function register(type, renderer, aliases = []) {
+        const keys = new Set();
+        const record = (key) => {
+            if (typeof key !== 'string') return;
+            const trimmed = key.trim();
+            if (!trimmed) return;
+            const lower = trimmed.toLowerCase();
+            keys.add(trimmed);
+            keys.add(lower);
+            keys.add(lower.replace(/[\s-]+/g, '_'));
+            keys.add(lower.replace(/[\s_]+/g, '-'));
+        };
+        record(type);
+        ensureArray(aliases).forEach(alias => record(alias));
+        keys.forEach(key => {
+            if (key) {
+                renderers[key] = renderer;
+            }
+        });
     }
 
     register('text', createInputRenderer('text'));
     register('textarea', createTextareaRenderer());
     register('number', createInputRenderer('number'));
-    register('phone', createInputRenderer('tel'));
-    register('boolean', yesNoRenderer);
+    register('phone', createInputRenderer('tel'), ['tel']);
+    register('boolean', yesNoRenderer, ['yesno']);
     register('email', createInputRenderer('email'));
     register('date', createInputRenderer('date'));
     register('time', createInputRenderer('time'));
-    register('yesno', yesNoRenderer);
-    register('single', createChoiceRenderer('single'));
-    register('multi', createChoiceRenderer('multi'));
+    register('single', createChoiceRenderer('single'), ['single-select', 'singlechoice', 'radio']);
+    register('multi', createChoiceRenderer('multi'), ['multi-select', 'multiselect', 'checkbox']);
     register('likert', likertRenderer);
-    register('nps_0_10', npsRenderer);
-    register('rating_stars', ratingStarsRenderer);
+    register('nps_0_10', npsRenderer, ['nps', 'nps-0-10', 'nps0-10', 'nps0_10']);
+    register('rating_stars', ratingStarsRenderer, ['rating']);
     register('matrix', matrixRenderer);
     register('file', fileRenderer);
     register('signature', signatureRenderer);
@@ -912,7 +928,12 @@
     }
 
     function renderQuestion(q, state) {
-        const renderer = renderers[q.type];
+        const type = typeof q.type === 'string' ? q.type : '';
+        const normalized = type.trim().toLowerCase();
+        const renderer = renderers[type]
+            || renderers[normalized]
+            || renderers[normalized.replace(/[\s-]+/g, '_')]
+            || renderers[normalized.replace(/[\s_]+/g, '-')];
         if (!renderer) {
             const fallback = document.createElement('div');
             fallback.textContent = `Unsupported question type: ${q.type}`;
