@@ -17,6 +17,9 @@ namespace ClientFlow.Infrastructure.Repositories
         public Task<List<Survey>> ListAsync(CancellationToken ct)
             => _db.Surveys.AsNoTracking().ToListAsync(ct);
 
+        public Task<List<Survey>> ListForUpdateAsync(CancellationToken ct = default)
+            => _db.Surveys.ToListAsync(ct);
+
         public Task AddAsync(Survey survey, CancellationToken ct)
         {
             _db.Surveys.Add(survey);

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Linq;
 using System.Text;
@@ -6,8 +7,11 @@ using System.Text.Json;
 using ClientFlow.Application.Abstractions;
 using ClientFlow.Application.DTOs;
 using ClientFlow.Application.Services;
+using ClientFlow.Domain.Feedback;
 using ClientFlow.Domain.Surveys;
+using ClientFlow.Infrastructure;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Net.Http.Headers;
 
 namespace ClientFlow.Web.Controllers;
@@ -18,8 +22,10 @@ public class SurveysController(
     SurveyService svc,
     ISurveyRepository surveys,
     IResponseRepository responses,
-    IUnitOfWork uow) : ControllerBase
+    IUnitOfWork uow,
+    AppDbContext db) : ControllerBase
 {
+    private const string DefaultKioskSurveyCode = "liberty-nps";
     private static readonly JsonSerializerOptions DefinitionJsonOptions = new(JsonSerializerDefaults.Web);
 
     [HttpGet("{code}")]
@@ -101,8 +107,163 @@ public class SurveysController(
         await responses.AddAsync(response, ct);
         await uow.SaveChangesAsync(ct);
 
+        await TryRecordKioskFeedbackAsync(survey, answers, ct);
+
         return Ok(new { id = response.Id });
     }
+
+    private async Task TryRecordKioskFeedbackAsync(Survey survey, Dictionary<string, string?> answers, CancellationToken ct)
+    {
+        try
+        {
+            if (!string.Equals(survey.Code, DefaultKioskSurveyCode, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            if (!TryGetInt(answers, "satisfaction", out var overall) ||
+                !TryGetInt(answers, "timeliness", out var time) ||
+                !TryGetInt(answers, "professionalism", out var respect))
+            {
+                return;
+            }
+
+            var staff = await ResolveStaffAsync(answers, ct);
+            if (staff is null)
+            {
+                return;
+            }
+
+            var branch = await ResolveBranchAsync(staff.BranchId, answers, ct);
+            if (branch is null)
+            {
+                return;
+            }
+
+            var (branchId, branchName) = branch.Value;
+            if (staff.BranchId is null)
+            {
+                staff.BranchId = branchId;
+            }
+
+            var durationSeconds = TryGetInt(answers, "__durationSeconds", out var duration) ? duration : 0;
+            var startedUtc = TryGetDateTimeOffset(answers, "__startedUtc") ?? DateTimeOffset.UtcNow;
+            var phone = answers.TryGetValue("phone", out var phoneRaw) ? NormalizePhone(phoneRaw) : null;
+
+            var entity = new KioskFeedback
+            {
+                Id = Guid.NewGuid(),
+                StaffId = staff.Id,
+                TimeRating = time,
+                RespectRating = respect,
+                OverallRating = overall,
+                Phone = string.IsNullOrWhiteSpace(phone) ? null : phone,
+                StartedUtc = startedUtc,
+                DurationSeconds = durationSeconds,
+                BranchId = branchId,
+                BranchName = branchName,
+                CreatedUtc = DateTimeOffset.UtcNow
+            };
+
+            db.KioskFeedback.Add(entity);
+            await db.SaveChangesAsync(ct);
+        }
+        catch
+        {
+            // Ignore kiosk mapping failures to avoid interrupting the main survey submission flow.
+        }
+    }
+
+    private async Task<Staff?> ResolveStaffAsync(IReadOnlyDictionary<string, string?> answers, CancellationToken ct)
+    {
+        if (!answers.TryGetValue("staff", out var raw) || string.IsNullOrWhiteSpace(raw))
+        {
+            return null;
+        }
+
+        var value = raw.Trim();
+        if (Guid.TryParse(value, out var staffId))
+        {
+            return await db.Staff.FirstOrDefaultAsync(s => s.Id == staffId, ct);
+        }
+
+        var existing = await db.Staff.FirstOrDefaultAsync(s => s.Name == value, ct);
+        if (existing is not null)
+        {
+            return existing;
+        }
+
+        var staff = new Staff
+        {
+            Id = Guid.NewGuid(),
+            Name = value,
+            IsActive = true
+        };
+        db.Staff.Add(staff);
+        return staff;
+    }
+
+    private async Task<(Guid Id, string? Name)?> ResolveBranchAsync(Guid? staffBranchId, IReadOnlyDictionary<string, string?> answers, CancellationToken ct)
+    {
+        if (answers.TryGetValue("branchId", out var branchIdRaw) && Guid.TryParse(branchIdRaw, out var branchGuid))
+        {
+            var branch = await db.Branches.FirstOrDefaultAsync(b => b.Id == branchGuid, ct);
+            if (branch is not null)
+            {
+                return (branch.Id, branch.Name);
+            }
+        }
+
+        if (answers.TryGetValue("branch", out var branchNameRaw) && !string.IsNullOrWhiteSpace(branchNameRaw))
+        {
+            var branch = await db.Branches.FirstOrDefaultAsync(b => b.Name == branchNameRaw.Trim(), ct);
+            if (branch is not null)
+            {
+                return (branch.Id, branch.Name);
+            }
+        }
+
+        if (staffBranchId.HasValue)
+        {
+            var branch = await db.Branches.FirstOrDefaultAsync(b => b.Id == staffBranchId.Value, ct);
+            if (branch is not null)
+            {
+                return (branch.Id, branch.Name);
+            }
+        }
+
+        var fallback = await db.Branches.OrderBy(b => b.Name).FirstOrDefaultAsync(ct);
+        return fallback is null ? null : (fallback.Id, fallback.Name);
+    }
+
+    private static bool TryGetInt(IReadOnlyDictionary<string, string?> source, string key, out int value)
+    {
+        value = 0;
+        if (!source.TryGetValue(key, out var raw) || string.IsNullOrWhiteSpace(raw))
+        {
+            return false;
+        }
+
+        return int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out value);
+    }
+
+    private static DateTimeOffset? TryGetDateTimeOffset(IReadOnlyDictionary<string, string?> source, string key)
+    {
+        if (!source.TryGetValue(key, out var raw) || string.IsNullOrWhiteSpace(raw))
+        {
+            return null;
+        }
+
+        return DateTimeOffset.TryParse(raw, CultureInfo.InvariantCulture,
+            DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var parsed)
+            ? parsed
+            : null;
+    }
+
+    private static string? NormalizePhone(string? value)
+        => string.IsNullOrWhiteSpace(value)
+            ? null
+            : new string(value.Where(ch => !char.IsWhiteSpace(ch)).ToArray());
 
     [HttpGet("{code}/nps")]
     public async Task<IActionResult> Nps(string code, CancellationToken ct)

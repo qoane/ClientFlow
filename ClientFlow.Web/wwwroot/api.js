@@ -14,10 +14,10 @@ const API = {
         return r.json();
     },
     async submit(code, data) {
-        const r = await __fetchApi(`api/surveys/${encodeURIComponent(code)}/responses`, {
+        const r = await __fetchApi(`api/surveys/${encodeURIComponent(code)}/submit`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ data })
+            body: JSON.stringify({ answers: data })
         });
         if (!r.ok) throw new Error('submit failed');
         return r.json();

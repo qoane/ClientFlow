@@ -15,7 +15,7 @@ public sealed record FeedbackDto(
     int? RespectRating,
     int? OverallRating,
     string? Phone,
-    DateTime? StartedUtc,
+    DateTimeOffset? StartedUtc,
     int? DurationSeconds,
     Guid? BranchId,
     string? BranchName
