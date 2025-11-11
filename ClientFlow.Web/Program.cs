@@ -3,6 +3,7 @@ using ClientFlow.Application.Services;
 using ClientFlow.Application.Surveys.Validation;
 using ClientFlow.Infrastructure;
 using ClientFlow.Infrastructure.Repositories;
+using ClientFlow.Infrastructure.Schema;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
@@ -102,6 +103,7 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.Migrate();
+    DatabaseSchemaFixer.EnsureMustChangePasswordColumn(db);
 }
 
 app.UseSwagger();
