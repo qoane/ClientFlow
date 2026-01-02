@@ -299,6 +299,7 @@
       margin-bottom: 12px;
     }
     .recommend-note { margin-top: 16px; font-size: .95rem; color: var(--text-muted); }
+    .field-error { margin-top: 12px; color: #ff9fa3; font-size: .95rem; min-height: 1.2em; }
     .progress {
       position: fixed;
       bottom: 40px;
@@ -385,6 +386,7 @@
         <div class="page" id="page-phone">
             <h1>Please enter your phone number</h1>
             <input type="tel" id="phoneInput" placeholder="8 digit local number" autocomplete="tel" inputmode="numeric" maxlength="8" />
+            <div class="field-error" id="phoneError" role="alert" aria-live="polite"></div>
             <button class="btn" id="btnProceed" disabled>Proceed</button>
         </div>
         <!-- Staff -->
@@ -750,6 +752,8 @@
                 state.startedAt = null;
                 const phoneInput = byId('phoneInput');
                 phoneInput.value = '';
+                const phoneError = byId('phoneError');
+                if (phoneError) phoneError.textContent = '';
                 byId('btnProceed').disabled = true;
                 ['optsSatisfaction', 'optsTime', 'optsRespect', 'optsRecommend', 'optsContact'].forEach(id => {
                     const host = byId(id);
@@ -795,23 +799,47 @@
 
             const phoneInput = byId('phoneInput');
             const btnProceed = byId('btnProceed');
+            const phoneError = byId('phoneError');
             function validatePhone(v) {
                 const digits = v.replace(/\D/g, '');
-                return digits.length === 8;
+                return digits.length === 8 && digits === v;
+            }
+            function updatePhoneValidation(showMessage) {
+                const value = phoneInput.value.trim();
+                state.phone = value;
+                const isValid = validatePhone(value);
+                btnProceed.disabled = !isValid;
+                if (!phoneError) return;
+                if (!value && !showMessage) {
+                    phoneError.textContent = '';
+                    return;
+                }
+                phoneError.textContent = isValid ? '' : 'Please enter an 8 digit local phone number.';
             }
             phoneInput.addEventListener('input', () => {
-                state.phone = phoneInput.value.trim();
-                btnProceed.disabled = !validatePhone(state.phone);
+                phoneInput.value = phoneInput.value.replace(/\D/g, '').slice(0, 8);
+                updatePhoneValidation(false);
+            });
+            phoneInput.addEventListener('blur', () => {
+                updatePhoneValidation(true);
             });
             phoneInput.addEventListener('keydown', ev => {
-                if (ev.key === 'Enter' && !btnProceed.disabled) {
+                if (ev.key === 'Enter') {
                     ev.preventDefault();
+                    if (btnProceed.disabled) {
+                        updatePhoneValidation(true);
+                        return;
+                    }
                     showPage(2);
                 }
             });
             btnProceed.addEventListener('click', () => showPage(2));
             const staffSelect = byId('staffSelect');
             const btnServiceDetails = byId('btnServiceDetails');
+            function updateServiceDetailsState() {
+                if (!btnServiceDetails) return;
+                btnServiceDetails.disabled = !(state.staff && state.gender && state.ageRange && state.city);
+            }
             if (staffSelect && btnServiceDetails) {
                 staffSelect.addEventListener('change', () => {
                     const selectedOption = staffSelect.options[staffSelect.selectedIndex];
@@ -826,7 +854,7 @@
                         state.staffBranchId = null;
                         state.staffBranchName = null;
                     }
-                    btnServiceDetails.disabled = !state.staff;
+                    updateServiceDetailsState();
                 });
             }
             const genderSelect = byId('genderSelect');
@@ -840,6 +868,7 @@
                 });
                 genderSelect.addEventListener('change', () => {
                     state.gender = genderSelect.value || null;
+                    updateServiceDetailsState();
                 });
             }
             const ageRangeSelect = byId('ageRangeSelect');
@@ -853,6 +882,7 @@
                 });
                 ageRangeSelect.addEventListener('change', () => {
                     state.ageRange = ageRangeSelect.value || null;
+                    updateServiceDetailsState();
                 });
             }
             const citySelect = byId('citySelect');
@@ -866,6 +896,7 @@
                 });
                 citySelect.addEventListener('change', () => {
                     state.city = citySelect.value || null;
+                    updateServiceDetailsState();
                 });
             }
             if (btnServiceDetails) {

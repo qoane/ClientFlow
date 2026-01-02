@@ -31,6 +31,9 @@ public class FeedbackController : ControllerBase
 
         if (string.IsNullOrWhiteSpace(dto.Phone))
             return BadRequest("Phone number is required.");
+        var phoneValue = dto.Phone.Trim();
+        if (phoneValue.Length != 8 || !phoneValue.All(char.IsDigit))
+            return BadRequest("Please enter an 8 digit local phone number.");
 
         if (dto.TimeRating is < 1 or > 5 ||
             dto.RespectRating is < 1 or > 5 ||
