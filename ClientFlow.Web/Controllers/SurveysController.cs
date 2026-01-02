@@ -229,6 +229,34 @@ public class SurveysController(
         DateTimeOffset? to = null,
         CancellationToken ct = default)
     {
+        if (string.Equals(code, "legacy", StringComparison.OrdinalIgnoreCase))
+        {
+            var legacySurvey = await surveys.GetByCodeAsync(code, ct);
+            if (legacySurvey is null)
+            {
+                return NotFound();
+            }
+
+            var feedbackQuery = db.KioskFeedback
+                .AsNoTracking()
+                .Include(x => x.Staff)
+                .AsQueryable();
+
+            if (from is not null)
+            {
+                feedbackQuery = feedbackQuery.Where(x => x.CreatedUtc >= from);
+            }
+
+            if (to is not null)
+            {
+                feedbackQuery = feedbackQuery.Where(x => x.CreatedUtc <= to);
+            }
+
+            var feedback = await feedbackQuery.ToListAsync(ct);
+            var legacyAnalytics = LegacyKioskAnalyticsBuilder.Build(legacySurvey, feedback);
+            return Ok(legacyAnalytics);
+        }
+
         var survey = await surveys.GetByCodeWithSectionsAndQuestionsAsync(code, ct);
         if (survey is null)
         {

@@ -68,6 +68,17 @@ namespace ClientFlow.Infrastructure.Migrations
                     b.Property<string>("BranchName")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("City")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("Comment")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ContactPreference")
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
                     b.Property<DateTimeOffset>("CreatedUtc")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetimeoffset")
@@ -76,12 +87,30 @@ namespace ClientFlow.Infrastructure.Migrations
                     b.Property<int>("DurationSeconds")
                         .HasColumnType("int");
 
+                    b.Property<string>("Gender")
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<string>("AgeRange")
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
                     b.Property<int>("OverallRating")
                         .HasColumnType("int");
 
                     b.Property<string>("Phone")
                         .HasMaxLength(64)
                         .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("PoliciesJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("RecommendRating")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ServiceType")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
 
                     b.Property<int>("RespectRating")
                         .HasColumnType("int");
@@ -958,6 +987,14 @@ namespace ClientFlow.Infrastructure.Migrations
                             IsActive = true,
                             ThemeJson = "{\"accent\":\"#de2b2b\"}",
                             Title = "Liberty NPS 2025"
+                        },
+                        new
+                        {
+                            Id = new Guid("cccccccc-cccc-cccc-cccc-cccccccccccc"),
+                            Code = "legacy",
+                            Description = "Legacy kiosk feedback",
+                            IsActive = true,
+                            Title = "Legacy"
                         });
                 });
 

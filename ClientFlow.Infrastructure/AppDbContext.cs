@@ -185,16 +185,26 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         var qServicesUsedId = Guid.Parse("10000000-0000-0000-0000-00000000000F");
         var qRecommendScoreId = Guid.Parse("10000000-0000-0000-0000-000000000010");
         var qAdditionalFeedbackId = Guid.Parse("10000000-0000-0000-0000-000000000011");
+        var legacySurveyId = Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc");
 
-        b.Entity<Survey>().HasData(new Survey
-        {
-            Id = surveyId,
-            Code = "liberty-nps",
-            Title = "Liberty NPS 2025",
-            Description = "How likely are you to recommend Liberty?",
-            IsActive = true,
-            ThemeJson = """{"accent":"#de2b2b"}"""
-        });
+        b.Entity<Survey>().HasData(
+            new Survey
+            {
+                Id = surveyId,
+                Code = "liberty-nps",
+                Title = "Liberty NPS 2025",
+                Description = "How likely are you to recommend Liberty?",
+                IsActive = true,
+                ThemeJson = """{"accent":"#de2b2b"}"""
+            },
+            new Survey
+            {
+                Id = legacySurveyId,
+                Code = "legacy",
+                Title = "Legacy",
+                Description = "Legacy kiosk feedback",
+                IsActive = true
+            });
 
         b.Entity<SurveySection>().HasData(
             new SurveySection
@@ -579,6 +589,16 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 .HasColumnType("datetimeoffset");
             e.Property(x => x.Phone)
                 .HasMaxLength(64);
+            e.Property(x => x.ServiceType)
+                .HasMaxLength(256);
+            e.Property(x => x.Gender)
+                .HasMaxLength(32);
+            e.Property(x => x.AgeRange)
+                .HasMaxLength(32);
+            e.Property(x => x.City)
+                .HasMaxLength(64);
+            e.Property(x => x.ContactPreference)
+                .HasMaxLength(16);
         });
 
         b.Entity<ClientFlow.Domain.Feedback.Staff>().HasData(

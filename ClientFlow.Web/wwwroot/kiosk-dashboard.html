@@ -341,7 +341,10 @@
                     const storedCode = localStorage.getItem(kioskSurveyStorageKey);
                     let preferred = storedCode ? sorted.find(s => s.code === storedCode) : null;
                     if (!preferred) {
-                        preferred = sorted.find(s => s.isActive) || sorted[0] || null;
+                        preferred = sorted.find(s => s.code.toLowerCase() === 'legacy')
+                            || sorted.find(s => s.isActive)
+                            || sorted[0]
+                            || null;
                     }
                     if (preferred) {
                         select.value = preferred.code;
