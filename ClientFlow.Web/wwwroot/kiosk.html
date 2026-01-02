@@ -180,7 +180,8 @@
     }
     .back-btn:active { transform: translateY(0); }
     #phoneInput,
-    #commentInput {
+    #commentInput,
+    select {
       width: 100%;
       padding: 18px 22px;
       font-size: 1.15rem;
@@ -192,6 +193,45 @@
     }
     #phoneInput::placeholder,
     #commentInput::placeholder { color: var(--text-muted); }
+    select option { color: #071a3d; }
+    .form-group {
+      width: 100%;
+      text-align: left;
+      margin-top: 24px;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 12px;
+      font-weight: 600;
+      color: var(--text-light);
+    }
+    .helper-text {
+      margin-top: 8px;
+      font-size: 0.95rem;
+      color: var(--text-muted);
+    }
+    .checkbox-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-top: 20px;
+    }
+    .checkbox-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      border-radius: 18px;
+      border: 1px solid var(--panel-border);
+      background: var(--card-bg);
+      box-shadow: inset 0 1px 18px rgba(2, 9, 30, 0.75);
+      cursor: pointer;
+    }
+    .checkbox-item input {
+      width: 20px;
+      height: 20px;
+      accent-color: var(--accent);
+    }
     .staff-grid,
     .option-list,
     .rating-options,
@@ -344,19 +384,54 @@
         <!-- Phone -->
         <div class="page" id="page-phone">
             <h1>Please enter your phone number</h1>
-            <input type="tel" id="phoneInput" placeholder="5xx xxxx" autocomplete="tel" inputmode="tel" />
+            <input type="tel" id="phoneInput" placeholder="8 digit local number" autocomplete="tel" inputmode="numeric" maxlength="8" />
             <button class="btn" id="btnProceed" disabled>Proceed</button>
         </div>
         <!-- Staff -->
         <div class="page" id="page-staff">
-            <h1>I was assisted by…</h1>
-            <div class="staff-grid" id="staffGrid"></div>
+            <h1>Service interaction</h1>
+            <div class="form-group">
+                <label for="staffSelect">Assisted by</label>
+                <select id="staffSelect">
+                    <option value="">Select a staff member</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="genderSelect">Gender</label>
+                <select id="genderSelect">
+                    <option value="">Select gender</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="ageRangeSelect">Age range</label>
+                <select id="ageRangeSelect">
+                    <option value="">Select age range</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="citySelect">Residential Address City</label>
+                <select id="citySelect">
+                    <option value="">Select city</option>
+                </select>
+            </div>
+            <button class="btn" id="btnServiceDetails" disabled>Continue</button>
             <button class="back-btn" id="backFromStaff">Back</button>
         </div>
         <!-- Service -->
         <div class="page" id="page-service">
             <h1>Which Liberty service were you assisted with today?</h1>
-            <div class="option-list" id="serviceOptions"></div>
+            <div class="form-group">
+                <label for="serviceSelect">Service</label>
+                <select id="serviceSelect">
+                    <option value="">Select service</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Policies assisted with</label>
+                <div class="checkbox-grid" id="policyOptions"></div>
+                <p class="helper-text">Select all that apply.</p>
+            </div>
+            <button class="btn" id="btnProceedService" disabled>Continue</button>
             <button class="back-btn" id="backFromService">Back</button>
         </div>
         <!-- Satisfaction -->
@@ -400,7 +475,7 @@
         </div>
         <!-- Final -->
         <div class="page final-page" id="page-final">
-            <h1>Thank you for your feedback!</h1>
+            <h1>Thank you for your feedback</h1>
             <p>Your input helps us improve our service.</p>
             <div class="progress-container">
                 <div class="progress-track"><div class="progress-fill" id="finalProgress"></div></div>
@@ -423,26 +498,31 @@
 <script>
         (function () {
             const ratingQuestions = [
-                { key: 'overall', container: 'optsSatisfaction', labels: ['Very dissatisfied', 'Dissatisfied', 'Neutral', 'Satisfied', 'Very satisfied'], nextPage: 5 },
+                { key: 'overall', container: 'optsSatisfaction', labels: ['😡 Very Poor', '😞 Poor', '😐 Fair', '🙂 Good', '😄 Excellent'], nextPage: 5 },
                 { key: 'time', container: 'optsTime', labels: ['Not at all', 'No', 'Neutral', 'Yes, Mostly', 'Absolutely'], nextPage: 6 },
                 { key: 'respect', container: 'optsRespect', labels: ['Not at all', 'No', 'Neutral', 'Yes, Mostly', 'Absolutely'], nextPage: 7 }
             ];
             const ratingColours = ['#e74c3c', '#e67e22', '#f1c40f', '#2ecc71', '#27ae60'];
             const recommendOptions = [
-                { value: 1, emoji: '😊', label: 'Extremely likely' },
-                { value: 2, emoji: '😃', label: 'Very likely' },
+                { value: 1, emoji: '😡', label: 'Not at all likely' },
+                { value: 2, emoji: '😞', label: 'Slightly likely' },
                 { value: 3, emoji: '😐', label: 'Neutral' },
-                { value: 4, emoji: '😞', label: 'Slightly likely' },
-                { value: 5, emoji: '😡', label: 'Not at all likely' }
+                { value: 4, emoji: '😃', label: 'Very likely' },
+                { value: 5, emoji: '😊', label: 'Extremely likely' }
             ];
             const services = [
-                'Policy enquiry',
+                'Policy enquiry Query',
+                'Complaint',
                 'Claim',
                 'New policy application',
                 'Payment',
-                'Amendments/ Policy Changes',
+                'Amendments Policy Changes',
                 'Other'
             ];
+            const genders = ['Female', 'Male'];
+            const ageRanges = ['18 to 35', '36 to 45', 'Over 45'];
+            const cityOptions = ['Maseru', 'Berea', 'Leribe', 'Botha Bothe', 'Mokhotlong', 'Thaba Tseka', 'Mafeteng', 'Mohale\u2019s Hoek', 'Qacha\u2019s Nek', 'Quthing'];
+            const policyOptions = ['Retail Funeral Policy', 'Life Cover', 'Education Lagacy Plan'];
             const contactChoices = [
                 { value: 'yes', label: 'Yes' },
                 { value: 'no', label: 'No' }
@@ -455,7 +535,11 @@
                 staffName: null,
                 staffBranchId: null,
                 staffBranchName: null,
+                gender: null,
+                ageRange: null,
+                city: null,
                 service: null,
+                policies: [],
                 time: null,
                 respect: null,
                 overall: null,
@@ -501,41 +585,54 @@
             }
 
             function renderStaff(roster) {
-                const host = byId('staffGrid');
-                host.innerHTML = '';
-                if (!roster || roster.length === 0) { host.innerHTML = '<p>No staff configured for this branch.</p>'; return; }
+                const host = byId('staffSelect');
+                host.innerHTML = '<option value="">Select a staff member</option>';
+                if (!roster || roster.length === 0) {
+                    const opt = document.createElement('option');
+                    opt.value = '';
+                    opt.textContent = 'No staff configured for this branch';
+                    host.appendChild(opt);
+                    return;
+                }
                 roster.forEach(m => {
-                    const card = document.createElement('div');
-                    card.className = 'staff-card';
-                    card.dataset.id = m.id;
-                    card.innerHTML = `<img src="${m.photo}" alt=""><div class="name">${m.name}</div>`;
-                    card.addEventListener('click', () => {
-                        state.staff = m.id;
-                        state.staffName = m.name;
-                        state.staffBranchId = m.branchId;
-                        state.staffBranchName = m.branchName;
-                        host.querySelectorAll('.staff-card').forEach(c => c.classList.remove('selected'));
-                        card.classList.add('selected');
-                        setTimeout(() => showPage(3), 150);
-                    });
-                    host.appendChild(card);
+                    const opt = document.createElement('option');
+                    opt.value = m.id;
+                    opt.textContent = m.name;
+                    opt.dataset.branchId = m.branchId ?? '';
+                    opt.dataset.branchName = m.branchName ?? '';
+                    host.appendChild(opt);
                 });
             }
 
             function renderServiceOptions() {
-                const host = byId('serviceOptions');
-                host.innerHTML = '';
+                const host = byId('serviceSelect');
+                host.innerHTML = '<option value="">Select service</option>';
                 services.forEach(service => {
-                    const opt = document.createElement('div');
-                    opt.className = 'option-item';
+                    const opt = document.createElement('option');
+                    opt.value = service;
                     opt.textContent = service;
-                    opt.addEventListener('click', () => {
-                        state.service = service;
-                        host.querySelectorAll('.option-item').forEach(o => o.classList.remove('selected'));
-                        opt.classList.add('selected');
-                        setTimeout(() => showPage(4), 150);
-                    });
                     host.appendChild(opt);
+                });
+            }
+
+            function renderPolicyOptions() {
+                const host = byId('policyOptions');
+                host.innerHTML = '';
+                policyOptions.forEach(policy => {
+                    const label = document.createElement('label');
+                    label.className = 'checkbox-item';
+                    const input = document.createElement('input');
+                    input.type = 'checkbox';
+                    input.value = policy;
+                    input.addEventListener('change', () => {
+                        const selections = Array.from(host.querySelectorAll('input:checked')).map(el => el.value);
+                        state.policies = selections;
+                    });
+                    const span = document.createElement('span');
+                    span.textContent = policy;
+                    label.appendChild(input);
+                    label.appendChild(span);
+                    host.appendChild(label);
                 });
             }
 
@@ -610,6 +707,10 @@
                                 staffId: state.staff,
                                 staffName: state.staffName,
                                 serviceType: state.service,
+                                gender: state.gender,
+                                ageRange: state.ageRange,
+                                city: state.city,
+                                policies: state.policies,
                                 timeRating: state.time,
                                 respectRating: state.respect,
                                 overallRating: state.overall,
@@ -634,7 +735,11 @@
                 state.staffName = null;
                 state.staffBranchId = null;
                 state.staffBranchName = null;
+                state.gender = null;
+                state.ageRange = null;
+                state.city = null;
                 state.service = null;
+                state.policies = [];
                 state.time = null;
                 state.respect = null;
                 state.overall = null;
@@ -646,10 +751,26 @@
                 const phoneInput = byId('phoneInput');
                 phoneInput.value = '';
                 byId('btnProceed').disabled = true;
-                ['staffGrid', 'serviceOptions', 'optsSatisfaction', 'optsTime', 'optsRespect', 'optsRecommend', 'optsContact'].forEach(id => {
+                ['optsSatisfaction', 'optsTime', 'optsRespect', 'optsRecommend', 'optsContact'].forEach(id => {
                     const host = byId(id);
                     if (host) host.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
                 });
+                const staffSelect = byId('staffSelect');
+                if (staffSelect) staffSelect.value = '';
+                const genderSelect = byId('genderSelect');
+                if (genderSelect) genderSelect.value = '';
+                const ageRangeSelect = byId('ageRangeSelect');
+                if (ageRangeSelect) ageRangeSelect.value = '';
+                const citySelect = byId('citySelect');
+                if (citySelect) citySelect.value = '';
+                const serviceSelect = byId('serviceSelect');
+                if (serviceSelect) serviceSelect.value = '';
+                const policyHost = byId('policyOptions');
+                if (policyHost) policyHost.querySelectorAll('input[type="checkbox"]').forEach(el => { el.checked = false; });
+                const btnServiceDetails = byId('btnServiceDetails');
+                if (btnServiceDetails) btnServiceDetails.disabled = true;
+                const btnProceedService = byId('btnProceedService');
+                if (btnProceedService) btnProceedService.disabled = true;
                 const commentInput = byId('commentInput');
                 if (commentInput) commentInput.value = '';
             }
@@ -658,6 +779,7 @@
                 const roster = await fetchRosterFromServer();
                 renderStaff(roster);
                 renderServiceOptions();
+                renderPolicyOptions();
                 renderRatings();
                 renderRecommendOptions();
                 renderContactOptions();
@@ -675,7 +797,7 @@
             const btnProceed = byId('btnProceed');
             function validatePhone(v) {
                 const digits = v.replace(/\D/g, '');
-                return digits.length >= 8;
+                return digits.length === 8;
             }
             phoneInput.addEventListener('input', () => {
                 state.phone = phoneInput.value.trim();
@@ -688,6 +810,76 @@
                 }
             });
             btnProceed.addEventListener('click', () => showPage(2));
+            const staffSelect = byId('staffSelect');
+            const btnServiceDetails = byId('btnServiceDetails');
+            if (staffSelect && btnServiceDetails) {
+                staffSelect.addEventListener('change', () => {
+                    const selectedOption = staffSelect.options[staffSelect.selectedIndex];
+                    if (selectedOption && selectedOption.value) {
+                        state.staff = selectedOption.value;
+                        state.staffName = selectedOption.textContent;
+                        state.staffBranchId = selectedOption.dataset.branchId || null;
+                        state.staffBranchName = selectedOption.dataset.branchName || null;
+                    } else {
+                        state.staff = null;
+                        state.staffName = null;
+                        state.staffBranchId = null;
+                        state.staffBranchName = null;
+                    }
+                    btnServiceDetails.disabled = !state.staff;
+                });
+            }
+            const genderSelect = byId('genderSelect');
+            if (genderSelect) {
+                genderSelect.innerHTML = '<option value="">Select gender</option>';
+                genders.forEach(g => {
+                    const opt = document.createElement('option');
+                    opt.value = g;
+                    opt.textContent = g;
+                    genderSelect.appendChild(opt);
+                });
+                genderSelect.addEventListener('change', () => {
+                    state.gender = genderSelect.value || null;
+                });
+            }
+            const ageRangeSelect = byId('ageRangeSelect');
+            if (ageRangeSelect) {
+                ageRangeSelect.innerHTML = '<option value="">Select age range</option>';
+                ageRanges.forEach(range => {
+                    const opt = document.createElement('option');
+                    opt.value = range;
+                    opt.textContent = range;
+                    ageRangeSelect.appendChild(opt);
+                });
+                ageRangeSelect.addEventListener('change', () => {
+                    state.ageRange = ageRangeSelect.value || null;
+                });
+            }
+            const citySelect = byId('citySelect');
+            if (citySelect) {
+                citySelect.innerHTML = '<option value="">Select city</option>';
+                cityOptions.forEach(city => {
+                    const opt = document.createElement('option');
+                    opt.value = city;
+                    opt.textContent = city;
+                    citySelect.appendChild(opt);
+                });
+                citySelect.addEventListener('change', () => {
+                    state.city = citySelect.value || null;
+                });
+            }
+            if (btnServiceDetails) {
+                btnServiceDetails.addEventListener('click', () => showPage(3));
+            }
+            const serviceSelect = byId('serviceSelect');
+            const btnProceedService = byId('btnProceedService');
+            if (serviceSelect && btnProceedService) {
+                serviceSelect.addEventListener('change', () => {
+                    state.service = serviceSelect.value || null;
+                    btnProceedService.disabled = !state.service;
+                });
+                btnProceedService.addEventListener('click', () => showPage(4));
+            }
             byId('backFromStaff').addEventListener('click', () => showPage(1));
             byId('backFromService').addEventListener('click', () => showPage(2));
             byId('backFromSatisfaction').addEventListener('click', () => showPage(3));
