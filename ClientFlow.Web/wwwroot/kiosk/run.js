@@ -17,6 +17,8 @@
 
     let sessionStarted = Date.now();
 
+    const LibertyFormKey = 'liberty-kiosk-v2';
+
     function resolveSurveyCode() {
         const explicit = app.dataset.surveyCode || app.dataset.code;
         if (explicit) return explicit;
@@ -24,8 +26,19 @@
         return params.get('code') || params.get('survey') || '';
     }
 
+    function resolveFormKey() {
+        const explicit = app.dataset.formKey;
+        if (explicit) return explicit;
+        const params = new URLSearchParams(window.location.search);
+        return params.get('formKey') || params.get('form') || '';
+    }
+
     const surveyCode = resolveSurveyCode();
-    if (!surveyCode) {
+    const formKey = resolveFormKey();
+    const useLibertyDefinition = typeof formKey === 'string'
+        && formKey.trim().toLowerCase() === LibertyFormKey;
+
+    if (!surveyCode && !useLibertyDefinition) {
         app.classList.remove('loading');
         app.textContent = 'Survey code is missing.';
         return;
@@ -34,7 +47,23 @@
     let etag = null;
     let cachedDefinition = null;
 
+    async function loadLibertyDefinition() {
+        if (cachedDefinition) {
+            return cachedDefinition;
+        }
+        const response = await apiFetch('/forms/liberty-kiosk-v2.json');
+        if (!response.ok) {
+            throw new Error('Unable to load liberty kiosk definition');
+        }
+        cachedDefinition = await response.json();
+        return cachedDefinition;
+    }
+
     async function loadDefinition() {
+        if (useLibertyDefinition) {
+            return loadLibertyDefinition();
+        }
+
         const headers = {};
         if (etag) {
             headers['If-None-Match'] = etag;
@@ -438,6 +467,10 @@
             statusMessage.textContent = 'Submitting…';
             submitButton.disabled = true;
             try {
+                if (!surveyCode) {
+                    statusMessage.textContent = 'Survey code is missing. Unable to submit.';
+                    return;
+                }
                 const answers = buildSubmitPayload(parsedQuestions, state);
                 const response = await apiFetch(`/api/surveys/${encodeURIComponent(surveyCode)}/submit`, {
                     method: 'POST',
