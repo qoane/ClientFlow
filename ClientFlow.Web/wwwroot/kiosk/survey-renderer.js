@@ -34,8 +34,14 @@
             const input = document.createElement('input');
             input.type = inputType;
             if (inputType === 'tel') {
-                input.inputMode = 'tel';
+                input.inputMode = 'numeric';
                 input.autocomplete = 'tel';
+                input.pattern = '[0-9]*';
+                if (q.settings && typeof q.settings.maxLength === 'number') {
+                    input.maxLength = q.settings.maxLength;
+                } else {
+                    input.maxLength = 8;
+                }
             }
             if (q.settings && typeof q.settings.placeholder === 'string') {
                 input.placeholder = q.settings.placeholder;
@@ -46,7 +52,12 @@
             }
             input.defaultValue = input.value;
             input.addEventListener('input', () => {
-                state.setAnswer(q.key, input.value);
+                let nextValue = input.value;
+                if (inputType === 'tel') {
+                    nextValue = nextValue.replace(/\D/g, '');
+                    input.value = nextValue;
+                }
+                state.setAnswer(q.key, nextValue);
             });
             wrapper.appendChild(input);
             return wrapper;
@@ -872,9 +883,16 @@
                 break;
             }
             case 'phone': {
-                const digits = typeof value === 'string' ? value.replace(/\D+/g, '') : '';
-                if (digits.length < 7) {
-                    errors.push('Enter a valid phone number.');
+                if (typeof value !== 'string') {
+                    errors.push('Enter an 8 digit local phone number.');
+                    break;
+                }
+                const digits = value.replace(/\s+/g, '');
+                const requiredLength = q.settings && typeof q.settings.maxLength === 'number'
+                    ? q.settings.maxLength
+                    : 8;
+                if (!/^\d+$/.test(digits) || digits.length !== requiredLength) {
+                    errors.push(`Enter a ${requiredLength} digit local phone number.`);
                 }
                 break;
             }
