@@ -209,15 +209,6 @@
                 box-shadow: 0 0 0 3px rgba(108,240,194,.35)
             }
 
-            .face img {
-                width: 86px;
-                height: 86px;
-                border-radius: 12px;
-                object-fit: cover;
-                border: 1px solid var(--border);
-                animation: pop .3s ease
-            }
-
             .face .nm {
                 color: #cfe0ff;
                 font-weight: 600;
@@ -547,7 +538,7 @@
             <section class="panel">
                 <div class="head">
                     <strong>Feedback</strong>
-                    <span class="tag" id="stepLabel">Step 1 of 4</span>
+                    <span class="tag" id="stepLabel">Step 1 of 5</span>
                 </div>
                 <div class="body">
                     <div class="stepper">
@@ -555,6 +546,7 @@
                         <div class="step"><div id="s2"></div></div>
                         <div class="step"><div id="s3"></div></div>
                         <div class="step"><div id="s4"></div></div>
+                        <div class="step"><div id="s5"></div></div>
                     </div>
 
                     <!-- STEP 1: STAFF -->
@@ -567,7 +559,7 @@
                         </div>
                     </div>
 
-                    <!-- STEP 2: EXPERIENCE -->
+                    <!-- STEP 2: SPEED -->
                     <div id="step2" style="display:none">
                         <div class="qblock">
                             <div class="qtitle">Was your query handled within a reasonable time?</div>
@@ -579,18 +571,16 @@
                                 <div class="opt" data-val="5">Absolutely</div>
                             </div>
                         </div>
-                        <div class="qblock">
-                            <div class="qtitle">Were you treated professionally and with respect?</div>
-                            <div class="rowBtns" data-name="respect">
-                                <div class="opt" data-val="1">Not at all</div>
-                                <div class="opt" data-val="2">No</div>
-                                <div class="opt" data-val="3">Neutral</div>
-                                <div class="opt" data-val="4">Yes, mostly</div>
-                                <div class="opt" data-val="5">Absolutely</div>
-                            </div>
+                        <div class="controls">
+                            <button class="btn" id="back2">Back</button>
+                            <button class="btn accent" id="next2">Next</button>
                         </div>
+                    </div>
+
+                    <!-- STEP 3: OVERALL -->
+                    <div id="step3" style="display:none">
                         <div class="qblock">
-                            <div class="qtitle">Overall service rating</div>
+                            <div class="qtitle">Overall Satisfaction</div>
                             <div class="stars" id="stars">
                                 <span class="star" data-val="1">★</span>
                                 <span class="star" data-val="2">★</span>
@@ -600,13 +590,13 @@
                             </div>
                         </div>
                         <div class="controls">
-                            <button class="btn" id="back2">Back</button>
-                            <button class="btn accent" id="next2">Next</button>
+                            <button class="btn" id="back3">Back</button>
+                            <button class="btn accent" id="next3">Next</button>
                         </div>
                     </div>
 
-                    <!-- STEP 3: NPS -->
-                    <div id="step3" style="display:none">
+                    <!-- STEP 4: NPS -->
+                    <div id="step4" style="display:none">
                         <div class="qblock">
                             <div class="qtitle">How likely are you to recommend us to a friend or colleague?</div>
                             <div class="hint" style="margin-bottom:6px">0 = Not at all likely, 10 = Extremely likely</div>
@@ -620,13 +610,13 @@
                             </div>
                         </div>
                         <div class="controls">
-                            <button class="btn" id="back3">Back</button>
-                            <button class="btn accent" id="next3">Next</button>
+                            <button class="btn" id="back4">Back</button>
+                            <button class="btn accent" id="next4">Next</button>
                         </div>
                     </div>
 
-                    <!-- STEP 4: COMMENTS & CONTACT -->
-                    <div id="step4" style="display:none">
+                    <!-- STEP 5: COMMENTS & CONTACT -->
+                    <div id="step5" style="display:none">
                         <div class="qblock">
                             <div class="qtitle">What went well?</div>
                             <textarea id="kudos" placeholder="Optional"></textarea>
@@ -646,7 +636,7 @@
                             </div>
                         </div>
                         <div class="controls">
-                            <button class="btn" id="back4">Back</button>
+                            <button class="btn" id="back5">Back</button>
                             <button class="btn accent" id="submit">Submit</button>
                         </div>
                         <div class="footer-note">At any time you can press <b>Finish @ Home</b> and we’ll generate a unique QR code. You can also use it to answer our longer survey to help us serve you even better.</div>
@@ -681,7 +671,7 @@
                 </div>
             </div>
             <table class="table">
-                <thead><tr><th>Photo</th><th>Name</th><th>Role</th><th>On duty</th></tr></thead>
+                <thead><tr><th>Name</th><th>Role</th><th>On duty</th></tr></thead>
                 <tbody id="rosterBody"></tbody>
             </table>
         </div>
@@ -734,12 +724,12 @@
         function seedIfEmpty() {
             if (localStorage.getItem(LS_STAFF)) return;
             const sample = [
-                { id: newId(), name: 'Lerato Mokoena', role: 'Advisor', photo: `https://i.pravatar.cc/150?img=1`, onDuty: true },
-                { id: newId(), name: 'Thabo Nkhahle', role: 'Agent', photo: `https://i.pravatar.cc/150?img=2`, onDuty: true },
-                { id: newId(), name: 'Naleli Seotsi', role: 'Consultant', photo: `https://i.pravatar.cc/150?img=3`, onDuty: false },
-                { id: newId(), name: 'Mpho Sello', role: 'Agent', photo: `https://i.pravatar.cc/150?img=4`, onDuty: false },
-                { id: newId(), name: 'Palesa T.', role: 'Advisor', photo: `https://i.pravatar.cc/150?img=5`, onDuty: true },
-                { id: newId(), name: 'Tumelo K.', role: 'Consultant', photo: `https://i.pravatar.cc/150?img=6`, onDuty: false }
+                { id: newId(), name: 'Lerato Mokoena', role: 'Advisor', onDuty: true },
+                { id: newId(), name: 'Thabo Nkhahle', role: 'Agent', onDuty: true },
+                { id: newId(), name: 'Naleli Seotsi', role: 'Consultant', onDuty: false },
+                { id: newId(), name: 'Mpho Sello', role: 'Agent', onDuty: false },
+                { id: newId(), name: 'Palesa T.', role: 'Advisor', onDuty: true },
+                { id: newId(), name: 'Tumelo K.', role: 'Consultant', onDuty: false }
             ];
             localStorage.setItem(LS_STAFF, JSON.stringify(sample));
         }
@@ -769,21 +759,21 @@
             step: 1,
             selectedStaff: [], // ids
             unknown: false,
-            speed: null, respect: null, overall: null,
+            speed: null, overall: null,
             nps: null, resolved: null,
             kudos: '', improve: '', consent: false, contactName: '', contactPhone: '', contactEmail: ''
         };
 
         /* ---------- DOM refs ---------- */
-        const stepEls = [null, 'step1', 'step2', 'step3', 'step4'].map(id => id ? document.getElementById(id) : null);
-        const progressEls = [null, 's1', 's2', 's3', 's4'].map(id => id ? document.getElementById(id) : null);
+        const stepEls = [null, 'step1', 'step2', 'step3', 'step4', 'step5'].map(id => id ? document.getElementById(id) : null);
+        const progressEls = [null, 's1', 's2', 's3', 's4', 's5'].map(id => id ? document.getElementById(id) : null);
         const stepLabel = document.getElementById('stepLabel');
 
         function setStep(n) {
             state.step = n;
             stepEls.forEach((el, i) => { if (!el) return; el.style.display = (i === n) ? '' : 'none'; });
             progressEls.forEach((bar, i) => { if (!bar) return; bar.style.width = (i <= n ? '100%' : '0%'); });
-            stepLabel.textContent = `Step ${n} of 4`;
+            stepLabel.textContent = `Step ${n} of 5`;
         }
 
         function getStaff() { try { return JSON.parse(localStorage.getItem(LS_STAFF) || '[]'); } catch { return []; } }
@@ -794,7 +784,7 @@
             const staff = getStaff().filter(s => s.onDuty);
             staff.forEach(p => {
                 const card = document.createElement('div'); card.className = 'face'; card.dataset.id = p.id;
-                card.innerHTML = `<img src="${p.photo}" alt=""><div class="nm">${esc(p.name)}</div><div class="role">${esc(p.role || '')}</div>`;
+                card.innerHTML = `<div class="nm">${esc(p.name)}</div><div class="role">${esc(p.role || '')}</div>`;
                 if (state.selectedStaff.includes(p.id)) card.classList.add('selected');
                 card.onclick = () => {
                     const idx = state.selectedStaff.indexOf(p.id);
@@ -847,15 +837,20 @@
         };
         document.getElementById('back2').onclick = () => setStep(1);
         document.getElementById('next2').onclick = () => {
-            if (!state.speed || !state.respect || !state.overall) { toast('Please answer all three'); return; }
+            if (!state.speed) { toast('Please answer the question'); return; }
             setStep(3);
         };
         document.getElementById('back3').onclick = () => setStep(2);
         document.getElementById('next3').onclick = () => {
-            if (state.nps === null || !state.resolved) { toast('Please choose NPS & resolution'); return; }
+            if (!state.overall) { toast('Please select an overall rating'); return; }
             setStep(4);
         };
         document.getElementById('back4').onclick = () => setStep(3);
+        document.getElementById('next4').onclick = () => {
+            if (state.nps === null || !state.resolved) { toast('Please choose NPS & resolution'); return; }
+            setStep(5);
+        };
+        document.getElementById('back5').onclick = () => setStep(4);
 
         document.getElementById('consent').onchange = (e) => {
             state.consent = e.target.checked;
@@ -869,13 +864,13 @@
             state.contactPhone = document.getElementById('contactPhone').value.trim();
             state.contactEmail = document.getElementById('contactEmail').value.trim();
 
-            const low = (+state.overall <= 2) || (+state.nps <= 6) || (+state.speed <= 2) || (+state.respect <= 2);
+            const low = (+state.overall <= 2) || (+state.nps <= 6) || (+state.speed <= 2);
             if (low && !state.improve) { toast('Please add a short improvement comment'); return; }
 
             const rec = {
                 id: newId(), ts: Date.now(),
                 staffIds: state.unknown ? [] : state.selectedStaff.slice(),
-                speed: +state.speed, respect: +state.respect, overall: +state.overall,
+                speed: +state.speed, overall: +state.overall,
                 nps: +state.nps, resolved: state.resolved === 'yes',
                 kudos: state.kudos, improve: state.improve,
                 consent: !!state.consent, contactName: state.contactName, contactPhone: state.contactPhone, contactEmail: state.contactEmail,
@@ -903,7 +898,6 @@
             getStaff().forEach(p => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-          <td><img src="${p.photo}" style="width:44px;height:44px;border-radius:10px;object-fit:cover;border:1px solid var(--border)"></td>
           <td>${esc(p.name)}</td>
           <td><input type="text" value="${esc(p.role || '')}" data-role style="width:100%;padding:8px;border-radius:8px;border:1px solid var(--border);background:#0f1530;color:#e9eeff"></td>
           <td><input type="checkbox" ${p.onDuty ? 'checked' : ''} data-duty></td>
@@ -942,7 +936,7 @@
             return 'H-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).slice(2, 8).toUpperCase();
         }
         function resetFlow() {
-            state = { step: 1, selectedStaff: [], unknown: false, speed: null, respect: null, overall: null, nps: null, resolved: null, kudos: '', improve: '', consent: false, contactName: '', contactPhone: '', contactEmail: '' };
+            state = { step: 1, selectedStaff: [], unknown: false, speed: null, overall: null, nps: null, resolved: null, kudos: '', improve: '', consent: false, contactName: '', contactPhone: '', contactEmail: '' };
             document.getElementById('chkUnknown').checked = false;
             document.getElementById('kudos').value = ''; document.getElementById('improve').value = '';
             document.getElementById('consent').checked = false; document.getElementById('contactName').value = ''; document.getElementById('contactPhone').value = ''; document.getElementById('contactEmail').value = '';
@@ -974,7 +968,7 @@
                 // snapshot of partial answers, in case you want to pre-fill later:
                 snapshot: {
                     staffIds: state.unknown ? [] : state.selectedStaff.slice(),
-                    speed: state.speed, respect: state.respect, overall: state.overall, nps: state.nps,
+                    speed: state.speed, overall: state.overall, nps: state.nps,
                     kudos: document.getElementById('kudos').value.trim(),
                     improve: document.getElementById('improve').value.trim()
                 }

@@ -294,7 +294,7 @@
                 </div>
                 <div class="head"><strong>Recent feedback</strong><span class="badge" id="recentChip">—</span></div>
                 <div class="body">
-                    <table class="table" id="tblRecent"><thead><tr><th>When</th><th>Staff</th><th>NPS</th><th>Overall</th><th>Speed</th><th>Respect</th><th>Kudos</th><th>Improve</th></tr></thead><tbody></tbody></table>
+                    <table class="table" id="tblRecent"><thead><tr><th>When</th><th>Staff</th><th>NPS</th><th>Overall</th><th>Speed</th><th>Kudos</th><th>Improve</th></tr></thead><tbody></tbody></table>
                 </div>
             </section>
         </div>
@@ -408,7 +408,7 @@ function render(){
   recent.forEach(r=>{
     const names = (r.staffIds||[]).map(id=> (staff.find(s=>s.id===id)?.name)||id).join(', ') || '(Unknown)';
     const tr=document.createElement('tr');
-    tr.innerHTML = `<td>${fmt(r.ts)}</td><td>${names}</td><td>${r.nps}</td><td>${r.overall}</td><td>${r.speed}</td><td>${r.respect}</td>
+    tr.innerHTML = `<td>${fmt(r.ts)}</td><td>${names}</td><td>${r.nps}</td><td>${r.overall}</td><td>${r.speed}</td>
       <td>${esc(r.kudos||'')}</td><td>${esc(r.improve||'')}</td>`;
     tb2.appendChild(tr);
   });
@@ -426,8 +426,8 @@ document.getElementById('btnClear').onclick = async ()=>{
 };
 document.getElementById('btnExport').onclick = ()=>{
   const data = getResp();
-  const rows=[['Timestamp','StaffIds','NPS','Overall','Speed','Respect','Resolved','Kudos','Improve','Consent','Name','Phone','Email','Location']];
-  data.forEach(r=> rows.push([ new Date(r.ts).toISOString(), (r.staffIds||[]).join('|'), r.nps, r.overall, r.speed, r.respect, r.resolved, (r.kudos||'').replace(/\n/g,' '), (r.improve||'').replace(/\n/g,' '), r.consent, r.contactName||'', r.contactPhone||'', r.contactEmail||'', r.location||'' ]));
+  const rows=[['Timestamp','StaffIds','NPS','Overall','Speed','Resolved','Kudos','Improve','Consent','Name','Phone','Email','Location']];
+  data.forEach(r=> rows.push([ new Date(r.ts).toISOString(), (r.staffIds||[]).join('|'), r.nps, r.overall, r.speed, r.resolved, (r.kudos||'').replace(/\n/g,' '), (r.improve||'').replace(/\n/g,' '), r.consent, r.contactName||'', r.contactPhone||'', r.contactEmail||'', r.location||'' ]));
   const csv = rows.map(r=> r.map(x=> `"${String(x).replace(/"/g,'""')}"`).join(',')).join('\n');
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
