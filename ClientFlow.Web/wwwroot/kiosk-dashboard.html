@@ -501,7 +501,13 @@
 
         function renderTable() {
             const rows = (analytics?.responses || []).map(r => {
-                const row = { created: r.createdUtc ? new Date(r.createdUtc).toISOString() : '' };
+                const row = {
+                    created: r.createdUtc ? new Date(r.createdUtc).toISOString() : '',
+                    started: r.startedUtc ? new Date(r.startedUtc).toISOString() : '',
+                    duration: r.durationSeconds ?? null,
+                    clientCode: r.clientCode ?? '',
+                    formKey: r.formKey ?? ''
+                };
                 (analytics?.questions || []).forEach(q => {
                     const raw = r.answers[q.key] ?? '';
                     if (q.summaryKind === 'scale') {
@@ -521,6 +527,36 @@
                     hozAlign: 'left',
                     width: 200,
                     formatter: cell => cell.getValue() ? new Date(cell.getValue()).toLocaleString() : ''
+                },
+                {
+                    title: 'Started',
+                    field: 'started',
+                    sorter: 'datetime',
+                    hozAlign: 'left',
+                    width: 200,
+                    formatter: cell => cell.getValue() ? new Date(cell.getValue()).toLocaleString() : ''
+                },
+                {
+                    title: 'Duration (s)',
+                    field: 'duration',
+                    sorter: 'number',
+                    hozAlign: 'center',
+                    width: 140,
+                    formatter: cell => formatNumber(cell.getValue())
+                },
+                {
+                    title: 'Client Code',
+                    field: 'clientCode',
+                    sorter: 'string',
+                    hozAlign: 'left',
+                    width: 160
+                },
+                {
+                    title: 'Form Key',
+                    field: 'formKey',
+                    sorter: 'string',
+                    hozAlign: 'left',
+                    width: 180
                 }
             ];
 
@@ -559,9 +595,16 @@
                 appNotify('Load a survey before exporting.', { type: 'warning' });
                 return;
             }
-            const headers = ['Timestamp'].concat(analytics.questions.map(q => q.prompt));
+            const headers = ['Timestamp', 'Started', 'Duration (s)', 'Client Code', 'Form Key']
+                .concat(analytics.questions.map(q => q.prompt));
             const csvRows = analytics.responses.map(r => {
-                const values = [r.createdUtc ? new Date(r.createdUtc).toISOString() : ''];
+                const values = [
+                    r.createdUtc ? new Date(r.createdUtc).toISOString() : '',
+                    r.startedUtc ? new Date(r.startedUtc).toISOString() : '',
+                    r.durationSeconds != null ? String(r.durationSeconds) : '',
+                    r.clientCode ?? '',
+                    r.formKey ?? ''
+                ];
                 analytics.questions.forEach(q => {
                     values.push((r.answers[q.key] ?? '').replaceAll('"', '""'));
                 });
@@ -592,9 +635,13 @@
             doc.text(els.label.textContent || '', 14, 22);
             doc.text(`Total Responses: ${analytics.totalResponses}`, 14, 28);
 
-            const head = [['Timestamp', ...analytics.questions.map(q => q.prompt)]];
+            const head = [['Timestamp', 'Started', 'Duration (s)', 'Client Code', 'Form Key', ...analytics.questions.map(q => q.prompt)]];
             const body = analytics.responses.map(r => [
                 r.createdUtc ? new Date(r.createdUtc).toLocaleString() : '',
+                r.startedUtc ? new Date(r.startedUtc).toLocaleString() : '',
+                r.durationSeconds != null ? String(r.durationSeconds) : '',
+                r.clientCode ?? '',
+                r.formKey ?? '',
                 ...analytics.questions.map(q => r.answers[q.key] ?? '')
             ]);
 
