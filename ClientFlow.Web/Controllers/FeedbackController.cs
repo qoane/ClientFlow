@@ -29,6 +29,9 @@ public class FeedbackController : ControllerBase
         if (dto.TimeRating is null || dto.RespectRating is null || dto.OverallRating is null)
             return BadRequest("All ratings (time, respect, overall) are required.");
 
+        if (string.IsNullOrWhiteSpace(dto.Phone))
+            return BadRequest("Phone number is required.");
+
         if (dto.TimeRating is < 1 or > 5 ||
             dto.RespectRating is < 1 or > 5 ||
             dto.OverallRating is < 1 or > 5)

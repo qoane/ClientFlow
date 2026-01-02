@@ -380,6 +380,88 @@ namespace ClientFlow.Infrastructure.Migrations
                             SectionId = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbf"),
                             SurveyId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
                             Type = "message"
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-00000000000b"),
+                            Key = "visit_reason",
+                            Order = 11,
+                            Prompt = "What brings you in today?",
+                            Required = false,
+                            SectionId = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbc"),
+                            SurveyId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                            Type = "single"
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-00000000000c"),
+                            Key = "visit_other",
+                            Order = 12,
+                            Prompt = "If something else, please tell us.",
+                            Required = false,
+                            SectionId = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbc"),
+                            SettingsJson = "{\"placeholder\":\"Short description\"}",
+                            SurveyId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                            Type = "text"
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-00000000000d"),
+                            Key = "resolved_today",
+                            Order = 13,
+                            Prompt = "Was your issue resolved today?",
+                            Required = false,
+                            SectionId = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbc"),
+                            SettingsJson = "{\"yesLabel\":\"Yes, resolved\",\"noLabel\":\"Not yet\"}",
+                            SurveyId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                            Type = "boolean"
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-00000000000e"),
+                            Key = "service_rating",
+                            Order = 14,
+                            Prompt = "How would you rate the service you received?",
+                            Required = false,
+                            SectionId = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbc"),
+                            SettingsJson = "{\"stars\":5}",
+                            SurveyId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                            Type = "rating_stars"
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-00000000000f"),
+                            Key = "services_used",
+                            Order = 15,
+                            Prompt = "Which services did you use today?",
+                            Required = false,
+                            SectionId = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbc"),
+                            SurveyId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                            Type = "multi"
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000010"),
+                            Key = "recommend_score",
+                            Order = 16,
+                            Prompt = "How likely are you to recommend Liberty to a friend?",
+                            Required = false,
+                            SectionId = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbe"),
+                            SettingsJson = "{\"min\":0,\"max\":10}",
+                            SurveyId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                            Type = "nps_0_10"
+                        },
+                        new
+                        {
+                            Id = new Guid("10000000-0000-0000-0000-000000000011"),
+                            Key = "additional_feedback",
+                            Order = 17,
+                            Prompt = "Any additional feedback for our team?",
+                            Required = false,
+                            SectionId = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbe"),
+                            SettingsJson = "{\"placeholder\":\"Share anything that would help us improve.\",\"rows\":4}",
+                            SurveyId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                            Type = "textarea"
                         });
                 });
 
@@ -666,6 +748,70 @@ namespace ClientFlow.Infrastructure.Migrations
                             Order = 2,
                             QuestionId = new Guid("10000000-0000-0000-0000-000000000008"),
                             Value = "no"
+                        },
+                        new
+                        {
+                            Id = new Guid("20000000-0000-0000-0000-000000000701"),
+                            Label = "Open a new account",
+                            Order = 1,
+                            QuestionId = new Guid("10000000-0000-0000-0000-00000000000b"),
+                            Value = "new_account"
+                        },
+                        new
+                        {
+                            Id = new Guid("20000000-0000-0000-0000-000000000702"),
+                            Label = "Loan or mortgage",
+                            Order = 2,
+                            QuestionId = new Guid("10000000-0000-0000-0000-00000000000b"),
+                            Value = "loan"
+                        },
+                        new
+                        {
+                            Id = new Guid("20000000-0000-0000-0000-000000000703"),
+                            Label = "Account support",
+                            Order = 3,
+                            QuestionId = new Guid("10000000-0000-0000-0000-00000000000b"),
+                            Value = "support"
+                        },
+                        new
+                        {
+                            Id = new Guid("20000000-0000-0000-0000-000000000704"),
+                            Label = "Something else",
+                            Order = 4,
+                            QuestionId = new Guid("10000000-0000-0000-0000-00000000000b"),
+                            Value = "other"
+                        },
+                        new
+                        {
+                            Id = new Guid("20000000-0000-0000-0000-000000000705"),
+                            Label = "Teller window",
+                            Order = 1,
+                            QuestionId = new Guid("10000000-0000-0000-0000-00000000000f"),
+                            Value = "teller"
+                        },
+                        new
+                        {
+                            Id = new Guid("20000000-0000-0000-0000-000000000706"),
+                            Label = "Financial advisor",
+                            Order = 2,
+                            QuestionId = new Guid("10000000-0000-0000-0000-00000000000f"),
+                            Value = "advisor"
+                        },
+                        new
+                        {
+                            Id = new Guid("20000000-0000-0000-0000-000000000707"),
+                            Label = "Loan consultation",
+                            Order = 3,
+                            QuestionId = new Guid("10000000-0000-0000-0000-00000000000f"),
+                            Value = "loan"
+                        },
+                        new
+                        {
+                            Id = new Guid("20000000-0000-0000-0000-000000000708"),
+                            Label = "ATM or kiosk",
+                            Order = 4,
+                            QuestionId = new Guid("10000000-0000-0000-0000-00000000000f"),
+                            Value = "atm"
                         });
                 });
 
