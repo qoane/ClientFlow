@@ -116,4 +116,27 @@ END";
 
         db.Database.ExecuteSqlRaw(sql);
     }
+
+    /// <summary>
+    /// Ensures kiosk feedback rows have non-null timing values. Older databases allow
+    /// StartedUtc and DurationSeconds to be null, but the application model expects
+    /// concrete values. Normalizing existing data avoids runtime materialization
+    /// exceptions when reading feedback summaries.
+    /// </summary>
+    /// <param name="db">The application database context.</param>
+    public static void EnsureKioskFeedbackTimingDefaults(AppDbContext db)
+    {
+        const string sql = @"IF OBJECT_ID(N'dbo.KioskFeedback', N'U') IS NOT NULL
+BEGIN
+    UPDATE dbo.KioskFeedback
+    SET StartedUtc = CreatedUtc
+    WHERE StartedUtc IS NULL;
+
+    UPDATE dbo.KioskFeedback
+    SET DurationSeconds = 0
+    WHERE DurationSeconds IS NULL;
+END";
+
+        db.Database.ExecuteSqlRaw(sql);
+    }
 }
