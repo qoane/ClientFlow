@@ -106,6 +106,7 @@ using (var scope = app.Services.CreateScope())
     DatabaseSchemaFixer.EnsureMustChangePasswordColumn(db);
     DatabaseSchemaFixer.EnsureCreatedByUserIdColumn(db);
     DatabaseSchemaFixer.EnsurePasswordResetTokensTable(db);
+    DatabaseSchemaFixer.EnsureLegacySurveySeed(db);
 }
 
 app.UseSwagger();

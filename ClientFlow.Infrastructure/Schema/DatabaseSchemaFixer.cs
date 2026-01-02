@@ -98,4 +98,22 @@ END";
 
         db.Database.ExecuteSqlRaw(sql);
     }
+
+    /// <summary>
+    /// Ensures the legacy kiosk survey row exists.  Some environments skip or
+    /// partially apply seed migrations, which leaves the legacy dashboard unable
+    /// to locate its survey definition.  This remediation keeps the seed data
+    /// aligned with production expectations.
+    /// </summary>
+    /// <param name="db">The application database context.</param>
+    public static void EnsureLegacySurveySeed(AppDbContext db)
+    {
+        const string sql = @"IF NOT EXISTS (SELECT 1 FROM dbo.Surveys WHERE Code = N'legacy')
+BEGIN
+    INSERT INTO dbo.Surveys ([Id], [Code], [Title], [Description], [IsActive])
+    VALUES ('cccccccc-cccc-cccc-cccc-cccccccccccc', N'legacy', N'Legacy', N'Legacy kiosk feedback', 1);
+END";
+
+        db.Database.ExecuteSqlRaw(sql);
+    }
 }
