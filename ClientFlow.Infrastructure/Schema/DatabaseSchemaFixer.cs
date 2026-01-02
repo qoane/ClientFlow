@@ -151,4 +151,34 @@ END";
 
         db.Database.ExecuteSqlRaw(sql);
     }
+
+    /// <summary>
+    /// Ensures legacy kiosk feedback columns exist for environments that missed the
+    /// migration adding demographic and comment fields.
+    /// </summary>
+    /// <param name="db">The application database context.</param>
+    public static void EnsureLegacyKioskFeedbackColumns(AppDbContext db)
+    {
+        const string sql = @"IF OBJECT_ID(N'dbo.KioskFeedback', N'U') IS NOT NULL
+BEGIN
+    IF COL_LENGTH('dbo.KioskFeedback','ServiceType') IS NULL
+        ALTER TABLE dbo.KioskFeedback ADD ServiceType NVARCHAR(256) NULL;
+    IF COL_LENGTH('dbo.KioskFeedback','Gender') IS NULL
+        ALTER TABLE dbo.KioskFeedback ADD Gender NVARCHAR(32) NULL;
+    IF COL_LENGTH('dbo.KioskFeedback','AgeRange') IS NULL
+        ALTER TABLE dbo.KioskFeedback ADD AgeRange NVARCHAR(32) NULL;
+    IF COL_LENGTH('dbo.KioskFeedback','City') IS NULL
+        ALTER TABLE dbo.KioskFeedback ADD City NVARCHAR(64) NULL;
+    IF COL_LENGTH('dbo.KioskFeedback','PoliciesJson') IS NULL
+        ALTER TABLE dbo.KioskFeedback ADD PoliciesJson NVARCHAR(MAX) NULL;
+    IF COL_LENGTH('dbo.KioskFeedback','ContactPreference') IS NULL
+        ALTER TABLE dbo.KioskFeedback ADD ContactPreference NVARCHAR(16) NULL;
+    IF COL_LENGTH('dbo.KioskFeedback','Comment') IS NULL
+        ALTER TABLE dbo.KioskFeedback ADD Comment NVARCHAR(MAX) NULL;
+    IF COL_LENGTH('dbo.KioskFeedback','RecommendRating') IS NULL
+        ALTER TABLE dbo.KioskFeedback ADD RecommendRating INT NULL;
+END";
+
+        db.Database.ExecuteSqlRaw(sql);
+    }
 }
