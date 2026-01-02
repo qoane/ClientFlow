@@ -346,6 +346,11 @@
       border: 1px solid rgba(96, 215, 255, 0.35);
     }
     .staff-card .name { font-weight: 600; }
+    .staff-card .branch {
+      margin-top: 4px;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
     .rating-option img { width: 68px; height: 68px; margin-bottom: 16px; }
     .rating-option .label,
     .recommend-option .label {
@@ -684,7 +689,8 @@
                     card.dataset.branchId = m.branchId ?? '';
                     card.dataset.branchName = m.branchName ?? '';
                     const photo = m.photo || placeholderAvatar;
-                    card.innerHTML = `<img src="${photo}" alt="${m.name || 'Staff member'}"><div class="name">${m.name}</div>`;
+                    const branchLabel = m.branchName ? `<div class="branch">${m.branchName}</div>` : '';
+                    card.innerHTML = `<img src="${photo}" alt="${m.name || 'Staff member'}"><div class="name">${m.name}</div>${branchLabel}`;
                     const img = card.querySelector('img');
                     if (img) {
                         img.addEventListener('error', () => {
