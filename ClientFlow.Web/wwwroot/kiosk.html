@@ -385,7 +385,7 @@
         <!-- Phone -->
         <div class="page" id="page-phone">
             <h1>Please enter your phone number</h1>
-            <input type="tel" id="phoneInput" placeholder="8 digit local number" autocomplete="tel" inputmode="numeric" maxlength="8" />
+            <input type="tel" id="phoneInput" placeholder="Phone number" autocomplete="tel" inputmode="numeric" maxlength="15" />
             <div class="field-error" id="phoneError" role="alert" aria-live="polite"></div>
             <button class="btn" id="btnProceed" disabled>Proceed</button>
         </div>
@@ -438,7 +438,7 @@
         </div>
         <!-- Satisfaction -->
         <div class="page" id="page-satisfaction">
-            <h1>How satisfied are you with your recent interaction with Liberty?</h1>
+            <h1>Overall Satisfaction</h1>
             <div class="rating-options" id="optsSatisfaction"></div>
             <button class="back-btn" id="backFromSatisfaction">Back</button>
         </div>
@@ -447,12 +447,6 @@
             <h1>Was your query handled within a reasonable time?</h1>
             <div class="rating-options" id="optsTime"></div>
             <button class="back-btn" id="backFromTime">Back</button>
-        </div>
-        <!-- Respect -->
-        <div class="page" id="page-respect">
-            <h1>Did our staff treat you professionally and with respect?</h1>
-            <div class="rating-options" id="optsRespect"></div>
-            <button class="back-btn" id="backFromRespect">Back</button>
         </div>
         <!-- Recommend -->
         <div class="page" id="page-recommend">
@@ -492,7 +486,6 @@
             <div class="dot" data-step="4"></div>
             <div class="dot" data-step="5"></div>
             <div class="dot" data-step="6"></div>
-            <div class="dot" data-step="7"></div>
         </div>
     </div>
 
@@ -501,8 +494,7 @@
         (function () {
             const ratingQuestions = [
                 { key: 'overall', container: 'optsSatisfaction', labels: ['😡 Very Poor', '😞 Poor', '😐 Fair', '🙂 Good', '😄 Excellent'], nextPage: 5 },
-                { key: 'time', container: 'optsTime', labels: ['Not at all', 'No', 'Neutral', 'Yes, Mostly', 'Absolutely'], nextPage: 6 },
-                { key: 'respect', container: 'optsRespect', labels: ['Not at all', 'No', 'Neutral', 'Yes, Mostly', 'Absolutely'], nextPage: 7 }
+                { key: 'time', container: 'optsTime', labels: ['Not at all', 'No', 'Neutral', 'Yes, Mostly', 'Absolutely'], nextPage: 6 }
             ];
             const ratingColours = ['#e74c3c', '#e67e22', '#f1c40f', '#2ecc71', '#27ae60'];
             const recommendOptions = [
@@ -530,7 +522,7 @@
                 { value: 'no', label: 'No' }
             ];
 
-            const pages = ['page-idle', 'page-phone', 'page-staff', 'page-service', 'page-satisfaction', 'page-time', 'page-respect', 'page-recommend', 'page-contact', 'page-comment', 'page-final'];
+            const pages = ['page-idle', 'page-phone', 'page-staff', 'page-service', 'page-satisfaction', 'page-time', 'page-recommend', 'page-contact', 'page-comment', 'page-final'];
             const state = {
                 phone: '',
                 staff: null,
@@ -543,7 +535,6 @@
                 service: null,
                 policies: [],
                 time: null,
-                respect: null,
                 overall: null,
                 recommend: null,
                 contactPreference: null,
@@ -562,7 +553,7 @@
                     p.style.removeProperty('display');
                 });
                 const prog = byId('progress');
-                if (idx >= 2 && idx <= 9) {
+                if (idx >= 2 && idx <= 8) {
                     prog.style.display = 'flex';
                     prog.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === (idx - 2)));
                 } else {
@@ -580,7 +571,7 @@
                     if (r.ok) {
                         const staff = await r.json();
                         localStorage.setItem('kiosk_staff', JSON.stringify(staff));
-                        return staff.map(s => ({ id: s.id, name: s.name, photo: s.photoUrl || 'assets/icons/meh.svg', branchId: s.branchId, branchName: s.branchName }));
+                        return staff.map(s => ({ id: s.id, name: s.name, photo: s.photoUrl || null, branchId: s.branchId, branchName: s.branchName }));
                     }
                 } catch (e) { console.warn('Roster fetch failed', e); }
                 return [];
@@ -675,7 +666,7 @@
                         state.recommend = opt.value;
                         host.querySelectorAll('.recommend-option').forEach(o => o.classList.remove('selected'));
                         el.classList.add('selected');
-                        setTimeout(() => showPage(8), 150);
+                        setTimeout(() => showPage(7), 150);
                     });
                     host.appendChild(el);
                 });
@@ -692,7 +683,7 @@
                         state.contactPreference = choice.value;
                         host.querySelectorAll('.option-item').forEach(o => o.classList.remove('selected'));
                         el.classList.add('selected');
-                        setTimeout(() => showPage(9), 150);
+                        setTimeout(() => showPage(8), 150);
                     });
                     host.appendChild(el);
                 });
@@ -714,7 +705,6 @@
                                 city: state.city,
                                 policies: state.policies,
                                 timeRating: state.time,
-                                respectRating: state.respect,
                                 overallRating: state.overall,
                                 recommendRating: state.recommend,
                                 contactPreference: state.contactPreference,
@@ -743,7 +733,6 @@
                 state.service = null;
                 state.policies = [];
                 state.time = null;
-                state.respect = null;
                 state.overall = null;
                 state.recommend = null;
                 state.contactPreference = null;
@@ -755,7 +744,7 @@
                 const phoneError = byId('phoneError');
                 if (phoneError) phoneError.textContent = '';
                 byId('btnProceed').disabled = true;
-                ['optsSatisfaction', 'optsTime', 'optsRespect', 'optsRecommend', 'optsContact'].forEach(id => {
+                ['optsSatisfaction', 'optsTime', 'optsRecommend', 'optsContact'].forEach(id => {
                     const host = byId(id);
                     if (host) host.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
                 });
@@ -802,7 +791,7 @@
             const phoneError = byId('phoneError');
             function validatePhone(v) {
                 const digits = v.replace(/\D/g, '');
-                return digits.length === 8 && digits === v;
+                return digits.length >= 8 && digits.length <= 15 && digits === v;
             }
             function updatePhoneValidation(showMessage) {
                 const value = phoneInput.value.trim();
@@ -814,10 +803,10 @@
                     phoneError.textContent = '';
                     return;
                 }
-                phoneError.textContent = isValid ? '' : 'Please enter an 8 digit local phone number.';
+                phoneError.textContent = isValid ? '' : 'Please enter a phone number with at least 8 digits.';
             }
             phoneInput.addEventListener('input', () => {
-                phoneInput.value = phoneInput.value.replace(/\D/g, '').slice(0, 8);
+                phoneInput.value = phoneInput.value.replace(/\D/g, '').slice(0, 15);
                 updatePhoneValidation(false);
             });
             phoneInput.addEventListener('blur', () => {
@@ -915,14 +904,13 @@
             byId('backFromService').addEventListener('click', () => showPage(2));
             byId('backFromSatisfaction').addEventListener('click', () => showPage(3));
             byId('backFromTime').addEventListener('click', () => showPage(4));
-            byId('backFromRespect').addEventListener('click', () => showPage(5));
-            byId('backFromRecommend').addEventListener('click', () => showPage(6));
-            byId('backFromContact').addEventListener('click', () => showPage(7));
-            byId('backFromComment').addEventListener('click', () => showPage(8));
+            byId('backFromRecommend').addEventListener('click', () => showPage(5));
+            byId('backFromContact').addEventListener('click', () => showPage(6));
+            byId('backFromComment').addEventListener('click', () => showPage(7));
             byId('btnSubmitComment').addEventListener('click', () => {
                 const commentInput = byId('commentInput');
                 state.comment = commentInput ? commentInput.value.trim() : '';
-                showPage(10);
+                showPage(9);
             });
 
             const observer = new MutationObserver(() => {

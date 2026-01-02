@@ -278,7 +278,7 @@
             // Utility to update the kiosk roster in localStorage
             function updateLocalRoster() {
                 // Only include staff marked active; map to id/name/photo for kiosk
-                const active = staffList.filter(s => s.isActive).map(s => ({ id: s.id, name: s.name, photo: s.photoUrl || 'assets/icons/meh.svg' }));
+                const active = staffList.filter(s => s.isActive).map(s => ({ id: s.id, name: s.name, photo: s.photoUrl || null }));
                 localStorage.setItem('kiosk_staff', JSON.stringify(active));
             }
 
@@ -405,10 +405,14 @@
                     const tr = document.createElement('tr');
                     // Photo
                     const tdPhoto = document.createElement('td');
-                    const img = document.createElement('img');
-                    img.src = staff.photoUrl || 'assets/icons/meh.svg';
-                    img.className = 'staff-photo';
-                    tdPhoto.appendChild(img);
+                    if (staff.photoUrl) {
+                        const img = document.createElement('img');
+                        img.src = staff.photoUrl;
+                        img.className = 'staff-photo';
+                        tdPhoto.appendChild(img);
+                    } else {
+                        tdPhoto.textContent = '—';
+                    }
                     tr.appendChild(tdPhoto);
                     // Name
                     const tdName = document.createElement('td');
