@@ -107,7 +107,11 @@ public class SurveysController(
             Id = Guid.NewGuid(),
             SurveyId = survey.Id,
             CreatedUtc = DateTimeOffset.UtcNow,
-            Channel = "web"
+            Channel = "web",
+            StartedUtc = TryGetDateTimeOffset(answers, "__startedUtc"),
+            DurationSeconds = TryGetInt(answers, "__durationSeconds", out var duration) ? duration : null,
+            ClientCode = ResolveMetaValue(req.AdditionalData?.ClientCode, answers, "__clientCode"),
+            FormKey = ResolveMetaValue(req.AdditionalData?.FormKey, answers, "__formKey")
         };
 
         foreach (var entry in answers)
@@ -384,6 +388,18 @@ public class SurveysController(
             }
         }
         return merged;
+    }
+
+    private static string? ResolveMetaValue(string? explicitValue, IReadOnlyDictionary<string, string?> answers, string fallbackKey)
+    {
+        if (!string.IsNullOrWhiteSpace(explicitValue))
+        {
+            return explicitValue.Trim();
+        }
+
+        return answers.TryGetValue(fallbackKey, out var value) && !string.IsNullOrWhiteSpace(value)
+            ? value.Trim()
+            : null;
     }
 
     [HttpGet("{code}/nps")]

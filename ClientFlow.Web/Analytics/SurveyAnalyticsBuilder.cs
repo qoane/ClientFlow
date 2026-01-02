@@ -35,6 +35,10 @@ public static class SurveyAnalyticsBuilder
             .Select(r => new ResponseRowDto(
                 r.Id,
                 r.CreatedUtc,
+                r.StartedUtc,
+                r.DurationSeconds,
+                r.ClientCode,
+                r.FormKey,
                 BuildAnswerMap(r, questions, optionLookup)))
             .ToList();
 
