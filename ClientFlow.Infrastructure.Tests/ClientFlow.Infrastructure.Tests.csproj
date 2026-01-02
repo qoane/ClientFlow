@@ -24,6 +24,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ClientFlow.Infrastructure\ClientFlow.Infrastructure.csproj" />
+    <ProjectReference Include="..\ClientFlow.Web\ClientFlow.Web.csproj" />
   </ItemGroup>
 
 </Project>
