@@ -60,6 +60,10 @@ public class Response
     public Guid SurveyId { get; set; }
     public DateTimeOffset CreatedUtc { get; set; }
     public string? Channel { get; set; } // web, sms, kiosk...
+    public DateTimeOffset? StartedUtc { get; set; }
+    public int? DurationSeconds { get; set; }
+    [MaxLength(64)] public string? ClientCode { get; set; }
+    [MaxLength(128)] public string? FormKey { get; set; }
 
     public List<Answer> Answers { get; set; } = [];
 }
@@ -113,4 +117,3 @@ public class SurveyVersion
     public DateTimeOffset CreatedUtc { get; set; }
     public string DefinitionJson { get; set; } = default!;
 }
-
