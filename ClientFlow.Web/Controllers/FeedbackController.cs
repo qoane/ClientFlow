@@ -25,19 +25,15 @@ public class FeedbackController : ControllerBase
     {
         if (dto is null) return BadRequest("Body required.");
 
-        // Validate ratings (avoid null-casts and DB constraint issues)
-        if (dto.TimeRating is null || dto.RespectRating is null || dto.OverallRating is null)
-            return BadRequest("All ratings (time, respect, overall) are required.");
-
         if (string.IsNullOrWhiteSpace(dto.Phone))
             return BadRequest("Phone number is required.");
         var phoneValue = dto.Phone.Trim();
         if (phoneValue.Length != 8 || !phoneValue.All(char.IsDigit))
             return BadRequest("Please enter an 8 digit local phone number.");
 
-        if (dto.TimeRating is < 1 or > 5 ||
-            dto.RespectRating is < 1 or > 5 ||
-            dto.OverallRating is < 1 or > 5)
+        if ((dto.TimeRating is not null && dto.TimeRating is < 1 or > 5) ||
+            (dto.RespectRating is not null && dto.RespectRating is < 1 or > 5) ||
+            (dto.OverallRating is not null && dto.OverallRating is < 1 or > 5))
             return BadRequest("Ratings must be between 1 and 5.");
 
         // Resolve staff: prefer ID, else by name (create if needed)
@@ -111,9 +107,9 @@ public class FeedbackController : ControllerBase
         {
             Id = Guid.NewGuid(),
             StaffId = staffId.Value,
-            TimeRating = dto.TimeRating!.Value,
-            RespectRating = dto.RespectRating!.Value,
-            OverallRating = dto.OverallRating!.Value,
+            TimeRating = dto.TimeRating ?? 0,
+            RespectRating = dto.RespectRating ?? 0,
+            OverallRating = dto.OverallRating ?? 0,
             Phone = string.IsNullOrWhiteSpace(dto.Phone) ? null : dto.Phone,
             StartedUtc = dto.StartedUtc ?? DateTimeOffset.UtcNow,
             DurationSeconds = dto.DurationSeconds ?? 0,
