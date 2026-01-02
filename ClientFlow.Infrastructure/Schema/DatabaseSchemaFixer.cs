@@ -118,8 +118,8 @@ END";
     }
 
     /// <summary>
-    /// Ensures kiosk feedback rows have non-null timing values. Older databases allow
-    /// StartedUtc and DurationSeconds to be null, but the application model expects
+    /// Ensures kiosk feedback rows have non-null timing and rating values. Older databases allow
+    /// StartedUtc, DurationSeconds, or rating columns to be null, but the application model expects
     /// concrete values. Normalizing existing data avoids runtime materialization
     /// exceptions when reading feedback summaries.
     /// </summary>
@@ -135,6 +135,18 @@ BEGIN
     UPDATE dbo.KioskFeedback
     SET DurationSeconds = 0
     WHERE DurationSeconds IS NULL;
+
+    UPDATE dbo.KioskFeedback
+    SET TimeRating = 0
+    WHERE TimeRating IS NULL;
+
+    UPDATE dbo.KioskFeedback
+    SET RespectRating = 0
+    WHERE RespectRating IS NULL;
+
+    UPDATE dbo.KioskFeedback
+    SET OverallRating = 0
+    WHERE OverallRating IS NULL;
 END";
 
         db.Database.ExecuteSqlRaw(sql);
