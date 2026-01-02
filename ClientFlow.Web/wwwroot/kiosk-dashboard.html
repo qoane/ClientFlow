@@ -727,7 +727,7 @@
                     return;
                 }
                 localStorage.setItem(kioskSurveyStorageKey, code);
-                const target = appBuildUrl(`kiosk/runner.html?code=${encodeURIComponent(code)}`);
+                const target = appBuildUrl('kiosk.html');
                 window.open(target, '_blank', 'noopener');
             });
         }

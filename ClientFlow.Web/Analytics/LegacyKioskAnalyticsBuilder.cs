@@ -31,6 +31,7 @@ public static class LegacyKioskAnalyticsBuilder
 
     public static SurveyAnalyticsDto Build(Survey survey, IReadOnlyList<KioskFeedback> feedback)
     {
+        var sectionLabel = string.IsNullOrWhiteSpace(survey.Title) ? "Legacy Survey" : survey.Title;
         var answerRows = feedback
             .OrderByDescending(x => x.CreatedUtc)
             .Select(x => new ResponseRowDto(
@@ -54,7 +55,7 @@ public static class LegacyKioskAnalyticsBuilder
                 Guid.Empty,
                 question.Key,
                 question.Prompt,
-                "Legacy Kiosk",
+                sectionLabel,
                 question.Type,
                 answers.Count,
                 summaryKind,
@@ -79,7 +80,7 @@ public static class LegacyKioskAnalyticsBuilder
         var map = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
         {
             ["phone"] = entry.Phone,
-            ["staff"] = entry.Staff?.Name ?? string.Empty,
+            ["staff"] = FormatStaffLabel(entry),
             ["branch"] = entry.BranchName,
             ["serviceType"] = entry.ServiceType,
             ["gender"] = entry.Gender,
@@ -103,7 +104,7 @@ public static class LegacyKioskAnalyticsBuilder
         return question.Key switch
         {
             "phone" => Maybe(entry.Phone),
-            "staff" => Maybe(entry.Staff?.Name),
+            "staff" => Maybe(FormatStaffLabel(entry)),
             "branch" => Maybe(entry.BranchName),
             "serviceType" => Maybe(entry.ServiceType),
             "gender" => Maybe(entry.Gender),
@@ -122,6 +123,24 @@ public static class LegacyKioskAnalyticsBuilder
 
         static IEnumerable<string> Maybe(string? value)
             => string.IsNullOrWhiteSpace(value) ? [] : [value.Trim()];
+    }
+
+    private static string? FormatStaffLabel(KioskFeedback entry)
+    {
+        var name = entry.Staff?.Name?.Trim();
+        var branch = entry.BranchName?.Trim();
+
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return string.IsNullOrWhiteSpace(branch) ? null : branch;
+        }
+
+        if (string.IsNullOrWhiteSpace(branch))
+        {
+            return name;
+        }
+
+        return $"{name} ({branch})";
     }
 
     private static (string SummaryKind, IReadOnlyList<ValueCountDto> Buckets, double? Average, double? Minimum, double? Maximum, IReadOnlyList<TextAnswerDto> TopText)
