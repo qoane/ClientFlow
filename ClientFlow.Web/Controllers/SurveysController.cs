@@ -49,7 +49,14 @@ public class SurveysController(
     public async Task<IActionResult> Submit(string code, [FromBody] SubmitResponseDto dto, CancellationToken ct)
         => (await svc.SubmitAsync(code, dto, ct)) is { } id ? Ok(new { id }) : NotFound();
 
-    public record SubmitSurveyRequest([property: JsonPropertyName("answers")] Dictionary<string, string?>? Answers);
+    public sealed record SubmitSurveyRequest(
+        [property: JsonPropertyName("answers")] Dictionary<string, string?>? Answers,
+        [property: JsonPropertyName("additionalData")] SubmitSurveyAdditionalData? AdditionalData);
+
+    public sealed record SubmitSurveyAdditionalData(
+        [property: JsonPropertyName("clientCode")] string? ClientCode,
+        [property: JsonPropertyName("formKey")] string? FormKey,
+        [property: JsonPropertyName("libertyAnswers")] Dictionary<string, string?>? LibertyAnswers);
 
     [HttpPost("{code}/submit")]
     public async Task<IActionResult> SubmitSurvey(string code, [FromBody] SubmitSurveyRequest req, CancellationToken ct)
@@ -60,7 +67,18 @@ public class SurveysController(
             return NotFound(new { message = "Survey not found or inactive." });
         }
 
-        var answers = req.Answers ?? new Dictionary<string, string?>();
+        var answers = MergeAnswers(req.Answers, req.AdditionalData?.LibertyAnswers);
+
+        if (string.Equals(survey.Code, DefaultKioskSurveyCode, StringComparison.OrdinalIgnoreCase))
+        {
+            var missingKiosk = RequiredKioskKeys
+                .Where(key => !answers.TryGetValue(key, out var value) || string.IsNullOrWhiteSpace(value))
+                .ToArray();
+            if (missingKiosk.Length > 0)
+            {
+                return BadRequest(new { message = "Missing required kiosk answers.", missing = missingKiosk });
+            }
+        }
 
         var missing = survey.Questions
             .Where(q => q.Required)
@@ -103,8 +121,7 @@ public class SurveysController(
                 QuestionId = question.Id
             };
 
-            if (question.Type.Equals("number", StringComparison.OrdinalIgnoreCase) ||
-                question.Type.Equals("nps", StringComparison.OrdinalIgnoreCase))
+            if (IsNumericQuestion(question.Type))
             {
                 if (decimal.TryParse(entry.Value, out var numericValue))
                 {
@@ -324,6 +341,37 @@ public class SurveysController(
         => string.IsNullOrWhiteSpace(value)
             ? null
             : new string(value.Where(ch => !char.IsWhiteSpace(ch)).ToArray());
+
+    private static readonly string[] RequiredKioskKeys = ["phone", "satisfaction", "timeliness", "professionalism"];
+
+    private static bool IsNumericQuestion(string? type)
+        => type != null && (
+            type.Equals("number", StringComparison.OrdinalIgnoreCase) ||
+            type.Equals("nps", StringComparison.OrdinalIgnoreCase) ||
+            type.Equals("nps_0_10", StringComparison.OrdinalIgnoreCase) ||
+            type.Equals("rating_stars", StringComparison.OrdinalIgnoreCase));
+
+    private static Dictionary<string, string?> MergeAnswers(
+        Dictionary<string, string?>? answers,
+        Dictionary<string, string?>? libertyAnswers)
+    {
+        var merged = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+        if (answers is not null)
+        {
+            foreach (var kvp in answers)
+            {
+                merged[kvp.Key] = kvp.Value;
+            }
+        }
+        if (libertyAnswers is not null)
+        {
+            foreach (var kvp in libertyAnswers)
+            {
+                merged[kvp.Key] = kvp.Value;
+            }
+        }
+        return merged;
+    }
 
     [HttpGet("{code}/nps")]
     public async Task<IActionResult> Nps(string code, CancellationToken ct)

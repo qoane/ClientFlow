@@ -172,6 +172,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         var qFollowUpId = Guid.Parse("10000000-0000-0000-0000-000000000008");
         var qImproveId = Guid.Parse("10000000-0000-0000-0000-000000000009");
         var qEndMessageId = Guid.Parse("10000000-0000-0000-0000-00000000000A");
+        var qVisitReasonId = Guid.Parse("10000000-0000-0000-0000-00000000000B");
+        var qVisitOtherId = Guid.Parse("10000000-0000-0000-0000-00000000000C");
+        var qResolvedTodayId = Guid.Parse("10000000-0000-0000-0000-00000000000D");
+        var qServiceRatingId = Guid.Parse("10000000-0000-0000-0000-00000000000E");
+        var qServicesUsedId = Guid.Parse("10000000-0000-0000-0000-00000000000F");
+        var qRecommendScoreId = Guid.Parse("10000000-0000-0000-0000-000000000010");
+        var qAdditionalFeedbackId = Guid.Parse("10000000-0000-0000-0000-000000000011");
 
         b.Entity<Survey>().HasData(new Survey
         {
@@ -337,6 +344,155 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 Prompt = "Thank you for your feedback! Your input helps us improve our service.",
                 Key = "end",
                 Required = false
+            },
+            new Question
+            {
+                Id = qVisitReasonId,
+                SurveyId = surveyId,
+                SectionId = sectionServiceId,
+                Order = 11,
+                Type = "single",
+                Prompt = "What brings you in today?",
+                Key = "visit_reason",
+                Required = false
+            },
+            new Question
+            {
+                Id = qVisitOtherId,
+                SurveyId = surveyId,
+                SectionId = sectionServiceId,
+                Order = 12,
+                Type = "text",
+                Prompt = "If something else, please tell us.",
+                Key = "visit_other",
+                Required = false,
+                SettingsJson = """{"placeholder":"Short description"}"""
+            },
+            new Question
+            {
+                Id = qResolvedTodayId,
+                SurveyId = surveyId,
+                SectionId = sectionServiceId,
+                Order = 13,
+                Type = "boolean",
+                Prompt = "Was your issue resolved today?",
+                Key = "resolved_today",
+                Required = false,
+                SettingsJson = """{"yesLabel":"Yes, resolved","noLabel":"Not yet"}"""
+            },
+            new Question
+            {
+                Id = qServiceRatingId,
+                SurveyId = surveyId,
+                SectionId = sectionServiceId,
+                Order = 14,
+                Type = "rating_stars",
+                Prompt = "How would you rate the service you received?",
+                Key = "service_rating",
+                Required = false,
+                SettingsJson = """{"stars":5}"""
+            },
+            new Question
+            {
+                Id = qServicesUsedId,
+                SurveyId = surveyId,
+                SectionId = sectionServiceId,
+                Order = 15,
+                Type = "multi",
+                Prompt = "Which services did you use today?",
+                Key = "services_used",
+                Required = false
+            },
+            new Question
+            {
+                Id = qRecommendScoreId,
+                SurveyId = surveyId,
+                SectionId = sectionFeedbackId,
+                Order = 16,
+                Type = "nps_0_10",
+                Prompt = "How likely are you to recommend Liberty to a friend?",
+                Key = "recommend_score",
+                Required = false,
+                SettingsJson = """{"min":0,"max":10}"""
+            },
+            new Question
+            {
+                Id = qAdditionalFeedbackId,
+                SurveyId = surveyId,
+                SectionId = sectionFeedbackId,
+                Order = 17,
+                Type = "textarea",
+                Prompt = "Any additional feedback for our team?",
+                Key = "additional_feedback",
+                Required = false,
+                SettingsJson = """{"placeholder":"Share anything that would help us improve.","rows":4}"""
+            }
+        );
+
+        b.Entity<QuestionOption>().HasData(
+            new QuestionOption
+            {
+                Id = Guid.Parse("20000000-0000-0000-0000-000000000701"),
+                QuestionId = qVisitReasonId,
+                Value = "new_account",
+                Label = "Open a new account",
+                Order = 1
+            },
+            new QuestionOption
+            {
+                Id = Guid.Parse("20000000-0000-0000-0000-000000000702"),
+                QuestionId = qVisitReasonId,
+                Value = "loan",
+                Label = "Loan or mortgage",
+                Order = 2
+            },
+            new QuestionOption
+            {
+                Id = Guid.Parse("20000000-0000-0000-0000-000000000703"),
+                QuestionId = qVisitReasonId,
+                Value = "support",
+                Label = "Account support",
+                Order = 3
+            },
+            new QuestionOption
+            {
+                Id = Guid.Parse("20000000-0000-0000-0000-000000000704"),
+                QuestionId = qVisitReasonId,
+                Value = "other",
+                Label = "Something else",
+                Order = 4
+            },
+            new QuestionOption
+            {
+                Id = Guid.Parse("20000000-0000-0000-0000-000000000705"),
+                QuestionId = qServicesUsedId,
+                Value = "teller",
+                Label = "Teller window",
+                Order = 1
+            },
+            new QuestionOption
+            {
+                Id = Guid.Parse("20000000-0000-0000-0000-000000000706"),
+                QuestionId = qServicesUsedId,
+                Value = "advisor",
+                Label = "Financial advisor",
+                Order = 2
+            },
+            new QuestionOption
+            {
+                Id = Guid.Parse("20000000-0000-0000-0000-000000000707"),
+                QuestionId = qServicesUsedId,
+                Value = "loan",
+                Label = "Loan consultation",
+                Order = 3
+            },
+            new QuestionOption
+            {
+                Id = Guid.Parse("20000000-0000-0000-0000-000000000708"),
+                QuestionId = qServicesUsedId,
+                Value = "atm",
+                Label = "ATM or kiosk",
+                Order = 4
             }
         );
 
