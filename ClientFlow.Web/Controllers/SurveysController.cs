@@ -78,6 +78,14 @@ public class SurveysController(
             {
                 return BadRequest(new { message = "Missing required kiosk answers.", missing = missingKiosk });
             }
+
+            var phoneValue = answers.TryGetValue("phone", out var phoneRaw)
+                ? NormalizePhone(phoneRaw)
+                : null;
+            if (!IsValidLocalPhone(phoneValue))
+            {
+                return BadRequest(new { message = "Please enter an 8 digit local phone number." });
+            }
         }
 
         var missing = survey.Questions
@@ -341,6 +349,11 @@ public class SurveysController(
         => string.IsNullOrWhiteSpace(value)
             ? null
             : new string(value.Where(ch => !char.IsWhiteSpace(ch)).ToArray());
+
+    private static bool IsValidLocalPhone(string? value)
+        => !string.IsNullOrWhiteSpace(value)
+        && value.Length == 8
+        && value.All(char.IsDigit);
 
     private static readonly string[] RequiredKioskKeys = ["phone", "satisfaction", "timeliness", "professionalism"];
 
