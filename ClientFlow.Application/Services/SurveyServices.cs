@@ -37,12 +37,18 @@ public class SurveyService
         var s = await _surveys.GetByCodeWithSectionsAndQuestionsAsync(code, ct);
         if (s is null) return null;
 
+        var meta = ExtractResponseMetadata(req.Data);
+
         var resp = new Response
         {
             Id = Guid.NewGuid(),
             SurveyId = s.Id,
             CreatedUtc = DateTimeOffset.UtcNow,
-            Channel = "web"
+            Channel = "web",
+            StartedUtc = meta.StartedUtc,
+            DurationSeconds = meta.DurationSeconds,
+            ClientCode = meta.ClientCode,
+            FormKey = meta.FormKey
         };
 
         foreach (var q in s.Questions)
@@ -81,6 +87,31 @@ public class SurveyService
         await _responses.AddAsync(resp, ct);
         await _uow.SaveChangesAsync(ct);
         return resp.Id;
+    }
+
+    private static (DateTimeOffset? StartedUtc, int? DurationSeconds, string? ClientCode, string? FormKey) ExtractResponseMetadata(
+        IReadOnlyDictionary<string, string?> data)
+    {
+        DateTimeOffset? startedUtc = null;
+        if (data.TryGetValue("__startedUtc", out var rawStarted) && !string.IsNullOrWhiteSpace(rawStarted))
+        {
+            if (DateTimeOffset.TryParse(rawStarted, CultureInfo.InvariantCulture,
+                DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var parsed))
+            {
+                startedUtc = parsed;
+            }
+        }
+
+        int? durationSeconds = null;
+        if (data.TryGetValue("__durationSeconds", out var rawDuration) && int.TryParse(rawDuration, NumberStyles.Integer, CultureInfo.InvariantCulture, out var duration))
+        {
+            durationSeconds = duration;
+        }
+
+        string? ResolveMeta(string key)
+            => data.TryGetValue(key, out var value) && !string.IsNullOrWhiteSpace(value) ? value.Trim() : null;
+
+        return (startedUtc, durationSeconds, ResolveMeta("__clientCode"), ResolveMeta("__formKey"));
     }
 
     public async Task<NpsSummaryDto?> GetNpsAsync(string code, CancellationToken ct)

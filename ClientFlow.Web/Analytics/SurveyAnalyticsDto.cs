@@ -40,5 +40,9 @@ public sealed record TextAnswerDto(string Value, int Count);
 public sealed record ResponseRowDto(
     Guid Id,
     DateTimeOffset CreatedUtc,
+    DateTimeOffset? StartedUtc,
+    int? DurationSeconds,
+    string? ClientCode,
+    string? FormKey,
     IReadOnlyDictionary<string, string?> Answers
 );

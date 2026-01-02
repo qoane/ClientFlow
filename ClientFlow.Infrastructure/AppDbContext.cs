@@ -146,6 +146,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasKey(x => x.Id);
         });
 
+        b.Entity<Response>(e =>
+        {
+            e.Property(x => x.ClientCode).HasMaxLength(64);
+            e.Property(x => x.FormKey).HasMaxLength(128);
+        });
+
         b.Entity<SurveyVersion>(e =>
         {
             e.ToTable("SurveyVersions");
