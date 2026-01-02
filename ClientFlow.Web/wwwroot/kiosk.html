@@ -393,10 +393,8 @@
         <div class="page" id="page-staff">
             <h1>Service interaction</h1>
             <div class="form-group">
-                <label for="staffSelect">Assisted by</label>
-                <select id="staffSelect">
-                    <option value="">Select a staff member</option>
-                </select>
+                <label>Assisted by</label>
+                <div class="staff-grid" id="staffGrid"></div>
             </div>
             <div class="form-group">
                 <label for="genderSelect">Gender</label>
@@ -587,22 +585,33 @@
             }
 
             function renderStaff(roster) {
-                const host = byId('staffSelect');
-                host.innerHTML = '<option value="">Select a staff member</option>';
+                const host = byId('staffGrid');
+                host.innerHTML = '';
                 if (!roster || roster.length === 0) {
-                    const opt = document.createElement('option');
-                    opt.value = '';
-                    opt.textContent = 'No staff configured for this branch';
-                    host.appendChild(opt);
+                    const empty = document.createElement('div');
+                    empty.className = 'staff-card';
+                    empty.textContent = 'No staff configured for this branch';
+                    empty.style.cursor = 'default';
+                    host.appendChild(empty);
                     return;
                 }
                 roster.forEach(m => {
-                    const opt = document.createElement('option');
-                    opt.value = m.id;
-                    opt.textContent = m.name;
-                    opt.dataset.branchId = m.branchId ?? '';
-                    opt.dataset.branchName = m.branchName ?? '';
-                    host.appendChild(opt);
+                    const card = document.createElement('div');
+                    card.className = 'staff-card';
+                    card.dataset.id = m.id;
+                    card.dataset.branchId = m.branchId ?? '';
+                    card.dataset.branchName = m.branchName ?? '';
+                    card.innerHTML = `<img src="${m.photo}" alt="${m.name}"><div class="name">${m.name}</div>`;
+                    card.addEventListener('click', () => {
+                        host.querySelectorAll('.staff-card').forEach(el => el.classList.remove('selected'));
+                        card.classList.add('selected');
+                        state.staff = m.id;
+                        state.staffName = m.name;
+                        state.staffBranchId = m.branchId ?? null;
+                        state.staffBranchName = m.branchName ?? null;
+                        updateServiceDetailsState();
+                    });
+                    host.appendChild(card);
                 });
             }
 
@@ -759,8 +768,8 @@
                     const host = byId(id);
                     if (host) host.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
                 });
-                const staffSelect = byId('staffSelect');
-                if (staffSelect) staffSelect.value = '';
+                const staffGrid = byId('staffGrid');
+                if (staffGrid) staffGrid.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
                 const genderSelect = byId('genderSelect');
                 if (genderSelect) genderSelect.value = '';
                 const ageRangeSelect = byId('ageRangeSelect');
@@ -834,28 +843,10 @@
                 }
             });
             btnProceed.addEventListener('click', () => showPage(2));
-            const staffSelect = byId('staffSelect');
             const btnServiceDetails = byId('btnServiceDetails');
             function updateServiceDetailsState() {
                 if (!btnServiceDetails) return;
                 btnServiceDetails.disabled = !(state.staff && state.gender && state.ageRange && state.city);
-            }
-            if (staffSelect && btnServiceDetails) {
-                staffSelect.addEventListener('change', () => {
-                    const selectedOption = staffSelect.options[staffSelect.selectedIndex];
-                    if (selectedOption && selectedOption.value) {
-                        state.staff = selectedOption.value;
-                        state.staffName = selectedOption.textContent;
-                        state.staffBranchId = selectedOption.dataset.branchId || null;
-                        state.staffBranchName = selectedOption.dataset.branchName || null;
-                    } else {
-                        state.staff = null;
-                        state.staffName = null;
-                        state.staffBranchId = null;
-                        state.staffBranchName = null;
-                    }
-                    updateServiceDetailsState();
-                });
             }
             const genderSelect = byId('genderSelect');
             if (genderSelect) {
