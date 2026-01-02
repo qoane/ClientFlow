@@ -250,7 +250,7 @@ public class DailyReportService : IHostedService, IDisposable
         try
         {
             var parsed = JsonSerializer.Deserialize<List<string>>(policiesJson);
-            return parsed ?? Array.Empty<string>();
+            return parsed != null ? parsed : Array.Empty<string>();
         }
         catch
         {

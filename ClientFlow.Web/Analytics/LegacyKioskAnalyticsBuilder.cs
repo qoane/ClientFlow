@@ -188,7 +188,7 @@ public static class LegacyKioskAnalyticsBuilder
         try
         {
             var parsed = System.Text.Json.JsonSerializer.Deserialize<List<string>>(policiesJson);
-            return parsed ?? Array.Empty<string>();
+            return parsed != null ? parsed : Array.Empty<string>();
         }
         catch
         {
