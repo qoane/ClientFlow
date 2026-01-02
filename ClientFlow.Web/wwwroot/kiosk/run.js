@@ -254,6 +254,10 @@
 
         payload.__startedUtc = new Date(sessionStarted).toISOString();
         payload.__durationSeconds = String(Math.max(0, Math.round((Date.now() - sessionStarted) / 1000)));
+        if (useLibertyDefinition) {
+            payload.__clientCode = 'Liberty';
+            payload.__formKey = LibertyFormKey;
+        }
 
         return payload;
     }
@@ -472,10 +476,18 @@
                     return;
                 }
                 const answers = buildSubmitPayload(parsedQuestions, state);
+                const submission = { answers };
+                if (useLibertyDefinition) {
+                    submission.additionalData = {
+                        clientCode: 'Liberty',
+                        formKey: LibertyFormKey,
+                        libertyAnswers: answers
+                    };
+                }
                 const response = await apiFetch(`/api/surveys/${encodeURIComponent(surveyCode)}/submit`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ answers })
+                    body: JSON.stringify(submission)
                 });
                 if (!response.ok) {
                     throw new Error('Submit failed');
