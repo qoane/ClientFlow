@@ -179,8 +179,22 @@
             localStorage.removeItem('branchId');
             window.location.href = appBuildUrl('login.html');
         });
+        const apiFetch = typeof window.appApiFetch === 'function'
+            ? window.appApiFetch
+            : (path, options) => {
+                const resolved = typeof window.appApiUrl === 'function' ? window.appApiUrl(path) : path;
+                return fetch(resolved, options);
+            };
+
         async function fetchJSON(url) {
-            const res = await appApiFetch(url, { headers: { 'Authorization': 'Bearer ' + token } });
+            const res = await apiFetch(url, { headers: { 'Authorization': 'Bearer ' + token } });
+            if (res.status === 401 || res.status === 403) {
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('userRole');
+                localStorage.removeItem('branchId');
+                window.location.href = appBuildUrl('login.html');
+                throw new Error('Unauthorized');
+            }
             if (!res.ok) throw new Error('API error');
             return res.json();
         }
@@ -205,6 +219,9 @@
                 });
             } catch (err) {
                 console.error(err);
+                document.getElementById('branchCount').textContent = '0';
+                document.getElementById('feedbackCount').textContent = '0';
+                document.getElementById('avgOverall').textContent = '0.00';
             }
         }
         loadData();
