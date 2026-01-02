@@ -5,6 +5,7 @@ using ClientFlow.Infrastructure;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
+using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 
@@ -33,7 +34,8 @@ public class FeedbackController : ControllerBase
 
         if ((dto.TimeRating is not null && dto.TimeRating is < 1 or > 5) ||
             (dto.RespectRating is not null && dto.RespectRating is < 1 or > 5) ||
-            (dto.OverallRating is not null && dto.OverallRating is < 1 or > 5))
+            (dto.OverallRating is not null && dto.OverallRating is < 1 or > 5) ||
+            (dto.RecommendRating is not null && dto.RecommendRating is < 1 or > 5))
             return BadRequest("Ratings must be between 1 and 5.");
 
         // Resolve staff: prefer ID, else by name (create if needed)
@@ -110,7 +112,17 @@ public class FeedbackController : ControllerBase
             TimeRating = dto.TimeRating ?? 0,
             RespectRating = dto.RespectRating ?? 0,
             OverallRating = dto.OverallRating ?? 0,
+            RecommendRating = dto.RecommendRating,
             Phone = string.IsNullOrWhiteSpace(dto.Phone) ? null : dto.Phone,
+            ServiceType = string.IsNullOrWhiteSpace(dto.ServiceType) ? null : dto.ServiceType.Trim(),
+            Gender = string.IsNullOrWhiteSpace(dto.Gender) ? null : dto.Gender.Trim(),
+            AgeRange = string.IsNullOrWhiteSpace(dto.AgeRange) ? null : dto.AgeRange.Trim(),
+            City = string.IsNullOrWhiteSpace(dto.City) ? null : dto.City.Trim(),
+            PoliciesJson = dto.Policies is { Count: > 0 }
+                ? JsonSerializer.Serialize(dto.Policies.Where(p => !string.IsNullOrWhiteSpace(p)))
+                : null,
+            ContactPreference = string.IsNullOrWhiteSpace(dto.ContactPreference) ? null : dto.ContactPreference.Trim(),
+            Comment = string.IsNullOrWhiteSpace(dto.Comment) ? null : dto.Comment.Trim(),
             StartedUtc = dto.StartedUtc ?? DateTimeOffset.UtcNow,
             DurationSeconds = dto.DurationSeconds ?? 0,
             BranchId = selectedBranchId,

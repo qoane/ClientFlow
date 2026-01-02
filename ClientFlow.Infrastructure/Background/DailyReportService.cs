@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -147,12 +148,63 @@ public class DailyReportService : IHostedService, IDisposable
             var times = list.Select(x => x.TimeRating).ToList();
             var respects = list.Select(x => x.RespectRating).ToList();
             var overalls = list.Select(x => x.OverallRating).ToList();
+            var recommends = list.Where(x => x.RecommendRating.HasValue).Select(x => x.RecommendRating!.Value).ToList();
             var durations = list.Select(x => x.DurationSeconds).ToList();
             var avgTime = avg(times);
             var avgRespect = avg(respects);
             var avgOverall = avg(overalls);
+            var avgRecommend = recommends.Count == 0 ? 0 : recommends.Average();
             var avgDuration = durations.Count == 0 ? 0 : durations.Average();
             var staffCounts = list.GroupBy(x => x.Staff.Name).Select(g => new { Name = g.Key, Count = g.Count() }).OrderByDescending(x => x.Count).ToList();
+            var serviceCounts = list
+                .Select(x => x.ServiceType)
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .GroupBy(x => x!.Trim())
+                .Select(g => (Name: g.Key, Count: g.Count()))
+                .OrderByDescending(x => x.Count)
+                .ToList();
+            var contactCounts = list
+                .Select(x => x.ContactPreference)
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .GroupBy(x => x!.Trim())
+                .Select(g => (Name: g.Key, Count: g.Count()))
+                .OrderByDescending(x => x.Count)
+                .ToList();
+            var cityCounts = list
+                .Select(x => x.City)
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .GroupBy(x => x!.Trim())
+                .Select(g => (Name: g.Key, Count: g.Count()))
+                .OrderByDescending(x => x.Count)
+                .ToList();
+            var genderCounts = list
+                .Select(x => x.Gender)
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .GroupBy(x => x!.Trim())
+                .Select(g => (Name: g.Key, Count: g.Count()))
+                .OrderByDescending(x => x.Count)
+                .ToList();
+            var ageCounts = list
+                .Select(x => x.AgeRange)
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .GroupBy(x => x!.Trim())
+                .Select(g => (Name: g.Key, Count: g.Count()))
+                .OrderByDescending(x => x.Count)
+                .ToList();
+            var policyCounts = list
+                .SelectMany(x => ParsePolicies(x.PoliciesJson))
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .GroupBy(x => x!.Trim())
+                .Select(g => (Name: g.Key, Count: g.Count()))
+                .OrderByDescending(x => x.Count)
+                .ToList();
+            var commentSamples = list
+                .Select(x => x.Comment)
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Select(x => x!.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Take(10)
+                .ToList();
             // Build HTML summary for this branch
             var sb = new StringBuilder();
             sb.AppendLine($"<h2>Daily Feedback Summary — {System.Net.WebUtility.HtmlEncode(branch.Name)}</h2>");
@@ -161,16 +213,60 @@ public class DailyReportService : IHostedService, IDisposable
             sb.AppendLine($"<li>Average Time Rating: {avgTime:F2}</li>");
             sb.AppendLine($"<li>Average Respect Rating: {avgRespect:F2}</li>");
             sb.AppendLine($"<li>Average Overall Rating: {avgOverall:F2}</li>");
+            if (recommends.Count > 0)
+            {
+                sb.AppendLine($"<li>Average Recommend Rating: {avgRecommend:F2}</li>");
+            }
             sb.AppendLine($"<li>Average Duration: {avgDuration:F2} seconds</li>");
             sb.AppendLine("</ul>");
             sb.AppendLine("<h3>Responses by Staff</h3><table border='1' cellpadding='4' cellspacing='0'><tr><th>Staff</th><th>Count</th></tr>");
             foreach (var sc in staffCounts)
                 sb.AppendLine($"<tr><td>{System.Net.WebUtility.HtmlEncode(sc.Name)}</td><td>{sc.Count}</td></tr>");
             sb.AppendLine("</table>");
+            AppendSummaryTable(sb, "Responses by Service Type", serviceCounts);
+            AppendSummaryTable(sb, "Responses by Contact Preference", contactCounts);
+            AppendSummaryTable(sb, "Responses by City", cityCounts);
+            AppendSummaryTable(sb, "Responses by Gender", genderCounts);
+            AppendSummaryTable(sb, "Responses by Age Range", ageCounts);
+            AppendSummaryTable(sb, "Responses by Policy", policyCounts);
+            if (commentSamples.Count > 0)
+            {
+                sb.AppendLine("<h3>Sample Comments</h3><ul>");
+                foreach (var comment in commentSamples)
+                {
+                    sb.AppendLine($"<li>{System.Net.WebUtility.HtmlEncode(comment)}</li>");
+                }
+                sb.AppendLine("</ul>");
+            }
             var subject = $"Daily Feedback Report ({DateTime.Now:yyyy-MM-dd}) — {branch.Name}";
             await emailService.SendAsync(recipients, subject, sb.ToString());
             _logger.LogInformation("Daily report for branch {Branch} sent to {Recipients}", branch.Name, string.Join(", ", recipients));
         }
+    }
+
+    private static IReadOnlyList<string> ParsePolicies(string? policiesJson)
+    {
+        if (string.IsNullOrWhiteSpace(policiesJson)) return Array.Empty<string>();
+        try
+        {
+            var parsed = JsonSerializer.Deserialize<List<string>>(policiesJson);
+            return parsed ?? Array.Empty<string>();
+        }
+        catch
+        {
+            return Array.Empty<string>();
+        }
+    }
+
+    private static void AppendSummaryTable(StringBuilder sb, string title, IReadOnlyList<(string Name, int Count)> entries)
+    {
+        if (entries.Count == 0) return;
+        sb.AppendLine($"<h3>{System.Net.WebUtility.HtmlEncode(title)}</h3><table border='1' cellpadding='4' cellspacing='0'><tr><th>Item</th><th>Count</th></tr>");
+        foreach (var entry in entries)
+        {
+            sb.AppendLine($"<tr><td>{System.Net.WebUtility.HtmlEncode(entry.Name)}</td><td>{entry.Count}</td></tr>");
+        }
+        sb.AppendLine("</table>");
     }
 
     public Task StopAsync(CancellationToken cancellationToken)

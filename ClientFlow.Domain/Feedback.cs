@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace ClientFlow.Domain.Feedback;
 
@@ -39,12 +40,27 @@ public class KioskFeedback
 {
     public Guid Id { get; set; }
     public DateTimeOffset CreatedUtc { get; set; } = DateTimeOffset.UtcNow;
+    [MaxLength(64)]
     public string? Phone { get; set; }
     public Guid StaffId { get; set; }
     public Staff Staff { get; set; } = null!;
     public int TimeRating { get; set; }
     public int RespectRating { get; set; }
     public int OverallRating { get; set; }
+    public int? RecommendRating { get; set; }
+
+    [MaxLength(256)]
+    public string? ServiceType { get; set; }
+    [MaxLength(32)]
+    public string? Gender { get; set; }
+    [MaxLength(32)]
+    public string? AgeRange { get; set; }
+    [MaxLength(64)]
+    public string? City { get; set; }
+    public string? PoliciesJson { get; set; }
+    [MaxLength(16)]
+    public string? ContactPreference { get; set; }
+    public string? Comment { get; set; }
 
     /// <summary>
     /// UTC timestamp indicating when the kiosk session was started.  This
