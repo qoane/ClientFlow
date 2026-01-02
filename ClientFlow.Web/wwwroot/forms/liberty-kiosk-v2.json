@@ -1,0 +1,179 @@
+{
+  "id": "0f72c376-0570-42e0-93e1-5271fa697a3b",
+  "code": "liberty-kiosk-v2",
+  "title": "Liberty Kiosk Intake",
+  "isActive": true,
+  "themeAccent": "#003a78",
+  "themePanel": "#ffffff",
+  "customCss": null,
+  "version": 1,
+  "sections": [
+    {
+      "id": "5df968a1-3b6f-4252-bf33-c24ae03d704b",
+      "title": "Welcome",
+      "order": 1,
+      "columns": 1
+    },
+    {
+      "id": "30a608a8-a1ee-4f8c-bca9-8496ea5efd99",
+      "title": "Visit Details",
+      "order": 2,
+      "columns": 1
+    },
+    {
+      "id": "5d269ed7-6a5c-4920-b346-945da0b422e1",
+      "title": "Feedback",
+      "order": 3,
+      "columns": 1
+    }
+  ],
+  "questions": [
+    {
+      "id": "4da23db5-45ed-4901-be5f-7e1a174a701b",
+      "sectionId": "5df968a1-3b6f-4252-bf33-c24ae03d704b",
+      "key": "welcome_message",
+      "type": "static_text",
+      "prompt": "",
+      "required": false,
+      "order": 1,
+      "settingsJson": "{\"text\":\"Welcome to Liberty. Please answer a few quick questions about your visit.\",\"alignment\":\"center\"}",
+      "visibleIf": null,
+      "options": []
+    },
+    {
+      "id": "b2398b8f-99ae-4e5f-b4dc-0b3544694795",
+      "sectionId": "5df968a1-3b6f-4252-bf33-c24ae03d704b",
+      "key": "visit_reason",
+      "type": "single",
+      "prompt": "What brings you in today?",
+      "required": true,
+      "order": 2,
+      "settingsJson": null,
+      "visibleIf": null,
+      "options": [
+        {
+          "id": "3108f67c-92b4-4b7d-86f5-eddb81bc1980",
+          "value": "new_account",
+          "label": "Open a new account",
+          "order": 1
+        },
+        {
+          "id": "8723d906-bf0a-4c58-a851-884b7b5cf7a8",
+          "value": "loan",
+          "label": "Loan or mortgage",
+          "order": 2
+        },
+        {
+          "id": "f3412c4f-4195-4eaf-a806-1ec67d035ea3",
+          "value": "support",
+          "label": "Account support",
+          "order": 3
+        },
+        {
+          "id": "82230b98-a7e1-4fac-9550-4b6f3c880e17",
+          "value": "other",
+          "label": "Something else",
+          "order": 4
+        }
+      ]
+    },
+    {
+      "id": "e6610e61-306c-4dae-a613-854c19de4b3f",
+      "sectionId": "5df968a1-3b6f-4252-bf33-c24ae03d704b",
+      "key": "visit_other",
+      "type": "text",
+      "prompt": "If something else, please tell us.",
+      "required": false,
+      "order": 3,
+      "settingsJson": "{\"placeholder\":\"Short description\"}",
+      "visibleIf": "visit_reason = \"other\"",
+      "options": []
+    },
+    {
+      "id": "b034f2a9-f8d7-4960-8824-a6da12854e1b",
+      "sectionId": "30a608a8-a1ee-4f8c-bca9-8496ea5efd99",
+      "key": "resolved_today",
+      "type": "boolean",
+      "prompt": "Was your issue resolved today?",
+      "required": true,
+      "order": 1,
+      "settingsJson": "{\"yesLabel\":\"Yes, resolved\",\"noLabel\":\"Not yet\"}",
+      "visibleIf": null,
+      "options": []
+    },
+    {
+      "id": "cf00047b-361e-4af0-a235-51dadae77603",
+      "sectionId": "30a608a8-a1ee-4f8c-bca9-8496ea5efd99",
+      "key": "service_rating",
+      "type": "rating_stars",
+      "prompt": "How would you rate the service you received?",
+      "required": true,
+      "order": 2,
+      "settingsJson": "{\"stars\":5}",
+      "visibleIf": null,
+      "options": []
+    },
+    {
+      "id": "0395a7c2-e85c-4cad-b787-0685a7fde217",
+      "sectionId": "30a608a8-a1ee-4f8c-bca9-8496ea5efd99",
+      "key": "services_used",
+      "type": "multi",
+      "prompt": "Which services did you use today?",
+      "required": false,
+      "order": 3,
+      "settingsJson": null,
+      "visibleIf": null,
+      "options": [
+        {
+          "id": "60e02ecb-ccb0-4fde-8758-756964f132c5",
+          "value": "teller",
+          "label": "Teller window",
+          "order": 1
+        },
+        {
+          "id": "620bfd76-d9ef-48f9-b3ee-cec83a09a634",
+          "value": "advisor",
+          "label": "Financial advisor",
+          "order": 2
+        },
+        {
+          "id": "20cd5061-b520-4d0e-83da-96e43b42128a",
+          "value": "loan",
+          "label": "Loan consultation",
+          "order": 3
+        },
+        {
+          "id": "2a96f420-53a5-4f29-9812-b1067b990e0c",
+          "value": "atm",
+          "label": "ATM or kiosk",
+          "order": 4
+        }
+      ]
+    },
+    {
+      "id": "a85886ac-98c1-45e6-bebe-bbd9d2f87fd4",
+      "sectionId": "5d269ed7-6a5c-4920-b346-945da0b422e1",
+      "key": "recommend_score",
+      "type": "nps_0_10",
+      "prompt": "How likely are you to recommend Liberty to a friend?",
+      "required": false,
+      "order": 1,
+      "settingsJson": "{\"min\":0,\"max\":10}",
+      "visibleIf": null,
+      "options": []
+    },
+    {
+      "id": "bc61e6c8-314a-42b4-bbf9-8aa11c4a9c0d",
+      "sectionId": "5d269ed7-6a5c-4920-b346-945da0b422e1",
+      "key": "additional_feedback",
+      "type": "textarea",
+      "prompt": "Any additional feedback for our team?",
+      "required": false,
+      "order": 2,
+      "settingsJson": "{\"placeholder\":\"Share anything that would help us improve.\",\"rows\":4}",
+      "visibleIf": null,
+      "options": []
+    }
+  ],
+  "rules": []
+}
