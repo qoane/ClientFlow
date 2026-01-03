@@ -9,12 +9,12 @@
 
     <!-- Libraries (CDN) -->
     <link rel="stylesheet" href="https://unpkg.com/flatpickr/dist/flatpickr.min.css">
-    <link rel="stylesheet" href="https://unpkg.com/tabulator-tables@5.6.2/dist/css/tabulator.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabulator/5.6.2/css/tabulator.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
     <script src="app-base.js"></script>
     <script src="https://unpkg.com/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
-    <script src="https://unpkg.com/tabulator-tables@5.6.2/dist/js/tabulator.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tabulator/5.6.2/js/tabulator.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
 
@@ -88,9 +88,25 @@
 
         .filters {
             display: grid;
-            grid-template-columns: repeat(2,minmax(160px,1fr));
+            grid-template-columns: repeat(auto-fit,minmax(190px,1fr));
             gap: 10px;
             margin: 10px 0 18px
+        }
+
+        .filter-group {
+            display: grid;
+            gap: 6px;
+        }
+
+        .filter-group label {
+            font-size: .78rem;
+            color: var(--muted);
+        }
+
+        .range-fields {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(80px, 1fr));
+            gap: 6px;
         }
 
         select, input {
@@ -121,6 +137,11 @@
         .actions .launch-select {
             width: auto;
             min-width: 220px;
+        }
+
+        .actions .email-input {
+            min-width: 240px;
+            flex: 1 1 240px;
         }
 
         .insight-grid {
@@ -208,14 +229,50 @@
         <!-- Filters -->
         <div class="panel">
             <div class="filters">
-                <input id="dateFrom" placeholder="From (date)">
-                <input id="dateTo" placeholder="To (date)">
+                <div class="filter-group">
+                    <label for="dateFrom">From</label>
+                    <input id="dateFrom" placeholder="From (date)">
+                </div>
+                <div class="filter-group">
+                    <label for="dateTo">To</label>
+                    <input id="dateTo" placeholder="To (date)">
+                </div>
+                <div class="filter-group">
+                    <label for="locationFilter">Location</label>
+                    <select id="locationFilter">
+                        <option value="">All locations</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="genderFilter">Gender</label>
+                    <select id="genderFilter">
+                        <option value="">All genders</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="kioskFilter">Kiosk / Branch</label>
+                    <select id="kioskFilter">
+                        <option value="">All kiosks</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="rangeQuestion">Score range</label>
+                    <select id="rangeQuestion">
+                        <option value="">Select metric…</option>
+                    </select>
+                    <div class="range-fields">
+                        <input id="rangeMin" type="number" placeholder="Min">
+                        <input id="rangeMax" type="number" placeholder="Max">
+                    </div>
+                </div>
             </div>
             <div class="actions">
                 <button class="btn" id="applyFilters">Apply</button>
                 <button class="btn" id="clearFilters">Clear</button>
                 <button class="btn" id="exportCsv">Export CSV</button>
                 <button class="btn" id="exportPdf">Export PDF</button>
+                <input class="email-input" id="reportEmail" type="email" placeholder="Email report to… (comma-separated)">
+                <button class="btn" id="sendReport">Send Report</button>
                 <select id="kioskSurveyPicker" class="launch-select">
                     <option value="">Select survey…</option>
                 </select>
@@ -255,6 +312,13 @@
             to: document.getElementById('dateTo'),
             label: document.getElementById('activeFilterLabel'),
             kioskSurvey: document.getElementById('kioskSurveyPicker'),
+            locationFilter: document.getElementById('locationFilter'),
+            genderFilter: document.getElementById('genderFilter'),
+            kioskFilter: document.getElementById('kioskFilter'),
+            rangeQuestion: document.getElementById('rangeQuestion'),
+            rangeMin: document.getElementById('rangeMin'),
+            rangeMax: document.getElementById('rangeMax'),
+            reportEmail: document.getElementById('reportEmail'),
             summaryRow: document.getElementById('summaryRow'),
             chartInsights: document.getElementById('chartInsights'),
             textInsights: document.getElementById('textInsights')
@@ -266,9 +330,14 @@
         const openKioskBtn = document.getElementById('openKiosk');
         let kioskSurveyList = [];
         let analytics = null;
+        let analyticsSource = null;
         let table = null;
         const charts = {};
         let lastTotal;
+        const filterKeys = {
+            location: null,
+            gender: null
+        };
 
         function playBeep() {
             try {
@@ -371,6 +440,276 @@
             return Number.isInteger(num) ? num.toString() : num.toFixed(2);
         }
 
+        function normalizeBucketLabel(label, fallback = 'Unspecified') {
+            const value = String(label ?? '').trim();
+            if (!value) return fallback;
+            const lowered = value.toLowerCase();
+            if (lowered === 'undefined' || lowered === 'null') return fallback;
+            return value;
+        }
+
+        function resetSelectOptions(select, placeholder) {
+            if (!select) return;
+            select.innerHTML = '';
+            const option = document.createElement('option');
+            option.value = '';
+            option.textContent = placeholder;
+            select.appendChild(option);
+        }
+
+        function fillSelectOptions(select, values, placeholder) {
+            if (!select) return;
+            resetSelectOptions(select, placeholder);
+            values.forEach(value => {
+                const option = document.createElement('option');
+                option.value = value;
+                option.textContent = value;
+                select.appendChild(option);
+            });
+            select.disabled = values.length === 0;
+        }
+
+        function getAnswerValues(responses, key) {
+            if (!key) return [];
+            const values = new Set();
+            (responses || []).forEach(r => {
+                const raw = r.answers?.[key];
+                const value = String(raw ?? '').trim();
+                if (value) values.add(value);
+            });
+            return Array.from(values).sort((a, b) => a.localeCompare(b));
+        }
+
+        function findQuestionKeyByKeywords(questions, keywords) {
+            if (!Array.isArray(questions)) return null;
+            const lowered = keywords.map(k => k.toLowerCase());
+            const match = questions.find(q => {
+                const prompt = (q.prompt || '').toLowerCase();
+                const key = (q.key || '').toLowerCase();
+                return lowered.some(word => prompt.includes(word) || key.includes(word));
+            });
+            return match ? match.key : null;
+        }
+
+        function responseKioskValue(response) {
+            const value = response?.clientCode || response?.formKey || '';
+            return String(value ?? '').trim();
+        }
+
+        function buildQuestionSummary(question, responses) {
+            const rawValues = (responses || [])
+                .map(r => r.answers?.[question.key])
+                .filter(v => v != null && String(v).trim() !== '');
+
+            const base = { ...question };
+
+            if (question.summaryKind === 'scale') {
+                const numericValues = rawValues
+                    .map(v => Number(v))
+                    .filter(Number.isFinite);
+                const answerCount = numericValues.length;
+                const sum = numericValues.reduce((acc, val) => acc + val, 0);
+                const average = answerCount ? sum / answerCount : null;
+                const minimum = answerCount ? Math.min(...numericValues) : null;
+                const maximum = answerCount ? Math.max(...numericValues) : null;
+                const bucketMap = new Map();
+                numericValues.forEach(value => {
+                    const key = value;
+                    bucketMap.set(key, (bucketMap.get(key) || 0) + 1);
+                });
+                const buckets = Array.from(bucketMap.entries())
+                    .sort((a, b) => a[0] - b[0])
+                    .map(([value, count]) => ({
+                        label: String(value),
+                        count,
+                        numericValue: value
+                    }));
+                return {
+                    ...base,
+                    answerCount,
+                    average,
+                    minimum,
+                    maximum,
+                    buckets,
+                    topAnswers: []
+                };
+            }
+
+            if (question.summaryKind === 'choice') {
+                const bucketMap = new Map();
+                rawValues.forEach(value => {
+                    const label = normalizeBucketLabel(value);
+                    bucketMap.set(label, (bucketMap.get(label) || 0) + 1);
+                });
+                const buckets = Array.from(bucketMap.entries())
+                    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+                    .map(([label, count]) => ({
+                        label,
+                        count,
+                        numericValue: null
+                    }));
+                return {
+                    ...base,
+                    answerCount: rawValues.length,
+                    average: null,
+                    minimum: null,
+                    maximum: null,
+                    buckets,
+                    topAnswers: []
+                };
+            }
+
+            if (question.summaryKind === 'text') {
+                const answerMap = new Map();
+                rawValues.forEach(value => {
+                    const label = normalizeBucketLabel(value);
+                    answerMap.set(label, (answerMap.get(label) || 0) + 1);
+                });
+                const topAnswers = Array.from(answerMap.entries())
+                    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+                    .slice(0, 6)
+                    .map(([value, count]) => ({ value, count }));
+                return {
+                    ...base,
+                    answerCount: rawValues.length,
+                    average: null,
+                    minimum: null,
+                    maximum: null,
+                    buckets: [],
+                    topAnswers
+                };
+            }
+
+            return base;
+        }
+
+        function applyResponseFilters(source) {
+            if (!source) return null;
+            const locationValue = els.locationFilter?.value || '';
+            const genderValue = els.genderFilter?.value || '';
+            const kioskValue = els.kioskFilter?.value || '';
+            const rangeKey = els.rangeQuestion?.value || '';
+            const minValue = els.rangeMin?.value !== '' ? Number(els.rangeMin.value) : null;
+            const maxValue = els.rangeMax?.value !== '' ? Number(els.rangeMax.value) : null;
+
+            const filteredResponses = (source.responses || []).filter(response => {
+                if (locationValue) {
+                    const locationAnswer = String(response.answers?.[filterKeys.location] ?? '').trim();
+                    if (locationAnswer !== locationValue) return false;
+                }
+                if (genderValue) {
+                    const genderAnswer = String(response.answers?.[filterKeys.gender] ?? '').trim();
+                    if (genderAnswer !== genderValue) return false;
+                }
+                if (kioskValue) {
+                    const kiosk = responseKioskValue(response);
+                    if (kiosk !== kioskValue) return false;
+                }
+                if (rangeKey && (minValue != null || maxValue != null)) {
+                    const raw = response.answers?.[rangeKey];
+                    const num = Number(raw);
+                    if (!Number.isFinite(num)) return false;
+                    if (minValue != null && num < minValue) return false;
+                    if (maxValue != null && num > maxValue) return false;
+                }
+                return true;
+            });
+
+            const questions = (source.questions || []).map(q => buildQuestionSummary(q, filteredResponses));
+            return {
+                ...source,
+                totalResponses: filteredResponses.length,
+                questions,
+                responses: filteredResponses
+            };
+        }
+
+        function updateFilterOptions() {
+            if (!analyticsSource) {
+                fillSelectOptions(els.locationFilter, [], 'All locations');
+                fillSelectOptions(els.genderFilter, [], 'All genders');
+                fillSelectOptions(els.kioskFilter, [], 'All kiosks');
+                fillSelectOptions(els.rangeQuestion, [], 'Select metric…');
+                if (els.rangeMin) els.rangeMin.value = '';
+                if (els.rangeMax) els.rangeMax.value = '';
+                return;
+            }
+
+            const previousLocation = els.locationFilter?.value || '';
+            const previousGender = els.genderFilter?.value || '';
+            const previousKiosk = els.kioskFilter?.value || '';
+            const previousRange = els.rangeQuestion?.value || '';
+
+            filterKeys.location = findQuestionKeyByKeywords(analyticsSource.questions, ['location', 'city', 'province', 'region', 'area']);
+            filterKeys.gender = findQuestionKeyByKeywords(analyticsSource.questions, ['gender', 'sex']);
+
+            const locationValues = getAnswerValues(analyticsSource.responses, filterKeys.location);
+            const genderValues = getAnswerValues(analyticsSource.responses, filterKeys.gender);
+            const kioskValues = Array.from(new Set((analyticsSource.responses || [])
+                .map(responseKioskValue)
+                .filter(Boolean)))
+                .sort((a, b) => a.localeCompare(b));
+
+            fillSelectOptions(els.locationFilter, locationValues, 'All locations');
+            fillSelectOptions(els.genderFilter, genderValues, 'All genders');
+            fillSelectOptions(els.kioskFilter, kioskValues, 'All kiosks');
+            if (previousLocation && locationValues.includes(previousLocation)) {
+                els.locationFilter.value = previousLocation;
+            }
+            if (previousGender && genderValues.includes(previousGender)) {
+                els.genderFilter.value = previousGender;
+            }
+            if (previousKiosk && kioskValues.includes(previousKiosk)) {
+                els.kioskFilter.value = previousKiosk;
+            }
+
+            const scaleQuestions = (analyticsSource.questions || [])
+                .filter(q => q.summaryKind === 'scale')
+                .map(q => ({ key: q.key, label: q.prompt || q.key }));
+            if (els.rangeQuestion) {
+                resetSelectOptions(els.rangeQuestion, 'Select metric…');
+                scaleQuestions.forEach(q => {
+                    const option = document.createElement('option');
+                    option.value = q.key;
+                    option.textContent = q.label;
+                    els.rangeQuestion.appendChild(option);
+                });
+                els.rangeQuestion.disabled = scaleQuestions.length === 0;
+                if (previousRange && scaleQuestions.some(q => q.key === previousRange)) {
+                    els.rangeQuestion.value = previousRange;
+                }
+            }
+            toggleRangeInputs();
+        }
+
+        function toggleRangeInputs() {
+            const hasRange = !!(els.rangeQuestion && els.rangeQuestion.value);
+            if (els.rangeMin) els.rangeMin.disabled = !hasRange;
+            if (els.rangeMax) els.rangeMax.disabled = !hasRange;
+        }
+
+        function buildCsvData(source) {
+            if (!source) return '';
+            const headers = ['Timestamp', 'Started', 'Duration (s)', 'Client Code', 'Form Key']
+                .concat(source.questions.map(q => q.prompt));
+            const csvRows = source.responses.map(r => {
+                const values = [
+                    r.createdUtc ? new Date(r.createdUtc).toISOString() : '',
+                    r.startedUtc ? new Date(r.startedUtc).toISOString() : '',
+                    r.durationSeconds != null ? String(r.durationSeconds) : '',
+                    r.clientCode ?? '',
+                    r.formKey ?? ''
+                ];
+                source.questions.forEach(q => {
+                    values.push((r.answers[q.key] ?? '').replaceAll('"', '""'));
+                });
+                return values.map(v => /[",\n]/.test(v) ? '"' + v + '"' : v).join(',');
+            });
+            return [headers.map(v => v.replaceAll('"', '""')).map(v => /[",\n]/.test(v) ? '"' + v + '"' : v).join(',')]
+                .concat(csvRows)
+                .join('\n');
+        }
+
         function clearDynamicCharts() {
             Object.entries(charts).forEach(([key, chart]) => {
                 if (chart && typeof chart.destroy === 'function') {
@@ -446,7 +785,7 @@
                     card.appendChild(wrap);
                     chartsHost.appendChild(card);
 
-                    const labels = q.buckets.map(b => b.label);
+                    const labels = q.buckets.map(b => normalizeBucketLabel(b.label));
                     const data = q.buckets.map(b => b.count);
                     const ctx = canvas.getContext('2d');
                     charts[chartId] = new Chart(ctx, {
@@ -489,7 +828,7 @@
                     const list = document.createElement('ol');
                     q.topAnswers.forEach(item => {
                         const li = document.createElement('li');
-                        li.innerHTML = `${escapeHtml(item.value)} <span class="count">(${item.count})</span>`;
+                        li.innerHTML = `${escapeHtml(normalizeBucketLabel(item.value))} <span class="count">(${item.count})</span>`;
                         list.appendChild(li);
                     });
                     card.appendChild(list);
@@ -598,24 +937,7 @@
                 appNotify('Load a survey before exporting.', { type: 'warning' });
                 return;
             }
-            const headers = ['Timestamp', 'Started', 'Duration (s)', 'Client Code', 'Form Key']
-                .concat(analytics.questions.map(q => q.prompt));
-            const csvRows = analytics.responses.map(r => {
-                const values = [
-                    r.createdUtc ? new Date(r.createdUtc).toISOString() : '',
-                    r.startedUtc ? new Date(r.startedUtc).toISOString() : '',
-                    r.durationSeconds != null ? String(r.durationSeconds) : '',
-                    r.clientCode ?? '',
-                    r.formKey ?? ''
-                ];
-                analytics.questions.forEach(q => {
-                    values.push((r.answers[q.key] ?? '').replaceAll('"', '""'));
-                });
-                return values.map(v => /[",\n]/.test(v) ? '"' + v + '"' : v).join(',');
-            });
-            const csv = [headers.map(v => v.replaceAll('"', '""')).map(v => /[",\n]/.test(v) ? '"' + v + '"' : v).join(',')]
-                .concat(csvRows)
-                .join('\n');
+            const csv = buildCsvData(analytics);
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -658,20 +980,54 @@
             doc.save(`survey-${analytics.code}-responses.pdf`);
         }
 
+        async function sendReportEmail() {
+            if (!analytics) {
+                appNotify('Load a survey before sending a report.', { type: 'warning' });
+                return;
+            }
+            const rawEmails = (els.reportEmail?.value || '').split(',').map(v => v.trim()).filter(Boolean);
+            if (rawEmails.length === 0) {
+                appNotify('Enter at least one recipient email.', { type: 'warning' });
+                return;
+            }
+            const payload = {
+                emails: rawEmails,
+                filterLabel: els.label.textContent || '',
+                csvContent: buildCsvData(analytics),
+                surveyTitle: analytics.title || analytics.code,
+                totalResponses: analytics.totalResponses
+            };
+            const url = `/api/surveys/${encodeURIComponent(analytics.code)}/report-email`;
+            const result = await fetchJson(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (result) {
+                appNotify('Report sent successfully.', { type: 'success' });
+            } else {
+                appNotify('Unable to send report right now.', { type: 'warning' });
+            }
+        }
+
         async function loadAnalytics() {
             if (!els.kioskSurvey || !els.kioskSurvey.value) {
                 analytics = null;
+                analyticsSource = null;
+                updateFilterOptions();
                 refreshCards();
                 renderInsights();
                 renderTable();
                 return;
             }
             const url = `/api/surveys/${encodeURIComponent(els.kioskSurvey.value)}/analytics${surveyParams()}`;
-            analytics = await fetchJson(url);
-            if (analytics && typeof lastTotal === 'number' && analytics.totalResponses > lastTotal) {
+            analyticsSource = await fetchJson(url);
+            analytics = applyResponseFilters(analyticsSource);
+            updateFilterOptions();
+            if (analyticsSource && typeof lastTotal === 'number' && analyticsSource.totalResponses > lastTotal) {
                 playBeep();
             }
-            lastTotal = analytics ? analytics.totalResponses : lastTotal;
+            lastTotal = analyticsSource ? analyticsSource.totalResponses : lastTotal;
             refreshCards();
             renderInsights();
             renderTable();
@@ -704,10 +1060,18 @@
         document.getElementById('clearFilters').addEventListener('click', async () => {
             els.from.value = '';
             els.to.value = '';
+            if (els.locationFilter) els.locationFilter.value = '';
+            if (els.genderFilter) els.genderFilter.value = '';
+            if (els.kioskFilter) els.kioskFilter.value = '';
+            if (els.rangeQuestion) els.rangeQuestion.value = '';
+            if (els.rangeMin) els.rangeMin.value = '';
+            if (els.rangeMax) els.rangeMax.value = '';
+            toggleRangeInputs();
             await apply();
         });
         document.getElementById('exportCsv').addEventListener('click', exportCsv);
         document.getElementById('exportPdf').addEventListener('click', exportPdf);
+        document.getElementById('sendReport').addEventListener('click', sendReportEmail);
 
         if (els.kioskSurvey) {
             els.kioskSurvey.addEventListener('change', () => {
@@ -715,7 +1079,13 @@
                     localStorage.setItem(kioskSurveyStorageKey, els.kioskSurvey.value);
                 }
                 updateLaunchAvailability();
-                apply();
+                loadAnalytics();
+            });
+        }
+
+        if (els.rangeQuestion) {
+            els.rangeQuestion.addEventListener('change', () => {
+                toggleRangeInputs();
             });
         }
 
@@ -737,7 +1107,7 @@
         (async function () {
             await loadSurveys();
             updateActiveLabel();
-            await apply();
+            await loadAnalytics();
             if ('serviceWorker' in navigator) { navigator.serviceWorker.register(appBuildUrl('sw.js')).catch(() => { }); }
         })();
     </script>
