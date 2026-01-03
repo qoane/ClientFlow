@@ -336,7 +336,8 @@
         let lastTotal;
         const filterKeys = {
             location: null,
-            gender: null
+            gender: null,
+            kiosk: null
         };
 
         function playBeep() {
@@ -492,7 +493,9 @@
         }
 
         function responseKioskValue(response) {
-            const value = response?.clientCode || response?.formKey || '';
+            const answerKey = filterKeys.kiosk;
+            const answerValue = answerKey ? response?.answers?.[answerKey] : null;
+            const value = answerValue ?? response?.clientCode ?? response?.formKey ?? '';
             return String(value ?? '').trim();
         }
 
@@ -642,6 +645,7 @@
 
             filterKeys.location = findQuestionKeyByKeywords(analyticsSource.questions, ['location', 'city', 'province', 'region', 'area']);
             filterKeys.gender = findQuestionKeyByKeywords(analyticsSource.questions, ['gender', 'sex']);
+            filterKeys.kiosk = findQuestionKeyByKeywords(analyticsSource.questions, ['kiosk', 'branch']);
 
             const locationValues = getAnswerValues(analyticsSource.responses, filterKeys.location);
             const genderValues = getAnswerValues(analyticsSource.responses, filterKeys.gender);
