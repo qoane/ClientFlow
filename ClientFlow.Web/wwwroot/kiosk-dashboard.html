@@ -334,6 +334,7 @@
         let table = null;
         const charts = {};
         let lastTotal;
+        const hiddenQuestionKeys = new Set(['overallrating', 'respectrating']);
         const filterKeys = {
             location: null,
             gender: null,
@@ -441,6 +442,17 @@
             return Number.isInteger(num) ? num.toString() : num.toFixed(2);
         }
 
+        function isHiddenQuestion(question) {
+            if (!question) return false;
+            const key = String(question.key || '').toLowerCase().replace(/\s+/g, '');
+            const prompt = String(question.prompt || '').toLowerCase().replace(/\s+/g, '');
+            return hiddenQuestionKeys.has(key) || hiddenQuestionKeys.has(prompt);
+        }
+
+        function getVisibleQuestions(source) {
+            return (source?.questions || []).filter(q => !isHiddenQuestion(q));
+        }
+
         function normalizeBucketLabel(label, fallback = 'Unspecified') {
             const value = String(label ?? '').trim();
             if (!value) return fallback;
@@ -490,6 +502,23 @@
                 return lowered.some(word => prompt.includes(word) || key.includes(word));
             });
             return match ? match.key : null;
+        }
+
+        function findAnswerKeyByKeywords(questions, responses, keywords) {
+            const questionKey = findQuestionKeyByKeywords(questions, keywords);
+            if (questionKey) return questionKey;
+            const lowered = keywords.map(k => k.toLowerCase());
+            const keySet = new Set();
+            (responses || []).forEach(response => {
+                Object.keys(response.answers || {}).forEach(key => {
+                    if (key) keySet.add(key);
+                });
+            });
+            const match = Array.from(keySet).find(key => {
+                const loweredKey = key.toLowerCase();
+                return lowered.some(word => loweredKey.includes(word));
+            });
+            return match || null;
         }
 
         function responseKioskValue(response) {
@@ -594,6 +623,12 @@
             const rangeKey = els.rangeQuestion?.value || '';
             const minValue = els.rangeMin?.value !== '' ? Number(els.rangeMin.value) : null;
             const maxValue = els.rangeMax?.value !== '' ? Number(els.rangeMax.value) : null;
+            const hasRangeFilter = !!(rangeKey && (minValue != null || maxValue != null));
+            const hasFilters = !!(locationValue || genderValue || kioskValue || hasRangeFilter);
+
+            if (!hasFilters) {
+                return source;
+            }
 
             const filteredResponses = (source.responses || []).filter(response => {
                 if (locationValue) {
@@ -608,7 +643,7 @@
                     const kiosk = responseKioskValue(response);
                     if (kiosk !== kioskValue) return false;
                 }
-                if (rangeKey && (minValue != null || maxValue != null)) {
+                if (hasRangeFilter) {
                     const raw = response.answers?.[rangeKey];
                     const num = Number(raw);
                     if (!Number.isFinite(num)) return false;
@@ -643,9 +678,9 @@
             const previousKiosk = els.kioskFilter?.value || '';
             const previousRange = els.rangeQuestion?.value || '';
 
-            filterKeys.location = findQuestionKeyByKeywords(analyticsSource.questions, ['location', 'city', 'province', 'region', 'area']);
-            filterKeys.gender = findQuestionKeyByKeywords(analyticsSource.questions, ['gender', 'sex']);
-            filterKeys.kiosk = findQuestionKeyByKeywords(analyticsSource.questions, ['kiosk', 'branch']);
+            filterKeys.location = findAnswerKeyByKeywords(analyticsSource.questions, analyticsSource.responses, ['location', 'city', 'province', 'region', 'area']);
+            filterKeys.gender = findAnswerKeyByKeywords(analyticsSource.questions, analyticsSource.responses, ['gender', 'sex']);
+            filterKeys.kiosk = findAnswerKeyByKeywords(analyticsSource.questions, analyticsSource.responses, ['kiosk', 'branch']);
 
             const locationValues = getAnswerValues(analyticsSource.responses, filterKeys.location);
             const genderValues = getAnswerValues(analyticsSource.responses, filterKeys.gender);
@@ -667,7 +702,7 @@
                 els.kioskFilter.value = previousKiosk;
             }
 
-            const scaleQuestions = (analyticsSource.questions || [])
+            const scaleQuestions = getVisibleQuestions(analyticsSource)
                 .filter(q => q.summaryKind === 'scale')
                 .map(q => ({ key: q.key, label: q.prompt || q.key }));
             if (els.rangeQuestion) {
@@ -694,8 +729,9 @@
 
         function buildCsvData(source) {
             if (!source) return '';
+            const visibleQuestions = getVisibleQuestions(source);
             const headers = ['Timestamp', 'Started', 'Duration (s)', 'Client Code', 'Form Key']
-                .concat(source.questions.map(q => q.prompt));
+                .concat(visibleQuestions.map(q => q.prompt));
             const csvRows = source.responses.map(r => {
                 const values = [
                     r.createdUtc ? new Date(r.createdUtc).toISOString() : '',
@@ -704,7 +740,7 @@
                     r.clientCode ?? '',
                     r.formKey ?? ''
                 ];
-                source.questions.forEach(q => {
+                visibleQuestions.forEach(q => {
                     values.push((r.answers[q.key] ?? '').replaceAll('"', '""'));
                 });
                 return values.map(v => /[",\n]/.test(v) ? '"' + v + '"' : v).join(',');
@@ -743,7 +779,8 @@
 
             addCard('Total Responses', analytics.totalResponses ?? 0);
 
-            const numericQuestions = analytics.questions.filter(q => q.summaryKind === 'scale' && q.average != null);
+            const numericQuestions = getVisibleQuestions(analytics)
+                .filter(q => q.summaryKind === 'scale' && q.average != null);
             numericQuestions.slice(0, 4).forEach(q => {
                 addCard(q.prompt, formatNumber(q.average), q.answerCount + ' responses');
             });
@@ -764,8 +801,9 @@
                 return;
             }
 
-            const chartQuestions = analytics.questions.filter(q => q.summaryKind === 'scale' || (q.summaryKind === 'choice' && q.buckets.length));
-            const textQuestions = analytics.questions.filter(q => q.summaryKind === 'text' && q.topAnswers.length);
+            const visibleQuestions = getVisibleQuestions(analytics);
+            const chartQuestions = visibleQuestions.filter(q => q.summaryKind === 'scale' || (q.summaryKind === 'choice' && q.buckets.length));
+            const textQuestions = visibleQuestions.filter(q => q.summaryKind === 'text' && q.topAnswers.length);
 
             if (chartQuestions.length === 0) {
                 const emptyCharts = document.createElement('div');
@@ -782,7 +820,6 @@
                     const wrap = document.createElement('div');
                     wrap.className = 'chart-wrap';
                     const canvas = document.createElement('canvas');
-                    canvas.height = 260;
                     const chartId = `dyn_${q.key}_${idx}`;
                     canvas.id = chartId;
                     wrap.appendChild(canvas);
@@ -791,28 +828,58 @@
 
                     const labels = q.buckets.map(b => normalizeBucketLabel(b.label));
                     const data = q.buckets.map(b => b.count);
+                    const labelCount = labels.length;
+                    const useDoughnut = q.summaryKind === 'choice' && labelCount <= 5;
+                    const useHorizontal = !useDoughnut && labelCount > 8;
+                    const chartHeight = useHorizontal ? Math.min(520, 220 + labelCount * 18) : 260;
+                    wrap.style.height = `${chartHeight}px`;
+                    canvas.height = chartHeight;
                     const ctx = canvas.getContext('2d');
+                    const labelAxis = useHorizontal ? 'y' : 'x';
+                    const valueAxis = useHorizontal ? 'x' : 'y';
+                    const labelLimit = useHorizontal ? 12 : 6;
+                    const dataLabelLimit = useDoughnut ? 8 : 10;
                     charts[chartId] = new Chart(ctx, {
-                        type: q.summaryKind === 'choice' && q.buckets.length <= 5 ? 'doughnut' : 'bar',
+                        type: useDoughnut ? 'doughnut' : 'bar',
                         data: {
                             labels,
                             datasets: [{
                                 data,
+                                label: 'Responses',
                                 backgroundColor: labels.map((_, i) => `hsla(${(i * 57) % 360},70%,55%,0.85)`),
                                 borderWidth: 0
                             }]
                         },
                         options: {
                             responsive: true,
+                            maintainAspectRatio: false,
+                            indexAxis: useHorizontal ? 'y' : 'x',
                             plugins: {
-                                legend: { position: 'bottom' },
+                                legend: useDoughnut ? { position: 'bottom' } : { display: false },
                                 datalabels: {
                                     color: '#fff',
-                                    formatter: Math.round
+                                    formatter: Math.round,
+                                    display: labelCount <= dataLabelLimit
                                 }
                             },
-                            scales: q.summaryKind === 'choice' && q.buckets.length <= 5 ? undefined : {
-                                y: { beginAtZero: true }
+                            scales: useDoughnut ? undefined : {
+                                [valueAxis]: {
+                                    beginAtZero: true,
+                                    ticks: { precision: 0 }
+                                },
+                                [labelAxis]: {
+                                    ticks: {
+                                        autoSkip: true,
+                                        maxTicksLimit: labelLimit,
+                                        maxRotation: useHorizontal ? 0 : 40,
+                                        minRotation: useHorizontal ? 0 : 20,
+                                        callback: (value) => {
+                                            const label = String(value ?? '');
+                                            const max = useHorizontal ? 28 : 16;
+                                            return label.length > max ? `${label.slice(0, max)}…` : label;
+                                        }
+                                    }
+                                }
                             }
                         }
                     });
@@ -846,6 +913,7 @@
         }
 
         function renderTable() {
+            const visibleQuestions = getVisibleQuestions(analytics);
             const rows = (analytics?.responses || []).map(r => {
                 const row = {
                     created: r.createdUtc ? new Date(r.createdUtc).toISOString() : '',
@@ -854,7 +922,7 @@
                     clientCode: r.clientCode ?? '',
                     formKey: r.formKey ?? ''
                 };
-                (analytics?.questions || []).forEach(q => {
+                visibleQuestions.forEach(q => {
                     const raw = r.answers[q.key] ?? '';
                     if (q.summaryKind === 'scale') {
                         row[q.key] = raw === '' ? null : Number(raw);
@@ -906,7 +974,7 @@
                 }
             ];
 
-            (analytics?.questions || []).forEach(q => {
+            visibleQuestions.forEach(q => {
                 columns.push({
                     title: q.prompt,
                     field: q.key,
@@ -964,14 +1032,15 @@
             doc.text(els.label.textContent || '', 14, 22);
             doc.text(`Total Responses: ${analytics.totalResponses}`, 14, 28);
 
-            const head = [['Timestamp', 'Started', 'Duration (s)', 'Client Code', 'Form Key', ...analytics.questions.map(q => q.prompt)]];
+            const visibleQuestions = getVisibleQuestions(analytics);
+            const head = [['Timestamp', 'Started', 'Duration (s)', 'Client Code', 'Form Key', ...visibleQuestions.map(q => q.prompt)]];
             const body = analytics.responses.map(r => [
                 r.createdUtc ? new Date(r.createdUtc).toLocaleString() : '',
                 r.startedUtc ? new Date(r.startedUtc).toLocaleString() : '',
                 r.durationSeconds != null ? String(r.durationSeconds) : '',
                 r.clientCode ?? '',
                 r.formKey ?? '',
-                ...analytics.questions.map(q => r.answers[q.key] ?? '')
+                ...visibleQuestions.map(q => r.answers[q.key] ?? '')
             ]);
 
             doc.autoTable({
