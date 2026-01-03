@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -11,6 +12,7 @@ using ClientFlow.Application.Services;
 using ClientFlow.Domain.Feedback;
 using ClientFlow.Domain.Surveys;
 using ClientFlow.Infrastructure;
+using ClientFlow.Infrastructure.Email;
 using ClientFlow.Web.Analytics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -25,8 +27,10 @@ public class SurveysController(
     ISurveyRepository surveys,
     IResponseRepository responses,
     IUnitOfWork uow,
-    AppDbContext db) : ControllerBase
+    AppDbContext db,
+    EmailService email) : ControllerBase
 {
+    private readonly EmailService _email = email;
     private const string DefaultKioskSurveyCode = "liberty-nps";
     private static readonly JsonSerializerOptions DefinitionJsonOptions = new(JsonSerializerDefaults.Web);
     private static readonly HashSet<string> DisplayOnlyQuestionTypes = new(StringComparer.OrdinalIgnoreCase)
@@ -57,6 +61,13 @@ public class SurveysController(
         [property: JsonPropertyName("clientCode")] string? ClientCode,
         [property: JsonPropertyName("formKey")] string? FormKey,
         [property: JsonPropertyName("libertyAnswers")] Dictionary<string, string?>? LibertyAnswers);
+
+    public sealed record ReportEmailRequest(
+        [property: JsonPropertyName("emails")] string[] Emails,
+        [property: JsonPropertyName("filterLabel")] string? FilterLabel,
+        [property: JsonPropertyName("csvContent")] string? CsvContent,
+        [property: JsonPropertyName("surveyTitle")] string? SurveyTitle,
+        [property: JsonPropertyName("totalResponses")] int? TotalResponses);
 
     [HttpPost("{code}/submit")]
     public async Task<IActionResult> SubmitSurvey(string code, [FromBody] SubmitSurveyRequest req, CancellationToken ct)
@@ -289,6 +300,48 @@ public class SurveysController(
 
         var analytics = SurveyAnalyticsBuilder.Build(survey, options, responses);
         return Ok(analytics);
+    }
+
+    [HttpPost("{code}/report-email")]
+    public async Task<IActionResult> SendReportEmail(
+        string code,
+        [FromBody] ReportEmailRequest request,
+        CancellationToken ct = default)
+    {
+        if (request.Emails is null || request.Emails.Length == 0)
+        {
+            return BadRequest(new { message = "Recipient emails are required." });
+        }
+
+        var survey = await surveys.GetByCodeAsync(code, ct);
+        if (survey is null)
+        {
+            return NotFound();
+        }
+
+        var title = WebUtility.HtmlEncode(request.SurveyTitle ?? survey.Title ?? survey.Code);
+        var filterLabel = WebUtility.HtmlEncode(request.FilterLabel ?? "All Time");
+        var totalResponses = request.TotalResponses?.ToString("N0", CultureInfo.InvariantCulture) ?? "0";
+        var csvContent = WebUtility.HtmlEncode(request.CsvContent ?? string.Empty);
+
+        var subject = $"ClientFlow Report — {survey.Title ?? survey.Code}";
+        var body = new StringBuilder()
+            .Append("<p>Here's your requested report for <strong>")
+            .Append(title)
+            .Append("</strong>.</p>")
+            .Append("<p><strong>Filters:</strong> ")
+            .Append(filterLabel)
+            .Append("<br/><strong>Total Responses:</strong> ")
+            .Append(totalResponses)
+            .Append("</p>")
+            .Append("<p>CSV Extract:</p>")
+            .Append("<pre style=\"white-space:pre-wrap;font-family:monospace;\">")
+            .Append(csvContent)
+            .Append("</pre>")
+            .ToString();
+
+        await _email.SendAsync(request.Emails, subject, body, ct);
+        return Ok(new { sent = true });
     }
 
     private async Task<Staff?> ResolveStaffAsync(IReadOnlyDictionary<string, string?> answers, CancellationToken ct)
