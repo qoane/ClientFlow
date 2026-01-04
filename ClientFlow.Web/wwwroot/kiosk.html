@@ -229,6 +229,7 @@
     .back-btn:active { transform: translateY(0); }
     #phoneInput,
     #commentInput,
+    #addressInput,
     select {
       width: 100%;
       padding: 18px 22px;
@@ -264,6 +265,9 @@
     }
     .form-grid.two-col {
       grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .form-grid.two-col .form-group.full-width {
+      grid-column: 1 / -1;
     }
     .helper-text {
       margin-top: 8px;
@@ -308,6 +312,10 @@
     .rating-options { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
     .recommend-options { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
     .card-grid { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+    .card-grid.choice-grid {
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      margin-top: 16px;
+    }
     .staff-card,
     .option-item,
     .rating-option,
@@ -349,6 +357,10 @@
       align-items: center;
       justify-content: center;
       min-height: 70px;
+    }
+    .card-item.choice-item {
+      padding: 18px 16px;
+      min-height: 58px;
     }
     .card-item .card-subtitle {
       display: block;
@@ -444,9 +456,16 @@
       opacity: 0.35;
       background: transparent;
     }
-    @media (max-width: 768px) {
-      .page { width: calc(100% - 32px); padding: 48px 24px; }
+    @media (max-width: 1024px) {
+      .page { width: calc(100% - 32px); padding: 44px 28px; }
       .page.compact { padding: 40px 24px; }
+      .staff-grid { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+      .card-grid { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+      .card-item { font-size: 1rem; min-height: 64px; }
+    }
+    @media (max-width: 768px) {
+      .page { width: calc(100% - 24px); padding: 40px 20px; }
+      .page.compact { padding: 36px 20px; }
       .start-btn,
       .btn,
       .back-btn { width: 100%; }
@@ -457,6 +476,16 @@
     @media (max-height: 720px) {
       .page { padding: 36px 24px; max-height: calc(100vh - 96px); }
       #page-idle { padding: 32px 20px; }
+    }
+    @media (max-height: 640px) {
+      .page { max-height: calc(100vh - 64px); overflow-y: auto; }
+      .page.compact h1 { font-size: 1.9rem; }
+      .staff-card,
+      .option-item,
+      .rating-option,
+      .recommend-option,
+      .card-item { padding: 16px 14px; }
+      .card-item { min-height: 56px; }
     }
     @media (max-width: 480px) {
       h1 { font-size: 1.9rem; }
@@ -500,22 +529,16 @@
             <h1>Tell us about yourself</h1>
             <div class="form-grid two-col">
                 <div class="form-group">
-                    <label for="genderSelect">Gender</label>
-                    <select id="genderSelect">
-                        <option value="">Select gender</option>
-                    </select>
+                    <label>Gender</label>
+                    <div class="card-grid choice-grid" id="genderOptions" role="list"></div>
                 </div>
                 <div class="form-group">
-                    <label for="ageRangeSelect">Age range</label>
-                    <select id="ageRangeSelect">
-                        <option value="">Select age range</option>
-                    </select>
+                    <label>Age range</label>
+                    <div class="card-grid choice-grid" id="ageRangeOptions" role="list"></div>
                 </div>
-                <div class="form-group">
-                    <label for="citySelect">Residential Address (City)</label>
-                    <select id="citySelect">
-                        <option value="">Select city</option>
-                    </select>
+                <div class="form-group full-width">
+                    <label for="addressInput">Residential Address</label>
+                    <input type="text" id="addressInput" placeholder="Enter your residential address" autocomplete="street-address" />
                 </div>
             </div>
             <button class="btn" id="btnServiceDetails" disabled>Continue</button>
@@ -626,7 +649,6 @@
             ];
             const genders = ['Female', 'Male'];
             const ageRanges = ['18-35', '36-45', 'Over 45'];
-            const cityOptions = ['Maseru', 'Berea', 'Leribe', 'Botha Bothe', 'Mokhotlong', 'Thaba Tseka', 'Mafeteng', 'Mohale\u2019s Hoek', 'Qacha\u2019s Nek', 'Quthing'];
             const policyOptions = ['Retail Funeral Policy', 'Life Cover', 'Education Lagacy Plan'];
             const contactChoices = [
                 { value: 'yes', label: 'Yes' },
@@ -767,6 +789,25 @@
                 });
             }
 
+            function renderChoiceCards(hostId, options, onSelect) {
+                const host = byId(hostId);
+                if (!host) return;
+                host.innerHTML = '';
+                options.forEach(option => {
+                    const card = document.createElement('button');
+                    card.type = 'button';
+                    card.className = 'card-item choice-item';
+                    card.dataset.value = option;
+                    card.textContent = option;
+                    card.addEventListener('click', () => {
+                        host.querySelectorAll('.card-item').forEach(el => el.classList.remove('selected'));
+                        card.classList.add('selected');
+                        onSelect(option);
+                    });
+                    host.appendChild(card);
+                });
+            }
+
             function renderRecommendOptions() {
                 const host = byId('optsRecommend');
                 host.innerHTML = '';
@@ -886,12 +927,12 @@
                 });
                 const staffGrid = byId('staffGrid');
                 if (staffGrid) staffGrid.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
-                const genderSelect = byId('genderSelect');
-                if (genderSelect) genderSelect.value = '';
-                const ageRangeSelect = byId('ageRangeSelect');
-                if (ageRangeSelect) ageRangeSelect.value = '';
-                const citySelect = byId('citySelect');
-                if (citySelect) citySelect.value = '';
+                const genderOptions = byId('genderOptions');
+                if (genderOptions) genderOptions.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
+                const ageRangeOptions = byId('ageRangeOptions');
+                if (ageRangeOptions) ageRangeOptions.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
+                const addressInput = byId('addressInput');
+                if (addressInput) addressInput.value = '';
                 const serviceHost = byId('serviceOptions');
                 if (serviceHost) serviceHost.querySelectorAll('.card-item.selected').forEach(el => el.classList.remove('selected'));
                 const policyHost = byId('policyOptions');
@@ -981,45 +1022,19 @@
                 if (!btnServiceDetails) return;
                 btnServiceDetails.disabled = !(state.gender && state.ageRange && state.city);
             }
-            const genderSelect = byId('genderSelect');
-            if (genderSelect) {
-                genderSelect.innerHTML = '<option value="">Select gender</option>';
-                genders.forEach(g => {
-                    const opt = document.createElement('option');
-                    opt.value = g;
-                    opt.textContent = g;
-                    genderSelect.appendChild(opt);
-                });
-                genderSelect.addEventListener('change', () => {
-                    state.gender = genderSelect.value || null;
-                    updateServiceDetailsState();
-                });
-            }
-            const ageRangeSelect = byId('ageRangeSelect');
-            if (ageRangeSelect) {
-                ageRangeSelect.innerHTML = '<option value="">Select age range</option>';
-                ageRanges.forEach(range => {
-                    const opt = document.createElement('option');
-                    opt.value = range;
-                    opt.textContent = range;
-                    ageRangeSelect.appendChild(opt);
-                });
-                ageRangeSelect.addEventListener('change', () => {
-                    state.ageRange = ageRangeSelect.value || null;
-                    updateServiceDetailsState();
-                });
-            }
-            const citySelect = byId('citySelect');
-            if (citySelect) {
-                citySelect.innerHTML = '<option value="">Select city</option>';
-                cityOptions.forEach(city => {
-                    const opt = document.createElement('option');
-                    opt.value = city;
-                    opt.textContent = city;
-                    citySelect.appendChild(opt);
-                });
-                citySelect.addEventListener('change', () => {
-                    state.city = citySelect.value || null;
+            renderChoiceCards('genderOptions', genders, value => {
+                state.gender = value || null;
+                updateServiceDetailsState();
+            });
+            renderChoiceCards('ageRangeOptions', ageRanges, value => {
+                state.ageRange = value || null;
+                updateServiceDetailsState();
+            });
+            const addressInput = byId('addressInput');
+            if (addressInput) {
+                addressInput.addEventListener('input', () => {
+                    const value = addressInput.value.trim();
+                    state.city = value ? value : null;
                     updateServiceDetailsState();
                 });
             }
