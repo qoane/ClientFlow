@@ -96,7 +96,8 @@
     .page.compact .option-list,
     .page.compact .rating-options,
     .page.compact .recommend-options,
-    .page.compact .checkbox-grid {
+    .page.compact .checkbox-grid,
+    .page.compact .card-grid {
       margin-top: 24px;
       gap: 16px;
     }
@@ -294,7 +295,8 @@
     .staff-grid,
     .option-list,
     .rating-options,
-    .recommend-options {
+    .recommend-options,
+    .card-grid {
       display: grid;
       width: 100%;
       margin-top: 36px;
@@ -305,10 +307,12 @@
     .option-list.contact { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
     .rating-options { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
     .recommend-options { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+    .card-grid { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
     .staff-card,
     .option-item,
     .rating-option,
-    .recommend-option {
+    .recommend-option,
+    .card-item {
       background: var(--card-bg);
       border: 1px solid var(--panel-border);
       border-radius: 22px;
@@ -322,7 +326,8 @@
     .staff-card:hover,
     .option-item:hover,
     .rating-option:hover,
-    .recommend-option:hover {
+    .recommend-option:hover,
+    .card-item:hover {
       transform: translateY(-4px);
       border-color: rgba(96, 215, 255, 0.7);
       box-shadow: 0 26px 55px rgba(2, 6, 22, 0.55);
@@ -330,11 +335,27 @@
     .staff-card.selected,
     .option-item.selected,
     .rating-option.selected,
-    .recommend-option.selected {
+    .recommend-option.selected,
+    .card-item.selected {
       background: var(--card-selected);
       border-color: var(--accent);
       box-shadow: 0 28px 60px rgba(63, 183, 255, 0.45);
       transform: translateY(-4px);
+    }
+    .card-item {
+      font-weight: 600;
+      font-size: 1.05rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 70px;
+    }
+    .card-item .card-subtitle {
+      display: block;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      font-weight: 500;
+      margin-top: 6px;
     }
     .staff-card img {
       width: 84px;
@@ -504,14 +525,12 @@
         <div class="page compact" id="page-service">
             <h1>Which Liberty service were you assisted with today?</h1>
             <div class="form-group">
-                <label for="serviceSelect">Service</label>
-                <select id="serviceSelect">
-                    <option value="">Select service</option>
-                </select>
+                <label>Service</label>
+                <div class="card-grid" id="serviceOptions" role="list"></div>
             </div>
             <div class="form-group">
                 <label>Policies assisted with</label>
-                <div class="checkbox-grid" id="policyOptions"></div>
+                <div class="card-grid" id="policyOptions" role="list"></div>
                 <p class="helper-text">Select all that apply.</p>
             </div>
             <button class="btn" id="btnProceedService" disabled>Continue</button>
@@ -583,11 +602,11 @@
                 { value: 5, emoji: '😁', label: 'Excellent' }
             ];
             const timeOptions = [
-                { value: 1, label: 'Not at all' },
-                { value: 2, label: 'No' },
-                { value: 3, label: 'Neutral' },
-                { value: 4, label: 'Yes, mostly' },
-                { value: 5, label: 'Absolutely' }
+                { value: 1, emoji: '😤', label: 'Not at all' },
+                { value: 2, emoji: '😕', label: 'No' },
+                { value: 3, emoji: '😐', label: 'Neutral' },
+                { value: 4, emoji: '🙂', label: 'Yes, mostly' },
+                { value: 5, emoji: '😄', label: 'Absolutely' }
             ];
             const recommendOptions = [
                 { value: 1, emoji: '😡', label: 'Not at all likely' },
@@ -711,13 +730,22 @@
             }
 
             function renderServiceOptions() {
-                const host = byId('serviceSelect');
-                host.innerHTML = '<option value="">Select service</option>';
+                const host = byId('serviceOptions');
+                host.innerHTML = '';
                 services.forEach(service => {
-                    const opt = document.createElement('option');
-                    opt.value = service;
-                    opt.textContent = service;
-                    host.appendChild(opt);
+                    const card = document.createElement('button');
+                    card.type = 'button';
+                    card.className = 'card-item';
+                    card.dataset.value = service;
+                    card.textContent = service;
+                    card.addEventListener('click', () => {
+                        host.querySelectorAll('.card-item').forEach(el => el.classList.remove('selected'));
+                        card.classList.add('selected');
+                        state.service = service;
+                        const btnProceedService = byId('btnProceedService');
+                        if (btnProceedService) btnProceedService.disabled = !state.service;
+                    });
+                    host.appendChild(card);
                 });
             }
 
@@ -725,20 +753,17 @@
                 const host = byId('policyOptions');
                 host.innerHTML = '';
                 policyOptions.forEach(policy => {
-                    const label = document.createElement('label');
-                    label.className = 'checkbox-item';
-                    const input = document.createElement('input');
-                    input.type = 'checkbox';
-                    input.value = policy;
-                    input.addEventListener('change', () => {
-                        const selections = Array.from(host.querySelectorAll('input:checked')).map(el => el.value);
+                    const card = document.createElement('button');
+                    card.type = 'button';
+                    card.className = 'card-item';
+                    card.dataset.value = policy;
+                    card.textContent = policy;
+                    card.addEventListener('click', () => {
+                        card.classList.toggle('selected');
+                        const selections = Array.from(host.querySelectorAll('.card-item.selected')).map(el => el.dataset.value);
                         state.policies = selections;
                     });
-                    const span = document.createElement('span');
-                    span.textContent = policy;
-                    label.appendChild(input);
-                    label.appendChild(span);
-                    host.appendChild(label);
+                    host.appendChild(card);
                 });
             }
 
@@ -867,10 +892,10 @@
                 if (ageRangeSelect) ageRangeSelect.value = '';
                 const citySelect = byId('citySelect');
                 if (citySelect) citySelect.value = '';
-                const serviceSelect = byId('serviceSelect');
-                if (serviceSelect) serviceSelect.value = '';
+                const serviceHost = byId('serviceOptions');
+                if (serviceHost) serviceHost.querySelectorAll('.card-item.selected').forEach(el => el.classList.remove('selected'));
                 const policyHost = byId('policyOptions');
-                if (policyHost) policyHost.querySelectorAll('input[type="checkbox"]').forEach(el => { el.checked = false; });
+                if (policyHost) policyHost.querySelectorAll('.card-item.selected').forEach(el => el.classList.remove('selected'));
                 const btnServiceDetails = byId('btnServiceDetails');
                 if (btnServiceDetails) btnServiceDetails.disabled = true;
                 const btnStaffContinue = byId('btnStaffContinue');
@@ -1001,13 +1026,8 @@
             if (btnServiceDetails) {
                 btnServiceDetails.addEventListener('click', () => showPage(4));
             }
-            const serviceSelect = byId('serviceSelect');
             const btnProceedService = byId('btnProceedService');
-            if (serviceSelect && btnProceedService) {
-                serviceSelect.addEventListener('change', () => {
-                    state.service = serviceSelect.value || null;
-                    btnProceedService.disabled = !state.service;
-                });
+            if (btnProceedService) {
                 btnProceedService.addEventListener('click', () => showPage(5));
             }
             byId('backFromStaff').addEventListener('click', () => showPage(1));
