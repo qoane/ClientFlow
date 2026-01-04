@@ -1283,7 +1283,6 @@
             }
 
             function renderDistrictMap() {
-                const mapHost = byId('districtMap');
                 const districtList = byId('districtList');
                 if (districtList) {
                     districtList.innerHTML = '';
@@ -1297,9 +1296,7 @@
                         districtList.appendChild(button);
                     });
                 }
-                buildDistrictMap(mapHost);
                 buildDistrictMap(byId('districtMapFull'));
-                attachMapHandlers(mapHost, false);
                 attachMapHandlers(byId('districtMapFull'), true);
                 selectDistrict(state.city);
             }
