@@ -229,7 +229,6 @@
     .back-btn:active { transform: translateY(0); }
     #phoneInput,
     #commentInput,
-    #addressInput,
     select {
       width: 100%;
       padding: 18px 22px;
@@ -285,24 +284,98 @@
       width: 1px;
       background: rgba(96, 215, 255, 0.2);
     }
-    #page-demographics .form-group {
+    #page-gender .form-group,
+    #page-age .form-group,
+    #page-address .form-group {
       margin-top: 16px;
     }
-    #page-demographics .form-group label {
+    #page-gender .form-group label,
+    #page-age .form-group label,
+    #page-address .form-group label {
       margin-bottom: 8px;
     }
-    #page-demographics .card-grid {
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    #page-gender .card-grid,
+    #page-age .card-grid {
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
       margin-top: 12px;
       gap: 12px;
     }
-    #page-demographics .card-item {
-      min-height: 56px;
+    #page-gender .card-item,
+    #page-age .card-item {
+      min-height: 60px;
       padding: 18px 14px;
-      font-size: 1rem;
+      font-size: 1.05rem;
     }
-    #page-demographics #addressInput {
-      padding: 14px 18px;
+    .district-map {
+      width: 100%;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 280px);
+      gap: 24px;
+      align-items: center;
+      margin-top: 12px;
+    }
+    .district-map svg {
+      width: 100%;
+      height: auto;
+      max-height: 380px;
+      border-radius: 24px;
+      background: rgba(3, 14, 42, 0.7);
+      border: 1px solid rgba(96, 215, 255, 0.2);
+      box-shadow: inset 0 0 24px rgba(2, 10, 30, 0.6);
+    }
+    .district-shape polygon {
+      stroke: rgba(255, 255, 255, 0.75);
+      stroke-width: 1.5;
+      cursor: pointer;
+      transition: transform 0.2s ease, filter 0.2s ease;
+    }
+    .district-shape:hover polygon {
+      filter: brightness(1.1);
+      transform: translateY(-2px);
+    }
+    .district-shape.selected polygon {
+      stroke-width: 2.5;
+      filter: brightness(1.2);
+    }
+    .district-label {
+      font-size: 12px;
+      fill: #ffffff;
+      font-weight: 600;
+      pointer-events: none;
+      text-shadow: 0 1px 6px rgba(0, 0, 0, 0.45);
+    }
+    .district-legend {
+      display: grid;
+      gap: 10px;
+    }
+    .district-btn {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      border-radius: 16px;
+      border: 1px solid var(--panel-border);
+      background: var(--card-bg);
+      color: var(--text-light);
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+    .district-btn span {
+      width: 14px;
+      height: 14px;
+      border-radius: 6px;
+      display: inline-block;
+    }
+    .district-btn.selected {
+      border-color: rgba(96, 215, 255, 0.8);
+      transform: translateY(-1px);
+      box-shadow: 0 10px 24px rgba(63, 183, 255, 0.25);
+    }
+    .district-selected {
+      margin-top: 18px;
+      font-weight: 600;
+      color: var(--accent-strong);
     }
     .helper-text {
       margin-top: 8px;
@@ -514,24 +587,38 @@
       #page-idle { padding: 32px 20px; }
     }
     @media (max-height: 820px) {
-      #page-demographics {
+      #page-gender,
+      #page-age,
+      #page-address {
         padding: 36px 36px;
       }
-      #page-demographics h1 {
+      #page-gender h1,
+      #page-age h1,
+      #page-address h1 {
         font-size: 2rem;
       }
-      #page-demographics .form-group {
+      #page-gender .form-group,
+      #page-age .form-group,
+      #page-address .form-group {
         margin-top: 12px;
       }
-      #page-demographics .card-grid {
+      #page-gender .card-grid,
+      #page-age .card-grid {
         margin-top: 10px;
         gap: 10px;
       }
-      #page-demographics .btn {
+      #page-gender .btn,
+      #page-age .btn,
+      #page-address .btn {
         margin-top: 8px;
       }
-      #page-demographics .back-btn {
+      #page-gender .back-btn,
+      #page-age .back-btn,
+      #page-address .back-btn {
         margin-top: 16px;
+      }
+      .district-map {
+        grid-template-columns: 1fr;
       }
     }
     @media (max-height: 640px) {
@@ -581,25 +668,78 @@
             <button class="btn" id="btnStaffContinue" disabled>Continue</button>
             <button class="back-btn" id="backFromStaff">Back</button>
         </div>
-        <!-- Demographics -->
-        <div class="page compact" id="page-demographics">
+        <!-- Gender -->
+        <div class="page compact" id="page-gender">
             <h1>Tell us about yourself</h1>
-            <div class="form-grid two-col demographics-grid">
-                <div class="form-group">
-                    <label>Gender</label>
-                    <div class="card-grid choice-grid" id="genderOptions" role="list"></div>
-                </div>
-                <div class="form-group">
-                    <label>Age range</label>
-                    <div class="card-grid choice-grid" id="ageRangeOptions" role="list"></div>
-                </div>
-                <div class="form-group full-width">
-                    <label for="addressInput">Residential Address</label>
-                    <input type="text" id="addressInput" placeholder="Enter your residential address" autocomplete="street-address" />
-                </div>
+            <div class="form-group">
+                <label>Gender</label>
+                <div class="card-grid choice-grid" id="genderOptions" role="list"></div>
             </div>
-            <button class="btn" id="btnServiceDetails" disabled>Continue</button>
-            <button class="back-btn" id="backFromDemographics">Back</button>
+            <button class="btn" id="btnGenderContinue" disabled>Continue</button>
+            <button class="back-btn" id="backFromGender">Back</button>
+        </div>
+        <!-- Age range -->
+        <div class="page compact" id="page-age">
+            <h1>Select your age range</h1>
+            <div class="form-group">
+                <label>Age range</label>
+                <div class="card-grid choice-grid" id="ageRangeOptions" role="list"></div>
+            </div>
+            <button class="btn" id="btnAgeContinue" disabled>Continue</button>
+            <button class="back-btn" id="backFromAge">Back</button>
+        </div>
+        <!-- Residential Address -->
+        <div class="page compact" id="page-address">
+            <h1>Residential Address (City)</h1>
+            <p class="helper-text">Tap your district on the map or choose from the list.</p>
+            <div class="district-map" id="districtMap">
+                <svg viewBox="0 0 420 540" role="img" aria-label="Map of Lesotho districts">
+                    <g class="district-shape" data-district="Butha-Buthe">
+                        <polygon fill="#56b3ff" points="40,20 160,20 170,90 120,130 50,100" />
+                        <text class="district-label" x="80" y="80">Butha-Buthe</text>
+                    </g>
+                    <g class="district-shape" data-district="Mokhotlong">
+                        <polygon fill="#7ad98c" points="220,20 360,40 380,120 300,150 220,110" />
+                        <text class="district-label" x="255" y="85">Mokhotlong</text>
+                    </g>
+                    <g class="district-shape" data-district="Leribe">
+                        <polygon fill="#ffd86b" points="40,120 140,140 170,210 120,250 50,220" />
+                        <text class="district-label" x="75" y="190">Leribe</text>
+                    </g>
+                    <g class="district-shape" data-district="Berea">
+                        <polygon fill="#f08ad5" points="160,130 240,140 250,220 170,230 150,200" />
+                        <text class="district-label" x="172" y="190">Berea</text>
+                    </g>
+                    <g class="district-shape" data-district="Thaba-Tseka">
+                        <polygon fill="#ffa874" points="250,150 360,170 370,260 300,300 240,240" />
+                        <text class="district-label" x="260" y="225">Thaba-Tseka</text>
+                    </g>
+                    <g class="district-shape" data-district="Maseru">
+                        <polygon fill="#8fd1ff" points="80,240 150,250 170,320 120,360 60,320" />
+                        <text class="district-label" x="85" y="310">Maseru</text>
+                    </g>
+                    <g class="district-shape" data-district="Mafeteng">
+                        <polygon fill="#ffb8c6" points="40,330 120,370 140,430 70,460 30,400" />
+                        <text class="district-label" x="50" y="405">Mafeteng</text>
+                    </g>
+                    <g class="district-shape" data-district="Mohale's Hoek">
+                        <polygon fill="#b8ffa8" points="150,330 230,340 240,410 180,460 130,420" />
+                        <text class="district-label" x="155" y="405">Mohale's Hoek</text>
+                    </g>
+                    <g class="district-shape" data-district="Qacha's Nek">
+                        <polygon fill="#8f9bff" points="240,330 340,320 380,380 340,460 240,440 230,380" />
+                        <text class="district-label" x="262" y="395">Qacha's Nek</text>
+                    </g>
+                    <g class="district-shape" data-district="Quthing">
+                        <polygon fill="#f8c47c" points="70,460 150,470 140,520 60,520 40,490" />
+                        <text class="district-label" x="75" y="505">Quthing</text>
+                    </g>
+                </svg>
+                <div class="district-legend" id="districtList"></div>
+            </div>
+            <div class="district-selected" id="districtSelected">No district selected</div>
+            <button class="btn" id="btnAddressContinue" disabled>Continue</button>
+            <button class="back-btn" id="backFromAddress">Back</button>
         </div>
         <!-- Service -->
         <div class="page compact" id="page-service">
@@ -667,6 +807,8 @@
             <div class="dot" data-step="5"></div>
             <div class="dot" data-step="6"></div>
             <div class="dot" data-step="7"></div>
+            <div class="dot" data-step="8"></div>
+            <div class="dot" data-step="9"></div>
         </div>
     </div>
 
@@ -707,12 +849,24 @@
             const genders = ['Female', 'Male'];
             const ageRanges = ['18-35', '36-45', 'Over 45'];
             const policyOptions = ['Retail Funeral Policy', 'Life Cover', 'Education Lagacy Plan'];
+            const districts = [
+                { name: 'Butha-Buthe', color: '#56b3ff' },
+                { name: 'Mokhotlong', color: '#7ad98c' },
+                { name: 'Leribe', color: '#ffd86b' },
+                { name: 'Berea', color: '#f08ad5' },
+                { name: 'Thaba-Tseka', color: '#ffa874' },
+                { name: 'Maseru', color: '#8fd1ff' },
+                { name: 'Mafeteng', color: '#ffb8c6' },
+                { name: "Mohale's Hoek", color: '#b8ffa8' },
+                { name: "Qacha's Nek", color: '#8f9bff' },
+                { name: 'Quthing', color: '#f8c47c' }
+            ];
             const contactChoices = [
                 { value: 'yes', label: 'Yes' },
                 { value: 'no', label: 'No' }
             ];
 
-            const pages = ['page-idle', 'page-phone', 'page-staff', 'page-demographics', 'page-service', 'page-satisfaction', 'page-time', 'page-recommend', 'page-contact', 'page-comment', 'page-final'];
+            const pages = ['page-idle', 'page-phone', 'page-staff', 'page-gender', 'page-age', 'page-address', 'page-service', 'page-satisfaction', 'page-time', 'page-recommend', 'page-contact', 'page-comment', 'page-final'];
             const state = {
                 phone: '',
                 staff: null,
@@ -743,7 +897,7 @@
                     p.style.removeProperty('display');
                 });
                 const prog = byId('progress');
-                if (idx >= 2 && idx <= 9) {
+                if (idx >= 2 && idx <= 11) {
                     prog.style.display = 'flex';
                     prog.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === (idx - 2)));
                 } else {
@@ -879,7 +1033,7 @@
                         state.recommend = opt.value;
                         host.querySelectorAll('.recommend-option').forEach(o => o.classList.remove('selected'));
                         el.classList.add('selected');
-                        setTimeout(() => showPage(8), 150);
+                        setTimeout(() => showPage(10), 150);
                     });
                     host.appendChild(el);
                 });
@@ -916,10 +1070,58 @@
                         state.contactPreference = choice.value;
                         host.querySelectorAll('.option-item').forEach(o => o.classList.remove('selected'));
                         el.classList.add('selected');
-                        setTimeout(() => showPage(9), 150);
+                        setTimeout(() => showPage(11), 150);
                     });
                     host.appendChild(el);
                 });
+            }
+
+            function selectDistrict(name) {
+                state.city = name;
+                const districtSelected = byId('districtSelected');
+                if (districtSelected) {
+                    districtSelected.textContent = name ? `Selected district: ${name}` : 'No district selected';
+                }
+                const mapHost = byId('districtMap');
+                if (mapHost) {
+                    mapHost.querySelectorAll('.district-shape').forEach(el => {
+                        el.classList.toggle('selected', el.dataset.district === name);
+                    });
+                }
+                const districtList = byId('districtList');
+                if (districtList) {
+                    districtList.querySelectorAll('.district-btn').forEach(el => {
+                        el.classList.toggle('selected', el.dataset.district === name);
+                    });
+                }
+                const btnAddressContinue = byId('btnAddressContinue');
+                if (btnAddressContinue) btnAddressContinue.disabled = !state.city;
+            }
+
+            function renderDistrictMap() {
+                const mapHost = byId('districtMap');
+                if (mapHost) {
+                    mapHost.querySelectorAll('.district-shape').forEach(el => {
+                        el.addEventListener('click', () => {
+                            const district = el.dataset.district;
+                            if (district) selectDistrict(district);
+                        });
+                    });
+                }
+                const districtList = byId('districtList');
+                if (districtList) {
+                    districtList.innerHTML = '';
+                    districts.forEach(district => {
+                        const button = document.createElement('button');
+                        button.type = 'button';
+                        button.className = 'district-btn';
+                        button.dataset.district = district.name;
+                        button.innerHTML = `<span style="background:${district.color}"></span>${district.name}`;
+                        button.addEventListener('click', () => selectDistrict(district.name));
+                        districtList.appendChild(button);
+                    });
+                }
+                selectDistrict(state.city);
             }
 
             function persistResponse() {
@@ -988,14 +1190,22 @@
                 if (genderOptions) genderOptions.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
                 const ageRangeOptions = byId('ageRangeOptions');
                 if (ageRangeOptions) ageRangeOptions.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
-                const addressInput = byId('addressInput');
-                if (addressInput) addressInput.value = '';
+                const districtList = byId('districtList');
+                if (districtList) districtList.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
+                const districtMap = byId('districtMap');
+                if (districtMap) districtMap.querySelectorAll('.district-shape').forEach(el => el.classList.remove('selected'));
+                const districtSelected = byId('districtSelected');
+                if (districtSelected) districtSelected.textContent = 'No district selected';
                 const serviceHost = byId('serviceOptions');
                 if (serviceHost) serviceHost.querySelectorAll('.card-item.selected').forEach(el => el.classList.remove('selected'));
                 const policyHost = byId('policyOptions');
                 if (policyHost) policyHost.querySelectorAll('.card-item.selected').forEach(el => el.classList.remove('selected'));
-                const btnServiceDetails = byId('btnServiceDetails');
-                if (btnServiceDetails) btnServiceDetails.disabled = true;
+                const btnGenderContinue = byId('btnGenderContinue');
+                if (btnGenderContinue) btnGenderContinue.disabled = true;
+                const btnAgeContinue = byId('btnAgeContinue');
+                if (btnAgeContinue) btnAgeContinue.disabled = true;
+                const btnAddressContinue = byId('btnAddressContinue');
+                if (btnAddressContinue) btnAddressContinue.disabled = true;
                 const btnStaffContinue = byId('btnStaffContinue');
                 if (btnStaffContinue) btnStaffContinue.disabled = true;
                 const btnProceedService = byId('btnProceedService');
@@ -1009,13 +1219,14 @@
                 renderStaff(roster);
                 renderServiceOptions();
                 renderPolicyOptions();
+                renderDistrictMap();
                 renderRatingOptions('optsSatisfaction', satisfactionOptions, value => {
                     state.satisfactionRating = value;
-                    setTimeout(() => showPage(6), 150);
+                    setTimeout(() => showPage(8), 150);
                 });
                 renderRatingOptions('optsTime', timeOptions, value => {
                     state.timeRating = value;
-                    setTimeout(() => showPage(7), 150);
+                    setTimeout(() => showPage(9), 150);
                 });
                 renderRecommendOptions();
                 renderContactOptions();
@@ -1074,46 +1285,52 @@
             if (btnStaffContinue) {
                 btnStaffContinue.addEventListener('click', () => showPage(3));
             }
-            const btnServiceDetails = byId('btnServiceDetails');
-            function updateServiceDetailsState() {
-                if (!btnServiceDetails) return;
-                btnServiceDetails.disabled = !(state.gender && state.ageRange && state.city);
+            const btnGenderContinue = byId('btnGenderContinue');
+            function updateGenderSelectionState() {
+                if (!btnGenderContinue) return;
+                btnGenderContinue.disabled = !state.gender;
             }
             renderChoiceCards('genderOptions', genders, value => {
                 state.gender = value || null;
-                updateServiceDetailsState();
+                updateGenderSelectionState();
             });
+            if (btnGenderContinue) {
+                btnGenderContinue.addEventListener('click', () => showPage(4));
+            }
+            const btnAgeContinue = byId('btnAgeContinue');
+            function updateAgeSelectionState() {
+                if (!btnAgeContinue) return;
+                btnAgeContinue.disabled = !state.ageRange;
+            }
             renderChoiceCards('ageRangeOptions', ageRanges, value => {
                 state.ageRange = value || null;
-                updateServiceDetailsState();
+                updateAgeSelectionState();
             });
-            const addressInput = byId('addressInput');
-            if (addressInput) {
-                addressInput.addEventListener('input', () => {
-                    const value = addressInput.value.trim();
-                    state.city = value ? value : null;
-                    updateServiceDetailsState();
-                });
+            if (btnAgeContinue) {
+                btnAgeContinue.addEventListener('click', () => showPage(5));
             }
-            if (btnServiceDetails) {
-                btnServiceDetails.addEventListener('click', () => showPage(4));
+            const btnAddressContinue = byId('btnAddressContinue');
+            if (btnAddressContinue) {
+                btnAddressContinue.addEventListener('click', () => showPage(6));
             }
             const btnProceedService = byId('btnProceedService');
             if (btnProceedService) {
-                btnProceedService.addEventListener('click', () => showPage(5));
+                btnProceedService.addEventListener('click', () => showPage(7));
             }
             byId('backFromStaff').addEventListener('click', () => showPage(1));
-            byId('backFromDemographics').addEventListener('click', () => showPage(2));
-            byId('backFromService').addEventListener('click', () => showPage(3));
-            byId('backFromSatisfaction').addEventListener('click', () => showPage(4));
-            byId('backFromTime').addEventListener('click', () => showPage(5));
-            byId('backFromRecommend').addEventListener('click', () => showPage(6));
-            byId('backFromContact').addEventListener('click', () => showPage(7));
-            byId('backFromComment').addEventListener('click', () => showPage(8));
+            byId('backFromGender').addEventListener('click', () => showPage(2));
+            byId('backFromAge').addEventListener('click', () => showPage(3));
+            byId('backFromAddress').addEventListener('click', () => showPage(4));
+            byId('backFromService').addEventListener('click', () => showPage(5));
+            byId('backFromSatisfaction').addEventListener('click', () => showPage(6));
+            byId('backFromTime').addEventListener('click', () => showPage(7));
+            byId('backFromRecommend').addEventListener('click', () => showPage(8));
+            byId('backFromContact').addEventListener('click', () => showPage(9));
+            byId('backFromComment').addEventListener('click', () => showPage(10));
             byId('btnSubmitComment').addEventListener('click', () => {
                 const commentInput = byId('commentInput');
                 state.comment = commentInput ? commentInput.value.trim() : '';
-                showPage(10);
+                showPage(12);
             });
 
             const observer = new MutationObserver(() => {
