@@ -313,6 +313,27 @@
       justify-content: center;
       margin-top: 12px;
     }
+    .district-helper {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .map-toggle-btn {
+      border-radius: 999px;
+      padding: 8px 16px;
+      border: 1px solid var(--panel-border);
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: border-color 0.2s ease, color 0.2s ease;
+    }
+    .map-toggle-btn:hover {
+      border-color: rgba(96, 215, 255, 0.65);
+      color: var(--text-light);
+    }
     .district-shape {
       stroke: rgba(255, 255, 255, 0.75);
       stroke-width: 1.5;
@@ -375,6 +396,56 @@
       margin-top: 18px;
       font-weight: 600;
       color: var(--accent-strong);
+    }
+    .district-map-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(2, 10, 30, 0.85);
+      display: none;
+      align-items: stretch;
+      justify-content: stretch;
+      z-index: 20;
+    }
+    .district-map-modal.active {
+      display: flex;
+    }
+    .district-map-dialog {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(160deg, rgba(7, 21, 63, 0.98) 0%, rgba(6, 20, 58, 0.98) 100%);
+      display: flex;
+      flex-direction: column;
+      padding: 32px;
+      gap: 20px;
+    }
+    .district-map-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .district-map-header h2 {
+      margin: 0;
+      font-size: 1.6rem;
+    }
+    .map-close-btn {
+      border-radius: 999px;
+      padding: 8px 18px;
+      border: 1px solid var(--panel-border);
+      background: transparent;
+      color: var(--text-light);
+      cursor: pointer;
+    }
+    .district-map-full {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+    }
+    .district-map-full svg {
+      width: min(720px, 95vw);
+      height: min(520px, 70vh);
     }
     .helper-text {
       margin-top: 8px;
@@ -694,7 +765,10 @@
         <!-- Residential Address -->
         <div class="page compact" id="page-address">
             <h1>Residential Address (City)</h1>
-            <p class="helper-text">Choose your district from the list below.</p>
+            <div class="district-helper">
+                <p class="helper-text">Choose your district from the list below, or open the map.</p>
+                <button class="map-toggle-btn" id="openDistrictMap" type="button">Choose from map</button>
+            </div>
             <div class="district-map" id="districtMap">
                 <div class="district-legend" id="districtList"></div>
             </div>
@@ -772,6 +846,16 @@
             <div class="dot" data-step="9"></div>
         </div>
     </div>
+    <div class="district-map-modal" id="districtMapModal" aria-hidden="true">
+        <div class="district-map-dialog" role="dialog" aria-modal="true" aria-labelledby="districtMapTitle">
+            <div class="district-map-header">
+                <h2 id="districtMapTitle">Select your district</h2>
+                <button class="map-close-btn" id="closeDistrictMap" type="button">Close</button>
+            </div>
+            <div class="district-map-full" id="districtMapFull"></div>
+            <p class="helper-text">Tap a district to select it.</p>
+        </div>
+    </div>
 
         <script src="app-base.js"></script>
 <script>
@@ -826,6 +910,18 @@
                 { value: 'yes', label: 'Yes' },
                 { value: 'no', label: 'No' }
             ];
+            const districtMapLayout = [
+                { name: 'Butha-Buthe', x: 120, y: 80 },
+                { name: 'Leribe', x: 210, y: 120 },
+                { name: 'Mokhotlong', x: 360, y: 90 },
+                { name: 'Berea', x: 260, y: 180 },
+                { name: 'Thaba-Tseka', x: 380, y: 200 },
+                { name: 'Maseru', x: 240, y: 240 },
+                { name: 'Mafeteng', x: 210, y: 300 },
+                { name: "Mohale's Hoek", x: 170, y: 350 },
+                { name: 'Quthing', x: 270, y: 360 },
+                { name: "Qacha's Nek", x: 380, y: 330 }
+            ];
 
             const pages = ['page-idle', 'page-phone', 'page-staff', 'page-gender', 'page-age', 'page-address', 'page-service', 'page-satisfaction', 'page-time', 'page-recommend', 'page-contact', 'page-comment', 'page-final'];
             const state = {
@@ -849,6 +945,70 @@
             };
             let currentIndex = 0;
             const byId = id => document.getElementById(id);
+            const districtColorLookup = new Map(districts.map(district => [district.name, district.color]));
+
+            function setDistrictMapOpen(isOpen) {
+                const modal = byId('districtMapModal');
+                if (!modal) return;
+                modal.classList.toggle('active', isOpen);
+                modal.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
+            }
+
+            function buildDistrictMap(container) {
+                if (!container) return;
+                container.innerHTML = '';
+                const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                svg.setAttribute('viewBox', '0 0 520 420');
+                svg.setAttribute('role', 'img');
+                svg.setAttribute('aria-label', 'District map');
+                districtMapLayout.forEach(point => {
+                    const color = districtColorLookup.get(point.name) || '#8fd1ff';
+                    const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    circle.setAttribute('cx', point.x);
+                    circle.setAttribute('cy', point.y);
+                    circle.setAttribute('r', '34');
+                    circle.setAttribute('fill', color);
+                    circle.classList.add('district-shape');
+                    circle.dataset.district = point.name;
+                    group.appendChild(circle);
+
+                    const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    label.setAttribute('class', 'district-label');
+                    label.setAttribute('text-anchor', 'middle');
+                    const parts = point.name.includes(' ') ? point.name.split(' ') : point.name.split('-');
+                    if (parts.length > 1) {
+                        const first = document.createElementNS('http://www.w3.org/2000/svg', 'tspan');
+                        first.setAttribute('x', point.x);
+                        first.setAttribute('y', point.y - 4);
+                        first.textContent = parts[0];
+                        label.appendChild(first);
+                        const second = document.createElementNS('http://www.w3.org/2000/svg', 'tspan');
+                        second.setAttribute('x', point.x);
+                        second.setAttribute('y', point.y + 12);
+                        second.textContent = parts.slice(1).join(' ');
+                        label.appendChild(second);
+                    } else {
+                        label.setAttribute('x', point.x);
+                        label.setAttribute('y', point.y + 4);
+                        label.textContent = point.name;
+                    }
+                    group.appendChild(label);
+                    svg.appendChild(group);
+                });
+                container.appendChild(svg);
+            }
+
+            function attachMapHandlers(mapHost, closeOnSelect) {
+                if (!mapHost) return;
+                mapHost.querySelectorAll('.district-shape').forEach(el => {
+                    el.addEventListener('click', () => {
+                        const district = el.dataset.district;
+                        if (district) selectDistrict(district);
+                        if (closeOnSelect) setDistrictMapOpen(false);
+                    });
+                });
+            }
 
             function showPage(idx) {
                 currentIndex = idx;
@@ -1043,12 +1203,14 @@
                 if (districtSelected) {
                     districtSelected.textContent = name ? `Selected district: ${name}` : 'No district selected';
                 }
-                const mapHost = byId('districtMap');
-                if (mapHost) {
-                    mapHost.querySelectorAll('.district-shape').forEach(el => {
-                        el.classList.toggle('selected', el.dataset.district === name);
-                    });
-                }
+                ['districtMap', 'districtMapFull'].forEach(mapId => {
+                    const mapHost = byId(mapId);
+                    if (mapHost) {
+                        mapHost.querySelectorAll('.district-shape').forEach(el => {
+                            el.classList.toggle('selected', el.dataset.district === name);
+                        });
+                    }
+                });
                 const districtList = byId('districtList');
                 if (districtList) {
                     districtList.querySelectorAll('.district-btn').forEach(el => {
@@ -1061,14 +1223,6 @@
 
             function renderDistrictMap() {
                 const mapHost = byId('districtMap');
-                if (mapHost) {
-                    mapHost.querySelectorAll('.district-shape').forEach(el => {
-                        el.addEventListener('click', () => {
-                            const district = el.dataset.district;
-                            if (district) selectDistrict(district);
-                        });
-                    });
-                }
                 const districtList = byId('districtList');
                 if (districtList) {
                     districtList.innerHTML = '';
@@ -1082,6 +1236,9 @@
                         districtList.appendChild(button);
                     });
                 }
+                buildDistrictMap(byId('districtMapFull'));
+                attachMapHandlers(mapHost, false);
+                attachMapHandlers(byId('districtMapFull'), true);
                 selectDistrict(state.city);
             }
 
@@ -1155,6 +1312,8 @@
                 if (districtList) districtList.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
                 const districtMap = byId('districtMap');
                 if (districtMap) districtMap.querySelectorAll('.district-shape').forEach(el => el.classList.remove('selected'));
+                const districtMapFull = byId('districtMapFull');
+                if (districtMapFull) districtMapFull.querySelectorAll('.district-shape').forEach(el => el.classList.remove('selected'));
                 const districtSelected = byId('districtSelected');
                 if (districtSelected) districtSelected.textContent = 'No district selected';
                 const serviceHost = byId('serviceOptions');
@@ -1273,6 +1432,20 @@
             const btnAddressContinue = byId('btnAddressContinue');
             if (btnAddressContinue) {
                 btnAddressContinue.addEventListener('click', () => showPage(6));
+            }
+            const openDistrictMap = byId('openDistrictMap');
+            const closeDistrictMap = byId('closeDistrictMap');
+            if (openDistrictMap) {
+                openDistrictMap.addEventListener('click', () => setDistrictMapOpen(true));
+            }
+            if (closeDistrictMap) {
+                closeDistrictMap.addEventListener('click', () => setDistrictMapOpen(false));
+            }
+            const districtMapModal = byId('districtMapModal');
+            if (districtMapModal) {
+                districtMapModal.addEventListener('click', ev => {
+                    if (ev.target === districtMapModal) setDistrictMapOpen(false);
+                });
             }
             const btnProceedService = byId('btnProceedService');
             if (btnProceedService) {
