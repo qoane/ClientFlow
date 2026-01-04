@@ -269,6 +269,41 @@
     .form-grid.two-col .form-group.full-width {
       grid-column: 1 / -1;
     }
+    .demographics-grid {
+      --demographics-gap: 32px;
+      position: relative;
+      column-gap: var(--demographics-gap);
+      row-gap: 16px;
+      padding: 4px 0;
+    }
+    .demographics-grid::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: calc(50% - (var(--demographics-gap) / 2));
+      width: 1px;
+      background: rgba(96, 215, 255, 0.2);
+    }
+    #page-demographics .form-group {
+      margin-top: 16px;
+    }
+    #page-demographics .form-group label {
+      margin-bottom: 8px;
+    }
+    #page-demographics .card-grid {
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      margin-top: 12px;
+      gap: 12px;
+    }
+    #page-demographics .card-item {
+      min-height: 56px;
+      padding: 18px 14px;
+      font-size: 1rem;
+    }
+    #page-demographics #addressInput {
+      padding: 14px 18px;
+    }
     .helper-text {
       margin-top: 8px;
       font-size: 0.95rem;
@@ -472,10 +507,32 @@
       .progress { right: 24px; bottom: 28px; }
       .logo { top: 24px; width: 140px; }
       .form-grid.two-col { grid-template-columns: 1fr; }
+      .demographics-grid::after { display: none; }
     }
     @media (max-height: 720px) {
       .page { padding: 36px 24px; max-height: calc(100vh - 96px); }
       #page-idle { padding: 32px 20px; }
+    }
+    @media (max-height: 820px) {
+      #page-demographics {
+        padding: 36px 36px;
+      }
+      #page-demographics h1 {
+        font-size: 2rem;
+      }
+      #page-demographics .form-group {
+        margin-top: 12px;
+      }
+      #page-demographics .card-grid {
+        margin-top: 10px;
+        gap: 10px;
+      }
+      #page-demographics .btn {
+        margin-top: 8px;
+      }
+      #page-demographics .back-btn {
+        margin-top: 16px;
+      }
     }
     @media (max-height: 640px) {
       .page { max-height: calc(100vh - 64px); overflow-y: auto; }
@@ -527,7 +584,7 @@
         <!-- Demographics -->
         <div class="page compact" id="page-demographics">
             <h1>Tell us about yourself</h1>
-            <div class="form-grid two-col">
+            <div class="form-grid two-col demographics-grid">
                 <div class="form-group">
                     <label>Gender</label>
                     <div class="card-grid choice-grid" id="genderOptions" role="list"></div>
