@@ -702,12 +702,27 @@
     @media (max-height: 640px) {
       .page { max-height: calc(100vh - 64px); }
       .page.compact h1 { font-size: 1.9rem; }
+      .page .btn { margin-top: 16px; }
+      .btn + .back-btn { margin-top: 16px; }
+      .back-btn { margin-top: 18px; }
       .staff-card,
       .option-item,
       .rating-option,
       .recommend-option,
       .card-item { padding: 16px 14px; }
       .card-item { min-height: 56px; }
+    }
+    @media (max-width: 720px) {
+      .page { padding: 32px 22px; }
+      .page.compact { padding: 32px 24px; }
+      h1 { font-size: 2rem; }
+      .page.compact h1 { font-size: 1.85rem; }
+      .page.compact .form-group { margin-top: 14px; }
+      .page.compact .card-grid,
+      .page.compact .rating-options,
+      .page.compact .recommend-options,
+      .page.compact .option-list,
+      .page.compact .staff-grid { margin-top: 16px; gap: 12px; }
     }
     @media (max-width: 480px) {
       h1 { font-size: 1.9rem; }
@@ -733,7 +748,7 @@
         <!-- Phone -->
         <div class="page" id="page-phone">
             <h1>Please enter your phone number</h1>
-            <input type="tel" id="phoneInput" placeholder="Phone number" autocomplete="tel" inputmode="numeric" maxlength="15" />
+            <input type="tel" id="phoneInput" placeholder="+27 82 345 6789" autocomplete="tel" inputmode="tel" maxlength="20" />
             <div class="field-error" id="phoneError" role="alert" aria-live="polite"></div>
             <button class="btn" id="btnProceed" disabled>Proceed</button>
         </div>
@@ -787,13 +802,19 @@
                 <label>Service</label>
                 <div class="card-grid" id="serviceOptions" role="list"></div>
             </div>
+            <button class="btn" id="btnProceedService" disabled>Continue</button>
+            <button class="back-btn" id="backFromService">Back</button>
+        </div>
+        <!-- Policies -->
+        <div class="page compact" id="page-policy">
+            <h1>Which policies were you assisted with today?</h1>
             <div class="form-group">
                 <label>Policies assisted with</label>
                 <div class="card-grid" id="policyOptions" role="list"></div>
                 <p class="helper-text">Select all that apply.</p>
             </div>
-            <button class="btn" id="btnProceedService" disabled>Continue</button>
-            <button class="back-btn" id="backFromService">Back</button>
+            <button class="btn" id="btnProceedPolicies">Continue</button>
+            <button class="back-btn" id="backFromPolicies">Back</button>
         </div>
         <!-- Satisfaction -->
         <div class="page compact" id="page-satisfaction">
@@ -848,6 +869,7 @@
             <div class="dot" data-step="7"></div>
             <div class="dot" data-step="8"></div>
             <div class="dot" data-step="9"></div>
+            <div class="dot" data-step="10"></div>
         </div>
     </div>
     <div class="district-map-modal" id="districtMapModal" aria-hidden="true">
@@ -979,7 +1001,7 @@
                 }
             ];
 
-            const pages = ['page-idle', 'page-phone', 'page-staff', 'page-gender', 'page-age', 'page-address', 'page-service', 'page-satisfaction', 'page-time', 'page-recommend', 'page-contact', 'page-comment', 'page-final'];
+            const pages = ['page-idle', 'page-phone', 'page-staff', 'page-gender', 'page-age', 'page-address', 'page-service', 'page-policy', 'page-satisfaction', 'page-time', 'page-recommend', 'page-contact', 'page-comment', 'page-final'];
             const state = {
                 phone: '',
                 staff: null,
@@ -1079,7 +1101,7 @@
                     p.style.removeProperty('display');
                 });
                 const prog = byId('progress');
-                if (idx >= 2 && idx <= 11) {
+                if (idx >= 2 && idx <= 12) {
                     prog.style.display = 'flex';
                     prog.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === (idx - 2)));
                 } else {
@@ -1215,7 +1237,7 @@
                         state.recommend = opt.value;
                         host.querySelectorAll('.recommend-option').forEach(o => o.classList.remove('selected'));
                         el.classList.add('selected');
-                        setTimeout(() => showPage(10), 150);
+                        setTimeout(() => showPage(11), 150);
                     });
                     host.appendChild(el);
                 });
@@ -1252,7 +1274,7 @@
                         state.contactPreference = choice.value;
                         host.querySelectorAll('.option-item').forEach(o => o.classList.remove('selected'));
                         el.classList.add('selected');
-                        setTimeout(() => showPage(11), 150);
+                        setTimeout(() => showPage(12), 150);
                     });
                     host.appendChild(el);
                 });
@@ -1401,11 +1423,11 @@
                 renderDistrictMap();
                 renderRatingOptions('optsSatisfaction', satisfactionOptions, value => {
                     state.satisfactionRating = value;
-                    setTimeout(() => showPage(8), 150);
+                    setTimeout(() => showPage(9), 150);
                 });
                 renderRatingOptions('optsTime', timeOptions, value => {
                     state.timeRating = value;
-                    setTimeout(() => showPage(9), 150);
+                    setTimeout(() => showPage(10), 150);
                 });
                 renderRecommendOptions();
                 renderContactOptions();
@@ -1422,9 +1444,9 @@
             const phoneInput = byId('phoneInput');
             const btnProceed = byId('btnProceed');
             const phoneError = byId('phoneError');
-            function validatePhone(v) {
-                const digits = v.replace(/\D/g, '');
-                return digits.length >= 8 && digits.length <= 15 && digits === v;
+            function validatePhone(value) {
+                const digits = value.replace(/\D/g, '');
+                return digits.length >= 8 && digits.length <= 15;
             }
             function updatePhoneValidation(showMessage) {
                 const value = phoneInput.value.trim();
@@ -1439,12 +1461,10 @@
                 phoneError.textContent = isValid ? '' : 'Please enter a phone number with at least 8 digits.';
             }
             phoneInput.addEventListener('input', () => {
-                phoneInput.value = phoneInput.value.replace(/\D/g, '').slice(0, 15);
+                phoneInput.value = phoneInput.value.replace(/[^\d+()\-\s]/g, '').slice(0, 20);
                 updatePhoneValidation(false);
             });
-            phoneInput.addEventListener('blur', () => {
-                updatePhoneValidation(true);
-            });
+            phoneInput.addEventListener('blur', () => updatePhoneValidation(true));
             phoneInput.addEventListener('keydown', ev => {
                 if (ev.key === 'Enter') {
                     ev.preventDefault();
@@ -1510,20 +1530,25 @@
             if (btnProceedService) {
                 btnProceedService.addEventListener('click', () => showPage(7));
             }
+            const btnProceedPolicies = byId('btnProceedPolicies');
+            if (btnProceedPolicies) {
+                btnProceedPolicies.addEventListener('click', () => showPage(8));
+            }
             byId('backFromStaff').addEventListener('click', () => showPage(1));
             byId('backFromGender').addEventListener('click', () => showPage(2));
             byId('backFromAge').addEventListener('click', () => showPage(3));
             byId('backFromAddress').addEventListener('click', () => showPage(4));
             byId('backFromService').addEventListener('click', () => showPage(5));
-            byId('backFromSatisfaction').addEventListener('click', () => showPage(6));
-            byId('backFromTime').addEventListener('click', () => showPage(7));
-            byId('backFromRecommend').addEventListener('click', () => showPage(8));
-            byId('backFromContact').addEventListener('click', () => showPage(9));
-            byId('backFromComment').addEventListener('click', () => showPage(10));
+            byId('backFromPolicies').addEventListener('click', () => showPage(6));
+            byId('backFromSatisfaction').addEventListener('click', () => showPage(7));
+            byId('backFromTime').addEventListener('click', () => showPage(8));
+            byId('backFromRecommend').addEventListener('click', () => showPage(9));
+            byId('backFromContact').addEventListener('click', () => showPage(10));
+            byId('backFromComment').addEventListener('click', () => showPage(11));
             byId('btnSubmitComment').addEventListener('click', () => {
                 const commentInput = byId('commentInput');
                 state.comment = commentInput ? commentInput.value.trim() : '';
-                showPage(12);
+                showPage(13);
             });
 
             const observer = new MutationObserver(() => {
