@@ -770,7 +770,7 @@
         <!-- Phone -->
         <div class="page" id="page-phone">
             <h1>Please enter your phone number</h1>
-            <input type="tel" id="phoneInput" placeholder="58 123 456 / 82 345 6789" autocomplete="tel" inputmode="tel" maxlength="20" />
+            <input type="tel" id="phoneInput" placeholder="+266 58 123 456" autocomplete="tel" inputmode="tel" maxlength="20" />
             <p class="helper-text">Sample (LS / SA): 58 123 456 / 82 345 6789. Country code only needed for international numbers.</p>
             <div class="field-error" id="phoneError" role="alert" aria-live="polite"></div>
         </div>
@@ -1521,9 +1521,15 @@
 
             const phoneInput = byId('phoneInput');
             const phoneError = byId('phoneError');
+            function getPhoneMinDigits(value) {
+                const digits = value.replace(/\D/g, '');
+                const hasCountryCode = value.trim().startsWith('+') || digits.startsWith('266') || digits.startsWith('27');
+                return hasCountryCode ? 11 : 8;
+            }
             function validatePhone(value) {
                 const digits = value.replace(/\D/g, '');
-                return digits.length >= 8 && digits.length <= 15;
+                const minDigits = getPhoneMinDigits(value);
+                return digits.length >= minDigits && digits.length <= 15;
             }
             function updatePhoneValidation(showMessage) {
                 const value = phoneInput.value.trim();
@@ -1534,7 +1540,12 @@
                     phoneError.textContent = '';
                     return isValid;
                 }
-                phoneError.textContent = isValid ? '' : 'Please enter a phone number with at least 8 digits.';
+                if (isValid) {
+                    phoneError.textContent = '';
+                    return isValid;
+                }
+                const minDigits = getPhoneMinDigits(value);
+                phoneError.textContent = `Please enter a phone number with at least ${minDigits} digits.`;
                 return isValid;
             }
             function schedulePhoneAdvance(isValid) {
