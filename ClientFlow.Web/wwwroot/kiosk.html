@@ -456,6 +456,28 @@
       font-size: 0.95rem;
       color: var(--text-muted);
     }
+    .policy-toast {
+      position: fixed;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 12px 22px;
+      border-radius: 999px;
+      background: rgba(7, 23, 61, 0.9);
+      border: 1px solid rgba(96, 215, 255, 0.45);
+      color: var(--text-light);
+      font-weight: 600;
+      font-size: 0.95rem;
+      box-shadow: 0 18px 40px rgba(2, 6, 22, 0.45);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease, transform 0.25s ease;
+      z-index: 40;
+    }
+    .policy-toast.visible {
+      opacity: 1;
+      transform: translateX(-50%) translateY(-4px);
+    }
     .checkbox-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -750,7 +772,6 @@
             <h1>Please enter your phone number</h1>
             <input type="tel" id="phoneInput" placeholder="+27 82 345 6789" autocomplete="tel" inputmode="tel" maxlength="20" />
             <div class="field-error" id="phoneError" role="alert" aria-live="polite"></div>
-            <button class="btn" id="btnProceed" disabled>Proceed</button>
         </div>
         <!-- Staff -->
         <div class="page compact" id="page-staff">
@@ -758,7 +779,6 @@
             <div class="form-group">
                 <div class="staff-grid" id="staffGrid"></div>
             </div>
-            <button class="btn" id="btnStaffContinue" disabled>Continue</button>
             <button class="back-btn" id="backFromStaff">Back</button>
         </div>
         <!-- Gender -->
@@ -768,7 +788,6 @@
                 <label>Gender</label>
                 <div class="card-grid choice-grid" id="genderOptions" role="list"></div>
             </div>
-            <button class="btn" id="btnGenderContinue" disabled>Continue</button>
             <button class="back-btn" id="backFromGender">Back</button>
         </div>
         <!-- Age range -->
@@ -778,7 +797,6 @@
                 <label>Age range</label>
                 <div class="card-grid choice-grid" id="ageRangeOptions" role="list"></div>
             </div>
-            <button class="btn" id="btnAgeContinue" disabled>Continue</button>
             <button class="back-btn" id="backFromAge">Back</button>
         </div>
         <!-- Residential Address -->
@@ -792,7 +810,6 @@
                 <div class="district-legend" id="districtList"></div>
             </div>
             <div class="district-selected" id="districtSelected">No district selected</div>
-            <button class="btn" id="btnAddressContinue" disabled>Continue</button>
             <button class="back-btn" id="backFromAddress">Back</button>
         </div>
         <!-- Service -->
@@ -802,7 +819,6 @@
                 <label>Service</label>
                 <div class="card-grid" id="serviceOptions" role="list"></div>
             </div>
-            <button class="btn" id="btnProceedService" disabled>Continue</button>
             <button class="back-btn" id="backFromService">Back</button>
         </div>
         <!-- Policies -->
@@ -813,7 +829,6 @@
                 <div class="card-grid" id="policyOptions" role="list"></div>
                 <p class="helper-text">Select all that apply.</p>
             </div>
-            <button class="btn" id="btnProceedPolicies">Continue</button>
             <button class="back-btn" id="backFromPolicies">Back</button>
         </div>
         <!-- Satisfaction -->
@@ -1024,6 +1039,65 @@
             let currentIndex = 0;
             const byId = id => document.getElementById(id);
             const districtColorLookup = new Map(districts.map(district => [district.name, district.color]));
+            let policyIdleTimer = null;
+            let policyCountdownTimer = null;
+            let policyCountdownInterval = null;
+            let policyToast = null;
+            let phoneAdvanceTimer = null;
+
+            function ensurePolicyToast() {
+                if (policyToast) return policyToast;
+                policyToast = document.createElement('div');
+                policyToast.className = 'policy-toast';
+                policyToast.setAttribute('role', 'status');
+                policyToast.setAttribute('aria-live', 'polite');
+                document.body.appendChild(policyToast);
+                return policyToast;
+            }
+
+            function hidePolicyToast() {
+                if (policyToast) policyToast.classList.remove('visible');
+            }
+
+            function cancelPolicyCountdown() {
+                if (policyCountdownTimer) {
+                    clearTimeout(policyCountdownTimer);
+                    policyCountdownTimer = null;
+                }
+                if (policyCountdownInterval) {
+                    clearInterval(policyCountdownInterval);
+                    policyCountdownInterval = null;
+                }
+                hidePolicyToast();
+            }
+
+            function resetPolicyTimers() {
+                if (policyIdleTimer) {
+                    clearTimeout(policyIdleTimer);
+                    policyIdleTimer = null;
+                }
+                cancelPolicyCountdown();
+            }
+
+            function schedulePolicyIdleTimer() {
+                resetPolicyTimers();
+                policyIdleTimer = setTimeout(() => {
+                    const toast = ensurePolicyToast();
+                    let remaining = 3;
+                    toast.textContent = `Continuing in ${remaining}...`;
+                    toast.classList.add('visible');
+                    policyCountdownInterval = setInterval(() => {
+                        remaining -= 1;
+                        if (remaining > 0) {
+                            toast.textContent = `Continuing in ${remaining}...`;
+                        }
+                    }, 1000);
+                    policyCountdownTimer = setTimeout(() => {
+                        cancelPolicyCountdown();
+                        showPage(8);
+                    }, 3000);
+                }, 3000);
+            }
 
             function setDistrictMapOpen(isOpen) {
                 const modal = byId('districtMapModal');
@@ -1100,6 +1174,9 @@
                     p.classList.toggle('active', i === idx);
                     p.style.removeProperty('display');
                 });
+                if (pages[idx] !== 'page-policy') {
+                    resetPolicyTimers();
+                }
                 const prog = byId('progress');
                 if (idx >= 2 && idx <= 12) {
                     prog.style.display = 'flex';
@@ -1160,7 +1237,7 @@
                         state.staffName = m.name;
                         state.staffBranchId = m.branchId ?? null;
                         state.staffBranchName = m.branchName ?? null;
-                        updateStaffSelectionState();
+                        setTimeout(() => showPage(3), 150);
                     });
                     host.appendChild(card);
                 });
@@ -1179,8 +1256,7 @@
                         host.querySelectorAll('.card-item').forEach(el => el.classList.remove('selected'));
                         card.classList.add('selected');
                         state.service = service;
-                        const btnProceedService = byId('btnProceedService');
-                        if (btnProceedService) btnProceedService.disabled = !state.service;
+                        setTimeout(() => showPage(7), 150);
                     });
                     host.appendChild(card);
                 });
@@ -1199,6 +1275,10 @@
                         card.classList.toggle('selected');
                         const selections = Array.from(host.querySelectorAll('.card-item.selected')).map(el => el.dataset.value);
                         state.policies = selections;
+                        resetPolicyTimers();
+                        if (state.policies.length > 0) {
+                            schedulePolicyIdleTimer();
+                        }
                     });
                     host.appendChild(card);
                 });
@@ -1281,6 +1361,7 @@
             }
 
             function selectDistrict(name) {
+                const previous = state.city;
                 state.city = name;
                 const districtSelected = byId('districtSelected');
                 if (districtSelected) {
@@ -1300,8 +1381,9 @@
                         el.classList.toggle('selected', el.dataset.district === name);
                     });
                 }
-                const btnAddressContinue = byId('btnAddressContinue');
-                if (btnAddressContinue) btnAddressContinue.disabled = !state.city;
+                if (name && name !== previous) {
+                    setTimeout(() => showPage(6), 150);
+                }
             }
 
             function renderDistrictMap() {
@@ -1357,6 +1439,11 @@
             }
 
             function resetState() {
+                resetPolicyTimers();
+                if (phoneAdvanceTimer) {
+                    clearTimeout(phoneAdvanceTimer);
+                    phoneAdvanceTimer = null;
+                }
                 state.phone = '';
                 state.staff = null;
                 state.staffName = null;
@@ -1378,7 +1465,6 @@
                 phoneInput.value = '';
                 const phoneError = byId('phoneError');
                 if (phoneError) phoneError.textContent = '';
-                byId('btnProceed').disabled = true;
                 ['optsSatisfaction', 'optsTime', 'optsRecommend', 'optsContact'].forEach(id => {
                     const host = byId(id);
                     if (host) host.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
@@ -1401,16 +1487,6 @@
                 if (serviceHost) serviceHost.querySelectorAll('.card-item.selected').forEach(el => el.classList.remove('selected'));
                 const policyHost = byId('policyOptions');
                 if (policyHost) policyHost.querySelectorAll('.card-item.selected').forEach(el => el.classList.remove('selected'));
-                const btnGenderContinue = byId('btnGenderContinue');
-                if (btnGenderContinue) btnGenderContinue.disabled = true;
-                const btnAgeContinue = byId('btnAgeContinue');
-                if (btnAgeContinue) btnAgeContinue.disabled = true;
-                const btnAddressContinue = byId('btnAddressContinue');
-                if (btnAddressContinue) btnAddressContinue.disabled = true;
-                const btnStaffContinue = byId('btnStaffContinue');
-                if (btnStaffContinue) btnStaffContinue.disabled = true;
-                const btnProceedService = byId('btnProceedService');
-                if (btnProceedService) btnProceedService.disabled = true;
                 const commentInput = byId('commentInput');
                 if (commentInput) commentInput.value = '';
             }
@@ -1442,7 +1518,6 @@
             });
 
             const phoneInput = byId('phoneInput');
-            const btnProceed = byId('btnProceed');
             const phoneError = byId('phoneError');
             function validatePhone(value) {
                 const digits = value.replace(/\D/g, '');
@@ -1452,66 +1527,58 @@
                 const value = phoneInput.value.trim();
                 state.phone = value;
                 const isValid = validatePhone(value);
-                btnProceed.disabled = !isValid;
-                if (!phoneError) return;
+                if (!phoneError) return isValid;
                 if (!value && !showMessage) {
                     phoneError.textContent = '';
-                    return;
+                    return isValid;
                 }
                 phoneError.textContent = isValid ? '' : 'Please enter a phone number with at least 8 digits.';
+                return isValid;
+            }
+            function schedulePhoneAdvance(isValid) {
+                if (phoneAdvanceTimer) {
+                    clearTimeout(phoneAdvanceTimer);
+                    phoneAdvanceTimer = null;
+                }
+                if (!isValid) return;
+                phoneAdvanceTimer = setTimeout(() => {
+                    if (validatePhone(phoneInput.value.trim())) {
+                        showPage(2);
+                    }
+                }, 300);
             }
             phoneInput.addEventListener('input', () => {
                 phoneInput.value = phoneInput.value.replace(/[^\d+()\-\s]/g, '').slice(0, 20);
-                updatePhoneValidation(false);
+                const isValid = updatePhoneValidation(false);
+                schedulePhoneAdvance(isValid);
             });
             phoneInput.addEventListener('blur', () => updatePhoneValidation(true));
             phoneInput.addEventListener('keydown', ev => {
                 if (ev.key === 'Enter') {
                     ev.preventDefault();
-                    if (btnProceed.disabled) {
-                        updatePhoneValidation(true);
+                    const isValid = updatePhoneValidation(true);
+                    if (!isValid) {
                         return;
+                    }
+                    if (phoneAdvanceTimer) {
+                        clearTimeout(phoneAdvanceTimer);
+                        phoneAdvanceTimer = null;
                     }
                     showPage(2);
                 }
             });
-            btnProceed.addEventListener('click', () => showPage(2));
-            const btnStaffContinue = byId('btnStaffContinue');
-            function updateStaffSelectionState() {
-                if (!btnStaffContinue) return;
-                btnStaffContinue.disabled = !state.staff;
-            }
-            if (btnStaffContinue) {
-                btnStaffContinue.addEventListener('click', () => showPage(3));
-            }
-            const btnGenderContinue = byId('btnGenderContinue');
-            function updateGenderSelectionState() {
-                if (!btnGenderContinue) return;
-                btnGenderContinue.disabled = !state.gender;
-            }
             renderChoiceCards('genderOptions', genders, value => {
                 state.gender = value || null;
-                updateGenderSelectionState();
+                if (state.gender) {
+                    setTimeout(() => showPage(4), 150);
+                }
             });
-            if (btnGenderContinue) {
-                btnGenderContinue.addEventListener('click', () => showPage(4));
-            }
-            const btnAgeContinue = byId('btnAgeContinue');
-            function updateAgeSelectionState() {
-                if (!btnAgeContinue) return;
-                btnAgeContinue.disabled = !state.ageRange;
-            }
             renderChoiceCards('ageRangeOptions', ageRanges, value => {
                 state.ageRange = value || null;
-                updateAgeSelectionState();
+                if (state.ageRange) {
+                    setTimeout(() => showPage(5), 150);
+                }
             });
-            if (btnAgeContinue) {
-                btnAgeContinue.addEventListener('click', () => showPage(5));
-            }
-            const btnAddressContinue = byId('btnAddressContinue');
-            if (btnAddressContinue) {
-                btnAddressContinue.addEventListener('click', () => showPage(6));
-            }
             const openDistrictMap = byId('openDistrictMap');
             const closeDistrictMap = byId('closeDistrictMap');
             if (openDistrictMap) {
@@ -1525,14 +1592,6 @@
                 districtMapModal.addEventListener('click', ev => {
                     if (ev.target === districtMapModal) setDistrictMapOpen(false);
                 });
-            }
-            const btnProceedService = byId('btnProceedService');
-            if (btnProceedService) {
-                btnProceedService.addEventListener('click', () => showPage(7));
-            }
-            const btnProceedPolicies = byId('btnProceedPolicies');
-            if (btnProceedPolicies) {
-                btnProceedPolicies.addEventListener('click', () => showPage(8));
             }
             byId('backFromStaff').addEventListener('click', () => showPage(1));
             byId('backFromGender').addEventListener('click', () => showPage(2));
