@@ -25,12 +25,101 @@
         let pageIndex = 0;
         let sessionStarted = Date.now();
         const answers = Object.create(null);
+        const directoryCache = new Map();
 
         const parseSettings = (json) => {
             if (!json) return {};
             try { return JSON.parse(json); }
             catch { return {}; }
         };
+
+        function normalizeDirectoryItems(items, settings) {
+            const list = Array.isArray(items) ? items : [];
+            const labelField = settings.labelField || 'name';
+            const valueField = settings.valueField || 'id';
+            const imageField = settings.imageField || 'photoUrl';
+            return list.map(item => {
+                if (item == null) return null;
+                if (typeof item === 'string' || typeof item === 'number') {
+                    const value = String(item);
+                    return { value, label: value, image: null };
+                }
+                const value = item[valueField] ?? item.id ?? item.value ?? item.code ?? '';
+                const label = item[labelField] ?? item.name ?? item.label ?? String(value ?? '');
+                const image = imageField ? (item[imageField] ?? item.photoUrl ?? item.imageUrl ?? null) : null;
+                return {
+                    value: value != null ? String(value) : '',
+                    label: label != null ? String(label) : '',
+                    image: typeof image === 'string' && image.trim() ? image.trim() : null,
+                };
+            }).filter(item => item && (item.value || item.label));
+        }
+
+        async function loadDirectoryOptions(question, settings) {
+            const source = (settings.source || (question.type === 'staff' ? 'staff' : 'custom')).toLowerCase();
+            const cacheKey = JSON.stringify({
+                source,
+                url: settings.sourceUrl || '',
+                includeInactive: !!settings.includeInactive,
+                labelField: settings.labelField || '',
+                valueField: settings.valueField || '',
+                imageField: settings.imageField || '',
+            });
+            if (directoryCache.has(cacheKey)) {
+                return directoryCache.get(cacheKey);
+            }
+
+            const loader = (async () => {
+                if (source === 'staff') {
+                    const params = [];
+                    if (!settings.includeInactive) params.push('active=true');
+                    const url = `/api/staff${params.length ? `?${params.join('&')}` : ''}`;
+                    try {
+                        const response = await fetch(url);
+                        if (response.ok) {
+                            const data = await response.json();
+                            return normalizeDirectoryItems(data, {
+                                ...settings,
+                                labelField: settings.labelField || 'name',
+                                valueField: settings.valueField || 'id',
+                                imageField: settings.imageField || 'photoUrl',
+                            });
+                        }
+                    } catch {
+                        // Ignore and fall through to local cache.
+                    }
+                    try {
+                        const cached = localStorage.getItem('kiosk_staff');
+                        if (cached) {
+                            const data = JSON.parse(cached);
+                            return normalizeDirectoryItems(data, {
+                                ...settings,
+                                labelField: 'name',
+                                valueField: 'id',
+                                imageField: 'photo',
+                            });
+                        }
+                    } catch {
+                        // Ignore local cache failures.
+                    }
+                    return [];
+                }
+
+                const sourceUrl = (settings.sourceUrl || '').trim();
+                if (!sourceUrl) return [];
+                try {
+                    const response = await fetch(sourceUrl);
+                    if (!response.ok) return [];
+                    const data = await response.json();
+                    return normalizeDirectoryItems(data, settings);
+                } catch {
+                    return [];
+                }
+            })();
+
+            directoryCache.set(cacheKey, loader);
+            return loader;
+        }
 
         function scopeCss(css, scopeSel) {
             if (!css) return '';
@@ -391,6 +480,10 @@
                     control = renderOptionTiles(q, currentValue);
                     break;
                 }
+                case 'staff': {
+                    control = renderDirectorySelect(q, currentValue, settings);
+                    break;
+                }
                 case 'dropdown':
                 case 'select': {
                     control = document.createElement('select');
@@ -500,6 +593,83 @@
                 wrap.appendChild(tile);
             }
             updateSelection();
+            return wrap;
+        }
+
+        function renderDirectorySelect(question, currentValue, settings) {
+            const wrap = document.createElement('div');
+            wrap.className = 'directory-grid';
+
+            const columns = Number(settings.columns);
+            if (Number.isFinite(columns) && columns > 0) {
+                wrap.style.gridTemplateColumns = `repeat(${columns}, minmax(0, 1fr))`;
+            }
+
+            const placeholder = document.createElement('div');
+            placeholder.className = 'directory-placeholder';
+            placeholder.textContent = (settings.source || 'staff') === 'custom'
+                ? 'Loading entries...'
+                : 'Loading staff...';
+            wrap.appendChild(placeholder);
+
+            const updateSelection = () => {
+                wrap.querySelectorAll('.directory-card').forEach(card => {
+                    card.classList.toggle('selected', card.dataset.value === String(answers[question.key] ?? ''));
+                });
+            };
+
+            loadDirectoryOptions(question, settings).then(options => {
+                wrap.innerHTML = '';
+                if (!options.length) {
+                    const empty = document.createElement('div');
+                    empty.className = 'directory-empty';
+                    empty.textContent = (settings.source || 'staff') === 'custom'
+                        ? 'No entries available.'
+                        : 'No staff available.';
+                    wrap.appendChild(empty);
+                    return;
+                }
+
+                options.forEach(option => {
+                    const card = document.createElement('button');
+                    card.type = 'button';
+                    card.className = 'directory-card';
+                    card.dataset.value = option.value;
+
+                    if (option.image) {
+                        const img = document.createElement('img');
+                        img.src = option.image;
+                        img.alt = option.label || option.value;
+                        card.appendChild(img);
+                    } else {
+                        const avatar = document.createElement('div');
+                        avatar.className = 'directory-avatar';
+                        avatar.textContent = (option.label || option.value || '?').slice(0, 1).toUpperCase();
+                        card.appendChild(avatar);
+                    }
+
+                    const meta = document.createElement('div');
+                    meta.className = 'directory-meta';
+                    const name = document.createElement('div');
+                    name.className = 'directory-name';
+                    name.textContent = option.label || option.value;
+                    meta.appendChild(name);
+                    card.appendChild(meta);
+
+                    card.addEventListener('click', () => {
+                        answers[question.key] = option.value;
+                        updateSelection();
+                    });
+
+                    if (currentValue === option.value) {
+                        card.classList.add('selected');
+                    }
+                    wrap.appendChild(card);
+                });
+
+                updateSelection();
+            });
+
             return wrap;
         }
 

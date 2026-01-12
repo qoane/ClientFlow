@@ -134,7 +134,7 @@ export class SurveyDesignerStore {
             sectionId: sectionId ?? null,
             type,
             prompt: input.prompt ?? this.defaultPrompt(type),
-            key: input.key ?? this.makeKey(type, this.state.questions.length + 1),
+            key: input.key ?? this.defaultKey(type, this.state.questions.length + 1),
             required: input.required ?? false,
             order: 0,
             settings: this.mergeSettings(this.defaultSettings(type), input.settings ?? {}),
@@ -357,6 +357,7 @@ export class SurveyDesignerStore {
             case "likert": return "Rate your agreement";
             case "single": return "Select one option";
             case "multi": return "Select all that apply";
+            case "staff": return "Which staff member helped you?";
             case "phone": return "Phone number";
             case "number": return "Numeric value";
             case "date": return "Pick a date";
@@ -374,6 +375,15 @@ export class SurveyDesignerStore {
                 return "";
             default: return "Your response";
         }
+    }
+
+    defaultKey(type, index) {
+        if (type === "staff") {
+            const base = "staff";
+            const exists = this.state.questions.some(q => (q.key || "").toLowerCase() === base);
+            if (!exists) return base;
+        }
+        return this.makeKey(type, index);
     }
 
     defaultChoices(type) {
@@ -439,6 +449,16 @@ export class SurveyDesignerStore {
                 return { backgroundColor: "#ffffff", penColor: "#000000", showGuideline: true };
             case "rating_stars":
                 return { stars: 5, icon: "star", showLabels: false };
+            case "staff":
+                return {
+                    source: "staff",
+                    sourceUrl: "",
+                    labelField: "name",
+                    valueField: "id",
+                    imageField: "photoUrl",
+                    includeInactive: false,
+                    columns: 2,
+                };
             default:
                 return {};
         }

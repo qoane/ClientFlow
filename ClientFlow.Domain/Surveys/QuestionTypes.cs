@@ -125,6 +125,23 @@ public static class QuestionTypes
     public const string SingleChoice = "single";
 
     /// <summary>
+    /// Staff directory picker that loads options dynamically from a roster API.
+    /// </summary>
+    /// <remarks>
+    /// Settings JSON contract:
+    /// <list type="bullet">
+    /// <item><description><c>source</c> (string?): Data source key (<c>staff</c> or <c>custom</c>).</description></item>
+    /// <item><description><c>sourceUrl</c> (string?): Custom API endpoint returning an array of items.</description></item>
+    /// <item><description><c>labelField</c> (string?): Field name to read labels from (defaults to <c>name</c>).</description></item>
+    /// <item><description><c>valueField</c> (string?): Field name to read values from (defaults to <c>id</c>).</description></item>
+    /// <item><description><c>imageField</c> (string?): Field name for optional avatar URLs (defaults to <c>photoUrl</c>).</description></item>
+    /// <item><description><c>includeInactive</c> (bool?): When true, include inactive staff in the roster.</description></item>
+    /// <item><description><c>columns</c> (int?): Preferred grid column count for the renderer.</description></item>
+    /// </list>
+    /// </remarks>
+    public const string Staff = "staff";
+
+    /// <summary>
     /// Multi-select question driven by discrete options.
     /// </summary>
     /// <remarks>
