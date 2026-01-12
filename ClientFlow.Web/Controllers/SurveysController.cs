@@ -433,7 +433,7 @@ public class SurveysController(
     private static string? NormalizePhone(string? value)
         => string.IsNullOrWhiteSpace(value)
             ? null
-            : new string(value.Where(ch => !char.IsWhiteSpace(ch)).ToArray());
+            : new string(value.Where(char.IsDigit).ToArray());
 
     private static bool IsValidLocalPhone(string? value)
         => !string.IsNullOrWhiteSpace(value)
