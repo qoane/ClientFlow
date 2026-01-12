@@ -582,6 +582,7 @@
             { type: 'likert', label: 'Likert 1–5', hint: 'Agreement scale' },
             { type: 'single', label: 'Single Select', hint: 'Radio buttons' },
             { type: 'multi', label: 'Multi Select', hint: 'Checkbox list' },
+            { type: 'staff', label: 'Staff Picker', hint: 'Load staff or API roster' },
             { type: 'text', label: 'Free Text', hint: 'Short answer' },
             { type: 'phone', label: 'Phone', hint: '8 digit local number' },
             { type: 'number', label: 'Numeric', hint: 'Quantitative input' },
@@ -721,6 +722,8 @@
                     return question.prompt || 'Signature';
                 case 'rating_stars':
                     return question.prompt || 'Star rating';
+                case 'staff':
+                    return question.prompt || 'Staff picker';
                 default:
                     return question.prompt || 'Untitled question';
             }
@@ -1362,6 +1365,82 @@
                     properties.appendChild(makeRow('Show Guideline', guideToggle));
                     break;
                 }
+                case 'staff': {
+                    const sourceSelect = document.createElement('select');
+                    [
+                        { value: 'staff', label: 'Staff roster' },
+                        { value: 'custom', label: 'Custom API' },
+                    ].forEach(opt => {
+                        const option = document.createElement('option');
+                        option.value = opt.value;
+                        option.textContent = opt.label;
+                        sourceSelect.appendChild(option);
+                    });
+                    sourceSelect.value = settings.source || 'staff';
+                    sourceSelect.onchange = () => setSettingValue('source', sourceSelect.value || 'staff');
+                    properties.appendChild(makeRow('Source', sourceSelect));
+
+                    if ((settings.source || 'staff') === 'custom') {
+                        const urlInput = document.createElement('input');
+                        urlInput.placeholder = 'https://api.example.com/items';
+                        urlInput.value = settings.sourceUrl || '';
+                        urlInput.onchange = () => setSettingValue('sourceUrl', urlInput.value.trim(), true);
+                        properties.appendChild(makeRow('Source URL', urlInput));
+
+                        const labelInput = document.createElement('input');
+                        labelInput.placeholder = 'Label field (e.g. name)';
+                        labelInput.value = settings.labelField || 'name';
+                        labelInput.onchange = () => setSettingValue('labelField', labelInput.value.trim() || 'name');
+                        properties.appendChild(makeRow('Label Field', labelInput));
+
+                        const valueInput = document.createElement('input');
+                        valueInput.placeholder = 'Value field (e.g. id)';
+                        valueInput.value = settings.valueField || 'id';
+                        valueInput.onchange = () => setSettingValue('valueField', valueInput.value.trim() || 'id');
+                        properties.appendChild(makeRow('Value Field', valueInput));
+
+                        const imageInput = document.createElement('input');
+                        imageInput.placeholder = 'Image field (e.g. photoUrl)';
+                        imageInput.value = settings.imageField || '';
+                        imageInput.onchange = () => setSettingValue('imageField', imageInput.value.trim(), true);
+                        properties.appendChild(makeRow('Image Field', imageInput));
+                    } else {
+                        const includeToggle = document.createElement('label');
+                        includeToggle.className = 'switch';
+                        const includeInput = document.createElement('input');
+                        includeInput.type = 'checkbox';
+                        includeInput.checked = !!settings.includeInactive;
+                        includeInput.onchange = () => updateSettings(current => {
+                            const next = { ...current };
+                            if (includeInput.checked) next.includeInactive = true;
+                            else delete next.includeInactive;
+                            return next;
+                        });
+                        const includeSlider = document.createElement('span');
+                        includeSlider.className = 'slider';
+                        includeToggle.appendChild(includeInput);
+                        includeToggle.appendChild(includeSlider);
+                        properties.appendChild(makeRow('Include Inactive', includeToggle));
+                    }
+
+                    const columnsInput = document.createElement('input');
+                    columnsInput.type = 'number';
+                    columnsInput.min = '1';
+                    columnsInput.max = '6';
+                    columnsInput.placeholder = 'Auto';
+                    columnsInput.value = settings.columns ?? '';
+                    columnsInput.onchange = () => {
+                        const value = parseInt(columnsInput.value, 10);
+                        updateSettings(current => {
+                            const next = { ...current };
+                            if (Number.isFinite(value) && value > 0) next.columns = value;
+                            else delete next.columns;
+                            return next;
+                        });
+                    };
+                    properties.appendChild(makeRow('Columns', columnsInput));
+                    break;
+                }
                 case 'rating_stars': {
                     const starsInput = document.createElement('input');
                     starsInput.type = 'number';
@@ -1716,6 +1795,22 @@
                 }
                 case 'multi': {
                     return createChoiceList(question, 'checkbox');
+                }
+                case 'staff': {
+                    const container = document.createElement('div');
+                    container.className = 'preview-choice-list';
+                    ['Staff member', 'Staff member', 'Staff member'].forEach(label => {
+                        const item = document.createElement('label');
+                        const input = document.createElement('input');
+                        input.type = 'radio';
+                        input.disabled = true;
+                        item.appendChild(input);
+                        const span = document.createElement('span');
+                        span.textContent = label;
+                        item.appendChild(span);
+                        container.appendChild(item);
+                    });
+                    return container;
                 }
                 default: {
                     const input = document.createElement('input');
