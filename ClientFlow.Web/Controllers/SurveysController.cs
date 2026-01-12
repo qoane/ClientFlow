@@ -431,9 +431,20 @@ public class SurveysController(
     }
 
     private static string? NormalizePhone(string? value)
-        => string.IsNullOrWhiteSpace(value)
-            ? null
-            : new string(value.Where(char.IsDigit).ToArray());
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        var digits = new string(value.Where(char.IsDigit).ToArray());
+        if (digits.StartsWith("266", StringComparison.Ordinal) && digits.Length >= 11)
+        {
+            return digits[^8..];
+        }
+
+        return digits;
+    }
 
     private static bool IsValidLocalPhone(string? value)
         => !string.IsNullOrWhiteSpace(value)

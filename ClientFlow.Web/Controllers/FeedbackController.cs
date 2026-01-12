@@ -28,8 +28,8 @@ public class FeedbackController : ControllerBase
 
         if (string.IsNullOrWhiteSpace(dto.Phone))
             return BadRequest("Phone number is required.");
-        var phoneValue = dto.Phone.Trim();
-        if (phoneValue.Length != 8 || !phoneValue.All(char.IsDigit))
+        var phoneValue = NormalizePhone(dto.Phone);
+        if (!IsValidLocalPhone(phoneValue))
             return BadRequest("Please enter an 8 digit local phone number.");
 
         if ((dto.TimeRating is not null && dto.TimeRating is < 1 or > 5) ||
@@ -113,7 +113,7 @@ public class FeedbackController : ControllerBase
             RespectRating = dto.RespectRating ?? 0,
             OverallRating = dto.OverallRating ?? 0,
             RecommendRating = dto.RecommendRating,
-            Phone = string.IsNullOrWhiteSpace(dto.Phone) ? null : dto.Phone,
+            Phone = string.IsNullOrWhiteSpace(phoneValue) ? null : phoneValue,
             ServiceType = string.IsNullOrWhiteSpace(dto.ServiceType) ? null : dto.ServiceType.Trim(),
             Gender = string.IsNullOrWhiteSpace(dto.Gender) ? null : dto.Gender.Trim(),
             AgeRange = string.IsNullOrWhiteSpace(dto.AgeRange) ? null : dto.AgeRange.Trim(),
@@ -135,6 +135,27 @@ public class FeedbackController : ControllerBase
 
         return CreatedAtAction(nameof(Get), new { id = entity.Id }, new { entity.Id });
     }
+
+    private static string? NormalizePhone(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        var digits = new string(value.Where(char.IsDigit).ToArray());
+        if (digits.StartsWith("266", StringComparison.Ordinal) && digits.Length >= 11)
+        {
+            return digits[^8..];
+        }
+
+        return digits;
+    }
+
+    private static bool IsValidLocalPhone(string? value)
+        => !string.IsNullOrWhiteSpace(value)
+        && value.Length == 8
+        && value.All(char.IsDigit);
 
     // NOTE:
     // The unfiltered GET method previously returned all kiosk feedback without any query parameters.
