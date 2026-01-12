@@ -1170,7 +1170,10 @@
                     return;
                 }
                 localStorage.setItem(kioskSurveyStorageKey, code);
-                const target = appBuildUrl('kiosk.html');
+                const isLegacy = code.trim().toLowerCase() === 'legacy';
+                const target = isLegacy
+                    ? appBuildUrl('kiosk.html')
+                    : appBuildUrl(`kiosk/runner.html?code=${encodeURIComponent(code)}`);
                 window.open(target, '_blank', 'noopener');
             });
         }
